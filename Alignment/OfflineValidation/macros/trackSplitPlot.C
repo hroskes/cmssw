@@ -1082,34 +1082,41 @@ Bool_t misalignmentDependence(TCanvas *c1old,
         if (xvar == "phi" && yvar == "dxy" && !resolution && !pull)
         {
             f = new TF1("sine","[0]*sin([1]*x-[2])");
-            f->FixParameter(1,-2);
+            //f = new TF1("sine","[0]*sin([1]*x-[2])+[3]");
             f->SetParameter(0,5e-4);
+            f->FixParameter(1,-2);
+
             nParameters = 2;
             Int_t tempParameters[2] = {0,2};
             TString tempParameterNames[2] = {"A;#mum","B"};
+            functionname = "#Deltad_{xy}=Asin(2#phi_{org}+B)";
+
+            //nParameters = 3;
+            //Int_t tempParameters[3] = {0,2,3};
+            //TString tempParameterNames[3] = {"A;#mum","B","C;#mum"};
+            //functionname = "#Deltad_{xy}=Asin(2#phi_{org}+B)+C";
+
             parameters = tempParameters;
             parameternames = tempParameterNames;
-            functionname = "#Deltad_{xy}=Asin(2#phi_{org}+B)";
         }
         if (xvar == "phi" && yvar == "dxy" && !resolution && pull)
         {
             f = new TF1("sine","[0]*sin([1]*x-[2])");
-            //f = new TF1("sine","[0]*sin([1]*x-[2]) + [3]");
-
+            //f = new TF1("sine","[0]*sin([1]*x-[2])+[3]");
             f->FixParameter(1,-2);
 
             nParameters = 2;
             Int_t tempParameters[2] = {0,2};
-            TString tempParameterNames[2] = {"A;#mum","B"};
+            TString tempParameterNames[2] = {"A","B"};
+            functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=Asin(2#phi_{org}+B)";
+
             //nParameters = 3;
             //Int_t tempParameters[3] = {0,2,3};
-            //TString tempParameterNames[3] = {"A;#mum","B","C;#mum"};
+            //TString tempParameterNames[3] = {"A","B","C"};
+            //functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=Asin(2#phi_{org}+B)+C";
 
             parameters = tempParameters;
             parameternames = tempParameterNames;
-
-            functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=Asin(2#phi_{org}+B)";
-            //functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=Asin(2#phi_{org}+B) + C";
         }
         
         if (xvar == "theta" && yvar == "dz" && !resolution && !pull)
