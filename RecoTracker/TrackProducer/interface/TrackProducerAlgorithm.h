@@ -54,12 +54,15 @@ public:
     conf_(conf),
     algoName_(conf_.getParameter<std::string>( "AlgorithmName" )),
     algo_(reco::TrackBase::algoByName(algoName_)),
-    reMatchSplitHits_(false)
+    reMatchSplitHits_(false),
+    excludePixelHits_(false)
       {
         geometricInnerState_ = (conf_.exists("GeometricInnerState") ?
 	  conf_.getParameter<bool>( "GeometricInnerState" ) : true);
 	if (conf_.exists("reMatchSplitHits"))
 	  reMatchSplitHits_=conf_.getParameter<bool>("reMatchSplitHits");
+	if (conf_.exists("excludePixelHits"))
+	  excludePixelHits_=conf_.getParameter<bool>("excludePixelHits");
       }
 
   /// Destructor
@@ -135,6 +138,7 @@ public:
   std::string algoName_;
   reco::TrackBase::TrackAlgorithm algo_;
   bool reMatchSplitHits_;
+  bool excludePixelHits_;
   bool geometricInnerState_;
 
   TrajectoryStateOnSurface getInitialState(const T * theT,

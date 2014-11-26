@@ -5,6 +5,11 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("splitter")
 
+######################################
+#Set this to true to exclude pixels
+excludePixels = False
+######################################
+
 # CMSSW.2.2.3
 
 # message logger
@@ -80,7 +85,8 @@ process.TrackRefitter1 = RecoTracker.TrackProducer.TrackRefitterP5_cfi.TrackRefi
       src = '.oO[TrackCollection]Oo.',
       TrajectoryInEvent = True,
       TTRHBuilder = "WithTrackAngle",
-      NavigationSchool = ""
+      NavigationSchool = "",
+      excludePixelHits = excludePixels
       )
       
 process.FittingSmootherRKP5.EstimateCut = -1
@@ -98,7 +104,6 @@ process.AlignmentTrackSelector.etaMin  = -9999.
 process.AlignmentTrackSelector.etaMax  = 9999.
 process.AlignmentTrackSelector.nHitMin = 10
 process.AlignmentTrackSelector.nHitMin2D = 2
-process.AlignmentTrackSelector.minHitsPerSubDet.inBPIX=4 ##skip tracks not passing the pixel
 process.AlignmentTrackSelector.chi2nMax = 9999.
 process.AlignmentTrackSelector.applyMultiplicityFilter = True
 process.AlignmentTrackSelector.maxMultiplicity = 1
@@ -109,7 +114,10 @@ process.AlignmentTrackSelector.applyIsolationCut = False
 process.AlignmentTrackSelector.minHitIsolation = 0.8
 process.AlignmentTrackSelector.applyChargeCheck = False
 process.AlignmentTrackSelector.minHitChargeStrip = 50.
-process.AlignmentTrackSelector.minHitsPerSubDet.inBPIX = 2
+if excludePixels:
+    process.AlignmentTrackSelector.minHitsPerSubDet.inBPIX=0
+else:
+    process.AlignmentTrackSelector.minHitsPerSubDet.inBPIX=2 ##skip tracks not passing the pixel
 #process.AlignmentTrackSelector.trackQualities = ["highPurity"]
 #process.AlignmentTrackSelector.iterativeTrackingSteps = ["iter1","iter2"]
 process.KFFittingSmootherWithOutliersRejectionAndRK.EstimateCut=30.0
@@ -122,7 +130,6 @@ process.KFFittingSmootherWithOutliersRejectionAndRK.MinNumberOfHits=4
 process.load("RecoTracker.FinalTrackSelectors.cosmicTrackSplitter_cfi")
 process.cosmicTrackSplitter.tracks = 'AlignmentTrackSelector'
 process.cosmicTrackSplitter.tjTkAssociationMapTag = 'TrackRefitter1'
-#process.cosmicTrackSplitter.excludePixelHits = False
 
 #---------------------------------------------------------------------
 # the output of the track hit filter are track candidates

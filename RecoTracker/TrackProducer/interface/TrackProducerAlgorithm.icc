@@ -156,6 +156,12 @@ TrackProducerAlgorithm<T>::runWithTrack(const TrackingGeometry * theG,
 	      }//next is not the end of hits
 	   }//if rematching option is on.
 
+          if (excludePixelHits_){   //Copied from RecoTracker/FinalTrackSelectors/plugins/CosmicTrackSplitter.cc
+            DetId hitId = (**i).geographicalId();
+            if ((hitId.det() == DetId::Tracker)&&((hitId.subdetId() == 1)||(hitId.subdetId() == 2))){  // check for pixel hits
+              continue;
+            }
+          }
 
 	  if ((**i).geographicalId()!=0U)  hits.push_back( (**i).cloneForFit(*builder->geometry()->idToDet( (**i).geographicalId() ) ) );
 	}

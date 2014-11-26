@@ -29,6 +29,9 @@ TrackRefitter = cms.EDProducer("TrackRefitter",
     # true for cosmics, false for collision tracks (needed by loopers)
     GeometricInnerState = cms.bool(False),
 
+    # to exclude pixel hits
+    excludePixelHits = cms.bool(False),
+
     # Navigation school is necessary to fill the secondary hit patterns                         
     NavigationSchool = cms.string('SimpleNavigationSchool'),
     MeasurementTracker = cms.string(''),                                              
