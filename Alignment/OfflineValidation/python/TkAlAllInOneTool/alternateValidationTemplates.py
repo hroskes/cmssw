@@ -206,6 +206,13 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("OfflineValidator") 
    
+############################################
+#Set this to true to exclude pixels
+#WARNING: For this to work, you need
+#to git cms-addpkg RecoTracker/TrackProducer
+excludePixels = cms.bool(False)
+############################################
+
 process.load("Alignment.OfflineValidation..oO[dataset]Oo._cff")
 
 process.options = cms.untracked.PSet(
@@ -250,7 +257,9 @@ process.TrackRefitter1 = process.TrackRefitterP5.clone(
         src ='ALCARECOTkAlCosmicsCTF0T',
         NavigationSchool = cms.string(''),
         TrajectoryInEvent = True,
-        TTRHBuilder = "WithAngleAndTemplate" #default
+        TTRHBuilder = "WithAngleAndTemplate", #default
+        NavigationSchool = "",
+        excludePixelHits = excludePixels
         )
 
 #-- 2nd fit for AlignmentProducer
@@ -357,6 +366,13 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("OfflineValidator") 
    
+############################################
+#Set this to true to exclude pixels
+#WARNING: For this to work, you need
+#to git cms-addpkg RecoTracker/TrackProducer
+excludePixels = cms.bool(False)
+############################################
+
 process.load("Alignment.OfflineValidation..oO[dataset]Oo._cff")
 
 process.options = cms.untracked.PSet(
@@ -442,7 +458,8 @@ process.TrackRefitter1 = process.TrackRefitterP5.clone(
    TTRHBuilder = "WithAngleAndTemplate",
    NavigationSchool = "",
    constraint = 'momentum', ### SPECIFIC FOR CRUZET
-   srcConstr='AliMomConstraint1' ### SPECIFIC FOR CRUZET$works only with tag V02-10-02 TrackingTools/PatternTools / or CMSSW >=31X
+   srcConstr='AliMomConstraint1', ### SPECIFIC FOR CRUZET$works only with tag V02-10-02 TrackingTools/PatternTools / or CMSSW >=31X
+   excludePixelHits = excludePixels
 )
 
 process.TrackRefitter2 = process.TrackRefitter1.clone(

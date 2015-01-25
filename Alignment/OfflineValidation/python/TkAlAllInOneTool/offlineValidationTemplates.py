@@ -5,6 +5,13 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("OfflineValidator") 
    
+############################################
+#Set this to true to exclude pixels
+#WARNING: For this to work, you need
+#to git cms-addpkg RecoTracker/TrackProducer
+excludePixels = cms.bool(False)
+############################################
+
 # process.load("Alignment.OfflineValidation..oO[dataset]Oo._cff")
 .oO[datasetDefinition]Oo.
 
@@ -138,7 +145,8 @@ process.TrackRefitter1 = process.TrackRefitter.clone(
    src = 'HighPuritySelector',
    TrajectoryInEvent = True,
    TTRHBuilder = "WithAngleAndTemplate",
-   NavigationSchool = ""
+   NavigationSchool = "",
+   excludePixelHits = excludePixels
 )
 process.TrackRefitter2 = process.TrackRefitter1.clone(
 #    src = 'HitFilteredTracks')
@@ -204,6 +212,13 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("OfflineValidator") 
    
+############################################
+#Set this to true to exclude pixels
+#WARNING: For this to work, you need
+#to git cms-addpkg RecoTracker/TrackProducer
+excludePixels = cms.bool(False)
+############################################
+
 process.load("Alignment.OfflineValidation..oO[dataset]Oo._cff")
 
 process.options = cms.untracked.PSet(
@@ -340,7 +355,8 @@ process.TrackRefitter1 = process.TrackRefitter.clone(
    src = 'HighPuritySelector',
    TrajectoryInEvent = True,
    TTRHBuilder = "WithAngleAndTemplate",
-   NavigationSchool = ""
+   NavigationSchool = "",
+   excludePixelHits = excludePixels
 )
 process.TrackRefitter2 = process.TrackRefitter1.clone(
 #    src = 'HitFilteredTracks')
