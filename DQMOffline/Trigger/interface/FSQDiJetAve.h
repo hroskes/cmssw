@@ -46,6 +46,7 @@
 #include "HLTrigger/HLTcore/interface/TriggerExpressionData.h"
 #include "HLTrigger/HLTcore/interface/TriggerExpressionEvaluator.h"
 #include "HLTrigger/HLTcore/interface/TriggerExpressionParser.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 //
 // class declaration
@@ -74,7 +75,6 @@ class FSQDiJetAve : public DQMEDAnalyzer {
       // ----------member data ---------------------------
       //
       triggerExpression::Data m_eventCache;
-      bool m_isSetup;
       bool m_useGenWeight;
       HLTConfigProvider m_hltConfig;
 
@@ -86,6 +86,7 @@ class FSQDiJetAve : public DQMEDAnalyzer {
       edm::EDGetTokenT <edm::TriggerResults> triggerResultsFUToken;
       edm::EDGetTokenT <trigger::TriggerEvent> triggerSummaryToken;
       edm::EDGetTokenT <trigger::TriggerEvent> triggerSummaryFUToken;
+      edm::EDGetTokenT <GenEventInfoProduct  > m_genEvInfoToken;
 
       edm::TriggerNames m_triggerNames; // TriggerNames class
       edm::Handle<edm::TriggerResults> m_triggerResults;

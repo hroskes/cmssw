@@ -222,8 +222,8 @@ TCanvas *trackSplitPlot(Int_t nFiles,TString *files,TString *names,TString xvar,
                 x = xint;
             if (xvar == "runNumber")
                 runNumber = x;
-            if (runNumber < minrun || (runNumber > maxrun && maxrun > 0))  //minrun and maxrun are global variables.  
-            {                                                              //they're defined in axislimits.C because they're used there too
+            if ((runNumber < minrun && runNumber > 1) || (runNumber > maxrun && maxrun > 0))  //minrun and maxrun are global variables.
+            {
                 notincluded++;
                 continue;
             }
@@ -389,6 +389,8 @@ TCanvas *trackSplitPlot(Int_t nFiles,TString *files,TString *names,TString xvar,
             yaxismin = 0;
         }
         firstp->GetYaxis()->SetRangeUser(yaxismin,yaxismax);
+        if (xvar == "runNumber")
+            firstp->GetXaxis()->SetNdivisions(505);
     }
     else if (type == Histogram || type == OrgHistogram)
     {
@@ -417,7 +419,13 @@ TCanvas *trackSplitPlot(Int_t nFiles,TString *files,TString *names,TString xvar,
                 maxp->SetBinContent(i,TMath::Max(maxp->GetBinContent(i),p[j]->GetBinContent(i)));
             }
         }
+        maxp->SetMinimum(0);
         maxp->Draw();
+        if (xvar == "runNumber")
+        {
+            maxp->GetXaxis()->SetNdivisions(505);
+            maxp->Draw();
+        }
     }
 
     TLegend *legend = new TLegend(.6,.7,.9,.9,"","br");
@@ -1082,22 +1090,21 @@ Bool_t misalignmentDependence(TCanvas *c1old,
         if (xvar == "phi" && yvar == "dxy" && !resolution && !pull)
         {
             f = new TF1("sine","[0]*sin([1]*x-[2])");
-            //f = new TF1("sine","[0]*sin([1]*x-[2])+[3]");
-            f->SetParameter(0,5e-4);
+            //f = new TF1("sine","[0]*sin([1]*x-[2]) + [3]");
             f->FixParameter(1,-2);
+            f->SetParameter(0,5e-4);
 
             nParameters = 2;
             Int_t tempParameters[2] = {0,2};
             TString tempParameterNames[2] = {"A;#mum","B"};
-            functionname = "#Deltad_{xy}=Asin(2#phi_{org}+B)";
-
             //nParameters = 3;
             //Int_t tempParameters[3] = {0,2,3};
             //TString tempParameterNames[3] = {"A;#mum","B","C;#mum"};
-            //functionname = "#Deltad_{xy}=Asin(2#phi_{org}+B)+C";
 
             parameters = tempParameters;
             parameternames = tempParameterNames;
+            functionname = "#Deltad_{xy}=-Asin(2#phi_{org}+B)";
+            //functionname = "#Deltad_{xy}=-Asin(2#phi_{org}+B)+C";
         }
         if (xvar == "phi" && yvar == "dxy" && !resolution && pull)
         {
@@ -1108,15 +1115,15 @@ Bool_t misalignmentDependence(TCanvas *c1old,
             nParameters = 2;
             Int_t tempParameters[2] = {0,2};
             TString tempParameterNames[2] = {"A","B"};
-            functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=Asin(2#phi_{org}+B)";
-
             //nParameters = 3;
             //Int_t tempParameters[3] = {0,2,3};
             //TString tempParameterNames[3] = {"A","B","C"};
-            //functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=Asin(2#phi_{org}+B)+C";
 
             parameters = tempParameters;
             parameternames = tempParameterNames;
+
+            functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=-Asin(2#phi_{org}+B)";
+            //functionname = "#Deltad_{xy}/#delta(#Deltad_{xy})=-Asin(2#phi_{org}+B)+C";
         }
         
         if (xvar == "theta" && yvar == "dz" && !resolution && !pull)
@@ -1904,8 +1911,8 @@ Double_t findStatistic(Statistic what,Int_t nFiles,TString *files,TString var,Ch
                 x = xint;
             if (var == "runNumber")
                 runNumber = x;
-            if (runNumber < minrun || (runNumber > maxrun && maxrun > 0)) continue;
-            
+            if ((runNumber < minrun && runNumber > 1) || (runNumber > maxrun && maxrun > 0)) continue;
+
             totallength++;
 
             Double_t error;
@@ -1916,6 +1923,9 @@ Double_t findStatistic(Statistic what,Int_t nFiles,TString *files,TString var,Ch
                                                                    // = sqrt(2) if axis == 'y' && !pull, so that you get the error in 1 track
                                                                    //       when you divide by it
             x /= (rel * error);
+            if (!std::isfinite(x))  //e.g. in data with no pixels, the error occasionally comes out to be NaN
+                continue;           //Filling a histogram with NaN is irrelevant, but here it would cause the whole result to be NaN
+
             if (what == Minimum && x < result)
                 result = x;
             if (what == Maximum && x > result)

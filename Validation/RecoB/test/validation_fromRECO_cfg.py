@@ -20,7 +20,7 @@ from DQMOffline.RecoB.bTagCommon_cff import *
 tagConfig = cms.VPSet(
         cms.PSet(
             bTagGenericAnalysisBlock,
-            label = cms.InputTag("combinedInclusiveSecondaryVertexV2BJetTags"),
+            label = cms.InputTag("pfCombinedInclusiveSecondaryVertexV2BJetTags"),
             folder = cms.string("CSVv2")
         ),
 )
@@ -75,7 +75,7 @@ else :
 process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.load("Configuration.StandardSequences.Reconstruction_cff")
-process.load("Configuration.Geometry.GeometryIdeal_cff")
+process.load("Configuration.StandardSequences.GeometryRecoDB_cff")
 
 process.GlobalTag.globaltag = tag
 

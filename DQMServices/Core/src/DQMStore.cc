@@ -273,7 +273,7 @@ void DQMStore::IBooker::cd(const std::string &dir) {
 
 void DQMStore::IBooker::setCurrentFolder(const std::string &fullpath) {
   owner_->setCurrentFolder(fullpath);
-}
+} 
 
 void DQMStore::IBooker::goUp(void) {
   owner_->goUp();
@@ -281,10 +281,14 @@ void DQMStore::IBooker::goUp(void) {
 
 const std::string & DQMStore::IBooker::pwd(void) {
   return owner_->pwd();
-}
+} 
 
 void DQMStore::IBooker::tag(MonitorElement *me, unsigned int tag) {
   owner_->tag(me, tag);
+}
+
+void DQMStore::IBooker::tagContents(const std::string &path, unsigned int myTag) {
+  owner_->tagContents(path, myTag);
 }
 
 //IGetter methods
@@ -2541,6 +2545,11 @@ void DQMStore::savePB(const std::string &filename,
                                options);
   dqmstore_message.SerializeToZeroCopyStream(&gzip_stream);
 
+  // we need to flush it before we close the fd
+  gzip_stream.Close();
+  file_stream.Close();
+  ::close(filedescriptor);
+
   // Maybe make some noise.
   if (verbose_)
     std::cout << "DQMStore::savePB: successfully wrote " << nme
@@ -3071,6 +3080,7 @@ DQMStore::readFilePB(const std::string &filename,
     raiseDQMError("DQMStore", "Fatal parsing file '%s'", filename.c_str());
     return false;
   }
+  ::close(filedescriptor);
 
   for (int i = 0; i < dqmstore_message.histo_size(); i++) {
     std::string path;

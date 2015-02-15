@@ -23,7 +23,7 @@ namespace HcalConst{
    constexpr int maxSamples = 10;
    constexpr int maxPSshapeBin = 256;
    constexpr int nsPerBX = 25;
-   constexpr float iniTimeShift = 98.5f;
+   constexpr float iniTimeShift = 98.0f;
    constexpr double invertnsPerBx = 0.04;
 
 }
@@ -37,7 +37,7 @@ namespace FitterFuncs{
 		       double iNoise);
      ~PulseShapeFunctor();
      
-     double EvalPulse(const std::vector<double>& pars);
+     double EvalPulse(const double *pars, unsigned int nPar);
      
      void setDefaultcntNANinfit(){ cntNANinfit =0; }
      int getcntNANinfit(){ return cntNANinfit; }
@@ -76,6 +76,9 @@ namespace FitterFuncs{
 
      double inverttimeSig_, inverttimeSig2_;
      double invertpedSig_, invertpedSig2_;
+     std::array<float,HcalConst::maxSamples> pulse_shape_;
+     std::array<float,HcalConst::maxSamples> pulse_shape_sum_;
+
    };
    
 }
@@ -130,6 +133,7 @@ private:
     double pedSig_;
     double noise_;    
     HcalTimeSlew::BiasSetting slewFlavor_;    
+
 };
 
 #endif // PulseShapeFitOOTPileupCorrection_h

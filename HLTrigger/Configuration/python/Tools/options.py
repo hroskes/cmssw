@@ -55,6 +55,7 @@ class ConnectionHLTMenu(object):
       if ':' in self.value:
         (db, name) = self.value.split(':')
         if db == 'run':
+          self.db   = 'orcoff'
           self.run  = name
         elif db in ('hltdev', 'orcoff'):
           self.db   = db
@@ -85,11 +86,13 @@ class HLTProcessOptions(object):
     self.profiling  = False       #     if set, instrument the menu for profiling measurements
     self.timing     = False       #     if set, instrument the menu for timing measurements (implies profiling)
     self.paths      = None        #     if set, include in the dump only the given paths (wildcards are supported)
-    self.input      = None        # (*) if set, run on a specific input file
+    self.input      = None        # (*) if set, specify the input file(s) or dataset
+    self.parent     = None        # (*) if set, specify the parent input file(s) or dataset
     self.events     = 100         # (*) run on these many events
     self.output     = 'all'       # (*) output 'all', 'minimal' or 'none' output modules
     self.fragment   = False       #     prepare a configuration fragment (true) or a whole process (false)
     self.fastsim    = False       #     prepare a configuration fragment suitable for FastSim
+    self.hilton     = False       #     prepare a configuration for running with hilton-like modules
 
 
   # convert HLT and L1 menus to a dedicated object representation on the fly

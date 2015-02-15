@@ -44,9 +44,9 @@ class HLTProcess(object):
     "HLT_GlobalRunHPDNoise_v*",
     "HLT_L1TrackerCosmics_v*",
     "HLT_HcalUTCA_v*",
-    
+
     # TODO: paths not supported by FastSim, but for which a recovery should be attempted
- 
+
     "HLT_DoubleMu33NoFiltersNoVtx_v*",
     "HLT_DoubleMu38NoFiltersNoVtx_v*",
     "HLT_Mu38NoFiltersNoVtx_Photon38_CaloIdL_v*",
@@ -56,14 +56,23 @@ class HLTProcess(object):
     "HLT_Mu28NoFiltersNoVtxDisplaced_Photon28_CaloIdL_v*",
     "HLT_Mu33NoFiltersNoVtxDisplaced_Photon33_CaloIdL_v*",
     "HLT_HT350_DisplacedDijet80_Tight_DisplacedTrack_v*",
-    "HLT_HT350_DisplacedDijet80_DisplacedTrack_v*"
+    "HLT_HT350_DisplacedDijet80_DisplacedTrack_v*",
+    "HLT_HT500_DisplacedDijet40_Inclusive_v*",
+    "HLT_HT350_DisplacedDijet40_DisplacedTrack_v*",
+    "HLT_VBF_DisplacedJet40_DisplacedTrack_v*",
+    "HLT_VBF_DisplacedJet40_Hadronic_v*",
+    "HLT_HT550_DisplacedDijet40_Inclusive_v*",
+    "HLT_HT350_DisplacedDijet80_DisplacedTrack_v*",
+    "HLT_VBF_DisplacedJet40_TightID_DisplacedTrack_v*",
+    "HLT_VBF_DisplacedJet40_TightID_Hadronic_v*"
+
   )
 
   def __init__(self, configuration):
     self.config = configuration
     self.data   = None
-    self.source = None
-    self.parent = None
+    self.source = []
+    self.parent = []
 
     self.options = {
       'essources' : [],
@@ -93,6 +102,8 @@ class HLTProcess(object):
       self.labels['prescale'] = self.config.prescale
 
     # get the configuration from ConfdB
+    from confdbOfflineConverter import OfflineConverter
+    self.converter = OfflineConverter(database = self.config.menu.db)
     self.buildPathList()
     self.buildOptions()
     self.getRawConfigurationFromDB()
@@ -100,42 +111,48 @@ class HLTProcess(object):
 
 
   def getRawConfigurationFromDB(self):
-    url = 'http://j2eeps.cern.ch/cms-project-confdb-hltdev/get.jsp'
-    postdata = dict([ (key, ','.join(vals)) for key, vals in self.options.iteritems() if vals ])
-    postdata['noedsources'] = ''
-    if self.config.fragment:
-      postdata['cff'] = ''
     if self.config.menu.run:
-      postdata['runNumber'] = self.config.menu.run
+      args = ['--runNumber', self.config.menu.run]
     else:
-      postdata['dbName']    = self.config.menu.db
-      postdata['configName']= self.config.menu.name
+      args = ['--configName', self.config.menu.name ]
+    args.append('--noedsources')
+    if self.config.fragment:
+      args.append('--cff')
+    for key, vals in self.options.iteritems():
+      if vals:
+        args.extend(('--'+key, ','.join(vals)))
 
-    data = urllib2.urlopen(url, urllib.urlencode(postdata)).read()
-    if 'Exhausted Resultset' in data or 'CONFIG_NOT_FOUND' in data:
-      raise ImportError('%s is not a valid HLT menu' % self.config.menuConfig.value)
+    data, err = self.converter.query( *args )
+    if 'ERROR' in err or 'Exhausted Resultset' in err or 'CONFIG_NOT_FOUND' in err:
+        print "%s: error while retriving the HLT menu" % os.path.basename(sys.argv[0])
+        print
+        print err
+        print
+        sys.exit(1)
     self.data = data
 
 
   def getPathList(self):
-    url = 'http://j2eeps.cern.ch/cms-project-confdb-hltdev/get.jsp'
-    postdata = { 
-      'noedsources': '', 
-      'noes':        '',
-      'noservices':  '',
-      'nosequences': '',
-      'nomodules' :  '',
-      'cff':         '',
-    }
     if self.config.menu.run:
-      postdata['runNumber'] = self.config.menu.run
+      args = ['--runNumber', self.config.menu.run]
     else:
-      postdata['dbName']    = self.config.menu.db
-      postdata['configName']= self.config.menu.name
+      args = ['--configName', self.config.menu.name]
+    args.extend( (
+      '--cff',
+      '--noedsources',
+      '--noes',
+      '--noservices',
+      '--nosequences',
+      '--nomodules'
+    ) )
 
-    data = urllib2.urlopen(url, urllib.urlencode(postdata)).read()
-    if 'Exhausted Resultset' in data or 'CONFIG_NOT_FOUND' in data:
-      raise ImportError('%s is not a valid HLT menu' % self.config.menuConfig.value)
+    data, err = self.converter.query( *args )
+    if 'ERROR' in err or 'Exhausted Resultset' in err or 'CONFIG_NOT_FOUND' in err:
+        print "%s: error while retriving the list of paths from the HLT menu" % os.path.basename(sys.argv[0])
+        print
+        print err
+        print
+        sys.exit(1)
     filter = re.compile(r' *= *cms.(End)?Path.*')
     paths  = [ filter.sub('', line) for line in data.splitlines() if filter.search(line) ]
     return paths
@@ -237,9 +254,6 @@ cmsswVersion = os.environ['CMSSW_VERSION']
 #    %(process)shltDt4DSegments.debug = cms.untracked.bool( False )
 #"""
 
-    # if requested, override the L1 self from the GlobalTag (Xml)
-    self.overrideL1MenuXml()
-
     # if running on MC, adapt the configuration accordingly
     self.fixForMC()
 
@@ -259,7 +273,7 @@ cmsswVersion = os.environ['CMSSW_VERSION']
     self.releaseSpecificCustomize()
 
     if self.config.fragment:
-      
+
       self.data += """
 # dummyfy hltGetConditions in cff's
 if 'hltGetConditions' in %(dict)s and 'HLTriggerFirstPath' in %(dict)s :
@@ -292,6 +306,9 @@ process = customisePostLS1(process)
 
       # if requested or necessary, override the GlobalTag and connection strings (incl. L1!)
       self.overrideGlobalTag()
+
+      # if requested, override the L1 self from the GlobalTag (Xml)
+      self.overrideL1MenuXml()
 
       # if requested, add snippet to run on new L1 skim
       self.switchToNewL1Skim()
@@ -387,8 +404,8 @@ process = customizeHLTforMC(process)
       # FIXME: this should be updated to take into accout the --l1-emulator option
       self._fix_parameter(                               type = 'InputTag', value = 'hltL1extraParticles',  replace = 'l1extraParticles')
       self._fix_parameter(name = 'GMTReadoutCollection', type = 'InputTag', value = 'hltGtDigis',           replace = 'simGmtDigis')
-      self._fix_parameter(                               type = 'InputTag', value = 'hltGtDigis',           replace = 'gtDigis')
-      self._fix_parameter(                               type = 'InputTag', value = 'hltL1GtObjectMap',     replace = 'gtDigis')
+      self._fix_parameter(                               type = 'InputTag', value = 'hltGtDigis',           replace = 'simGtDigis')
+      self._fix_parameter(                               type = 'InputTag', value = 'hltL1GtObjectMap',     replace = 'simGtDigis')
       self._fix_parameter(name = 'initialSeeds',         type = 'InputTag', value = 'noSeedsHere',          replace = 'globalPixelSeeds:GlobalPixel')
       self._fix_parameter(name = 'preFilteredSeeds',     type = 'bool',     value = 'True',                 replace = 'False')
       self._fix_parameter(                               type = 'InputTag', value = 'hltOfflineBeamSpot',   replace = 'offlineBeamSpot')
@@ -526,7 +543,7 @@ if 'GlobalTag' in %(dict)s:
   iovIsRunNotTime = cms.bool(True),
   firstValid = cms.vuint32(1)
 )
-%%(process)ses_prefer_l1GtParameters = cms.ESPrefer('L1GtTriggerMenuXmlProducer','l1GtTriggerMenuXml') 
+%%(process)ses_prefer_l1GtParameters = cms.ESPrefer('L1GtTriggerMenuXmlProducer','l1GtTriggerMenuXml')
 """
       self.data += text % self.config.l1Xml.__dict__
 
@@ -642,7 +659,7 @@ for module in process.__dict__.itervalues():
         elif parameter.moduleLabel == 'hltL1GtObjectMap':
           parameter.moduleLabel = "gtDigisFromSkim"
         elif parameter.moduleLabel == 'hltGctDigis':
-          parameter.moduleLabel ="caloStage1LegacyFormatDigis"
+          parameter.moduleLabel ="simCaloStage1LegacyFormatDigis"
 """
 
   def overrideOutput(self):
@@ -855,34 +872,35 @@ if 'GlobalTag' in %%(dict)s:
 
 
   def instrumentDQM(self):
-    # remove any reference to the hltDQMFileSaver
-    if 'hltDQMFileSaver' in self.data:
-      self.data = re.sub(r'\b(process\.)?hltDQMFileSaver \+ ', '', self.data)
-      self.data = re.sub(r' \+ \b(process\.)?hltDQMFileSaver', '', self.data)
-      self.data = re.sub(r'\b(process\.)?hltDQMFileSaver',     '', self.data)
+    if not self.config.hilton:
+      # remove any reference to the hltDQMFileSaver
+      if 'hltDQMFileSaver' in self.data:
+        self.data = re.sub(r'\b(process\.)?hltDQMFileSaver \+ ', '', self.data)
+        self.data = re.sub(r' \+ \b(process\.)?hltDQMFileSaver', '', self.data)
+        self.data = re.sub(r'\b(process\.)?hltDQMFileSaver',     '', self.data)
 
-    # instrument the HLT menu with DQMStore and DQMRootOutputModule suitable for running offline
-    dqmstore  = "\n# load the DQMStore and DQMRootOutputModule\n"
-    dqmstore += self.loadCffCommand('DQMServices.Core.DQMStore_cfi')
-    dqmstore += "%(process)sDQMStore.enableMultiThread = True\n"
-    dqmstore += """
+      # instrument the HLT menu with DQMStore and DQMRootOutputModule suitable for running offline
+      dqmstore  = "\n# load the DQMStore and DQMRootOutputModule\n"
+      dqmstore += self.loadCffCommand('DQMServices.Core.DQMStore_cfi')
+      dqmstore += "%(process)sDQMStore.enableMultiThread = True\n"
+      dqmstore += """
 %(process)sdqmOutput = cms.OutputModule("DQMRootOutputModule",
     fileName = cms.untracked.string("DQMIO.root")
 )
 """
 
-    empty_path = re.compile(r'.*\b(process\.)?DQMOutput = cms\.EndPath\( *\).*')
-    other_path = re.compile(r'(.*\b(process\.)?DQMOutput = cms\.EndPath\()(.*)')
-    if empty_path.search(self.data):
-      # replace an empty DQMOutput path
-      self.data = empty_path.sub(dqmstore + '\n%(process)sDQMOutput = cms.EndPath( %(process)sdqmOutput )\n', self.data)
-    elif other_path.search(self.data):
-      # prepend the dqmOutput to the DQMOutput path
-      self.data = other_path.sub(dqmstore + r'\g<1> %(process)sdqmOutput +\g<3>', self.data)
-    else:
-      # ceate a new DQMOutput path with the dqmOutput module
-      self.data += dqmstore
-      self.data += '\n%(process)sDQMOutput = cms.EndPath( %(process)sdqmOutput )\n'
+      empty_path = re.compile(r'.*\b(process\.)?DQMOutput = cms\.EndPath\( *\).*')
+      other_path = re.compile(r'(.*\b(process\.)?DQMOutput = cms\.EndPath\()(.*)')
+      if empty_path.search(self.data):
+        # replace an empty DQMOutput path
+        self.data = empty_path.sub(dqmstore + '\n%(process)sDQMOutput = cms.EndPath( %(process)sdqmOutput )\n', self.data)
+      elif other_path.search(self.data):
+        # prepend the dqmOutput to the DQMOutput path
+        self.data = other_path.sub(dqmstore + r'\g<1> %(process)sdqmOutput +\g<3>', self.data)
+      else:
+        # ceate a new DQMOutput path with the dqmOutput module
+        self.data += dqmstore
+        self.data += '\n%(process)sDQMOutput = cms.EndPath( %(process)sdqmOutput )\n'
 
 
   @staticmethod
@@ -906,7 +924,7 @@ if 'GlobalTag' in %%(dict)s:
       # 'full' removes all outputs (same as 'none') and then adds a single "keep *" output (see the overrideOutput method)
       if self.config.paths:
         # paths are removed by default
-        pass    
+        pass
       else:
         # drop all output endpaths
         paths.append( "-*Output" )
@@ -952,16 +970,18 @@ if 'GlobalTag' in %%(dict)s:
   def buildOptions(self):
     # common configuration for all scenarios
     self.options['services'].append( "-DQM" )
-    self.options['services'].append( "-EvFDaqDirector" )
-    self.options['services'].append( "-FastMonitoringService" )
     self.options['services'].append( "-FUShmDQMOutputService" )
     self.options['services'].append( "-MicroStateService" )
     self.options['services'].append( "-ModuleWebRegistry" )
     self.options['services'].append( "-TimeProfilerService" )
 
-    # drop the online definition of the DQMStore and DQMFileSaver
-    self.options['services'].append( "-DQMStore" )
-    self.options['modules'].append( "-hltDQMFileSaver" )
+    # remove the DAQ modules and the online definition of the DQMStore and DQMFileSaver
+    # unless a hilton-like configuration has been requested
+    if not self.config.hilton:
+      self.options['services'].append( "-EvFDaqDirector" )
+      self.options['services'].append( "-FastMonitoringService" )
+      self.options['services'].append( "-DQMStore" )
+      self.options['modules'].append( "-hltDQMFileSaver" )
 
     if self.config.fragment:
       # extract a configuration file fragment
@@ -1070,7 +1090,7 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "-hltCtfWithMaterialTracksJpsiTk" )
       self.options['modules'].append( "-hltMuTrackCkfTrackCandidatesOnia" )
       self.options['modules'].append( "-hltMuTrackCtfTracksOnia" )
-      
+
       self.options['modules'].append( "-hltFEDSelector" )
       self.options['modules'].append( "-hltL3TrajSeedOIHit" )
       self.options['modules'].append( "-hltL3TrajSeedIOHit" )
@@ -1087,6 +1107,11 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "-hltESRawToRecHitFacility" )
       self.options['modules'].append( "-hltEcalRecHitAll" )
       self.options['modules'].append( "-hltESRecHitAll" )
+      # === eGamma
+      self.options['modules'].append( "-hltEgammaCkfTrackCandidatesForGSF" )
+      self.options['modules'].append( "-hltEgammaGsfTracks" )
+      self.options['modules'].append( "-hltEgammaCkfTrackCandidatesForGSFUnseeded" )
+      self.options['modules'].append( "-hltEgammaGsfTracksUnseeded" )
       # === hltPF
       self.options['modules'].append( "-hltPFJetCkfTrackCandidates" )
       self.options['modules'].append( "-hltPFJetCtfWithMaterialTracks" )
@@ -1094,13 +1119,13 @@ if 'GlobalTag' in %%(dict)s:
       # === hltFastJet
       self.options['modules'].append( "-hltDisplacedHT250L1FastJetRegionalPixelSeedGenerator" )
       self.options['modules'].append( "-hltDisplacedHT250L1FastJetRegionalCkfTrackCandidates" )
-      self.options['modules'].append( "-hltDisplacedHT250L1FastJetRegionalCtfWithMaterialTracks" )     
+      self.options['modules'].append( "-hltDisplacedHT250L1FastJetRegionalCtfWithMaterialTracks" )
       self.options['modules'].append( "-hltDisplacedHT300L1FastJetRegionalPixelSeedGenerator" )
       self.options['modules'].append( "-hltDisplacedHT300L1FastJetRegionalCkfTrackCandidates" )
-      self.options['modules'].append( "-hltDisplacedHT300L1FastJetRegionalCtfWithMaterialTracks" )     
+      self.options['modules'].append( "-hltDisplacedHT300L1FastJetRegionalCtfWithMaterialTracks" )
       self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorbbPhiL1FastJet" )
       self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesbbPhiL1FastJet" )
-      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksbbPhiL1FastJet" )     
+      self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksbbPhiL1FastJet" )
       self.options['modules'].append( "-hltBLifetimeRegionalPixelSeedGeneratorHbbVBF" )
       self.options['modules'].append( "-hltBLifetimeRegionalCkfTrackCandidatesHbbVBF" )
       self.options['modules'].append( "-hltBLifetimeRegionalCtfWithMaterialTracksHbbVBF" )
@@ -1132,7 +1157,7 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "-hltFastPixelBLifetimeRegionalPixelSeedGeneratorHbb" )
       self.options['modules'].append( "-hltFastPixelBLifetimeRegionalCkfTrackCandidatesHbb" )
       self.options['modules'].append( "-hltFastPixelBLifetimeRegionalCtfWithMaterialTracksHbb" )
-     
+
       self.options['modules'].append( "-hltPixelTracksForMinBias" )
       self.options['modules'].append( "-hltPixelTracksForHighMult" )
       self.options['modules'].append( "-hltRegionalPixelTracks" )
@@ -1156,7 +1181,7 @@ if 'GlobalTag' in %%(dict)s:
       self.options['modules'].append( "-hltPixelLayerTripletsHITHB" )
       self.options['modules'].append( "-hltPixelLayerTripletsHITHE" )
       self.options['modules'].append( "-hltMixedLayerPairs" )
-      
+
       self.options['modules'].append( "-hltFastPrimaryVertexbbPhi")
       self.options['modules'].append( "-hltPixelTracksFastPVbbPhi")
       self.options['modules'].append( "-hltPixelTracksRecoverbbPhi" )
@@ -1231,18 +1256,36 @@ if 'GlobalTag' in %%(dict)s:
         self.options['paths'].append( "-HLTAnalyzerEndpath" )
 
 
+  def append_filenames(self, name, filenames):
+    if len(filenames) > 255:
+      token_open  = "( *("
+      token_close = ") )"
+    else:
+      token_open  = "("
+      token_close = ")"
+
+    self.data += "    %s = cms.untracked.vstring%s\n" % (name, token_open)
+    for line in filenames:
+      self.data += "        '%s',\n" % line
+    self.data += "    %s,\n" % (token_close)
+
+
+  def expand_filenames(self, input):
+    # check if the input is a dataset or a list of files
+    if input[0:8] == 'dataset:':
+      from dasFileQuery import dasFileQuery
+      # extract the dataset name, and use DAS to fine the list of LFNs
+      dataset = input[8:]
+      files = dasFileQuery(dataset)
+    else:
+      # assume a comma-separated list of input files
+      files = self.config.input.split(',')
+    return files
+
   def build_source(self):
     if self.config.input:
       # if a dataset or a list of input files was given, use it
-      if self.config.input[0:8] == 'dataset:':
-        from dasFileQuery import dasFileQuery
-        # extract the dataset name, and use DAS to fine the list of LFNs
-        dataset = self.config.input[8:]
-        files   = dasFileQuery(dataset)
-        self.source = files
-      else:
-        # assume a list of input files
-        self.source = self.config.input.split(',')
+      self.source = self.expand_filenames(self.config.input)
     elif self.config.online:
       # online we always run on data
       self.source = [ "file:/tmp/InputCollection.root" ]
@@ -1253,20 +1296,17 @@ if 'GlobalTag' in %%(dict)s:
       # ...or on mc
       self.source = [ "file:RelVal_Raw_%s_MC.root" % self.config.type ]
 
+    if self.config.parent:
+      # if a dataset or a list of input files was given for the parent data, use it
+      self.parent = self.expand_filenames(self.config.parent)
+
     self.data += """
 %(process)ssource = cms.Source( "PoolSource",
-    fileNames = cms.untracked.vstring(
 """
-    if self.source: 
-      for line in self.source:
-        self.data += "        '%s',\n" % line
-    self.data += """    ),
-    secondaryFileNames = cms.untracked.vstring(
-"""
-    if self.parent: 
-      for line in self.parent:
-        self.data += "        '%s',\n" % line
-    self.data += """    ),
+    self.append_filenames("fileNames", self.source)
+    if (self.parent):
+      self.append_filenames("secondaryFileNames", self.parent)
+    self.data += """\
     inputCommands = cms.untracked.vstring(
         'keep *'
     )

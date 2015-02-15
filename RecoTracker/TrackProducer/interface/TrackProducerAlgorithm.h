@@ -56,6 +56,7 @@ public:
     algo_(reco::TrackBase::algoByName(algoName_)),
     reMatchSplitHits_(false),
     excludePixelHits_(false)
+    usePropagatorForPCA_(false)
       {
         geometricInnerState_ = (conf_.exists("GeometricInnerState") ?
 	  conf_.getParameter<bool>( "GeometricInnerState" ) : true);
@@ -63,6 +64,8 @@ public:
 	  reMatchSplitHits_=conf_.getParameter<bool>("reMatchSplitHits");
 	if (conf_.exists("excludePixelHits"))
 	  excludePixelHits_=conf_.getParameter<bool>("excludePixelHits");
+        if (conf_.exists("usePropagatorForPCA"))
+          usePropagatorForPCA_ = conf_.getParameter<bool>("usePropagatorForPCA");
       }
 
   /// Destructor
@@ -140,6 +143,7 @@ public:
   bool reMatchSplitHits_;
   bool excludePixelHits_;
   bool geometricInnerState_;
+  bool usePropagatorForPCA_;
 
   TrajectoryStateOnSurface getInitialState(const T * theT,
 					   TransientTrackingRecHit::RecHitContainer& hits,
