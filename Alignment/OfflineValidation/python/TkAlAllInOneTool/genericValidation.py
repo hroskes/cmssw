@@ -229,7 +229,7 @@ class GenericValidationData(GenericValidation):
                    "cannot use parallel jobs.")
             raise AllInOneError(msg)
 
-        self.general["excludePixels"] = capitalize(self.general["excludePixels"])
+        self.general["excludePixels"] = self.general["excludePixels"].capitalize()
         if self.general["excludePixels"] == "False":
             self.excludePixels = False
         elif self.general["excludePixels"] == "True":

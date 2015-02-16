@@ -425,7 +425,7 @@ process.HitFilteredTracks = RecoTracker.TrackProducer.CTFFinalFitWithMaterialP5_
     src = 'TrackerTrackHitFilter',
     NavigationSchool = "",
 ###    TrajectoryInEvent = True,
-    TTRHBuilder = "WithAngleAndTemplate"    
+    TTRHBuilder = "WithAngleAndTemplate"
 )
 
  ##
@@ -442,7 +442,8 @@ process.TrackRefitter1 = process.TrackRefitterP5.clone(
    src =  '.oO[TrackCollection]Oo.', #'AliMomConstraint1',
    TrajectoryInEvent = True,
    TTRHBuilder = "WithAngleAndTemplate",
-   NavigationSchool = ""
+   NavigationSchool = "",
+   excludePixelHits = excludePixels
    #constraint = 'momentum', ### SPECIFIC FOR CRUZET
    #srcConstr='AliMomConstraint1' ### SPECIFIC FOR CRUZET$works only with tag V02-10-02 TrackingTools/PatternTools / or CMSSW >=31X
 )
