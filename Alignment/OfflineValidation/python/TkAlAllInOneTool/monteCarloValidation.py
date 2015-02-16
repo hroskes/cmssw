@@ -22,6 +22,9 @@ class MonteCarloValidation(GenericValidationData):
         if self.NJobs > 1:
             raise AllInOneError("Parallel jobs not implemented for the MC validation!\n"
                                 "Please set parallelJobs = 1.")
+        if self.excludePixels:
+            raise AllInOneError("excludePixels not implemented for the MC validation!\n"
+                                "Please set excludePixels = false")
 
     def createConfiguration(self, path ):
         cfgName = "%s.%s.%s_cfg.py"%(self.configBaseName, self.name,

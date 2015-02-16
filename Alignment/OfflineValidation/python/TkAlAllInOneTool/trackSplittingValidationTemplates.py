@@ -7,7 +7,9 @@ process = cms.Process("splitter")
 
 ######################################
 #Set this to true to exclude pixels
-excludePixels = False
+#WARNING: For this to work, you need
+#to git cms-addpkg RecoTracker/TrackProducer
+excludePixels = .oO[excludePixels]Oo.
 ######################################
 
 # CMSSW.2.2.3

@@ -214,7 +214,8 @@ class GenericValidationData(GenericValidation):
                     "lastRun": "",
                     "begin": "",
                     "end": "",
-                    "JSON": ""
+                    "JSON": "",
+                    "excludePixels": "False"
                     }
         defaults.update(addDefaults)
         mandatories = [ "dataset", "maxevents" ]
@@ -226,6 +227,17 @@ class GenericValidationData(GenericValidation):
         if int( self.general["maxevents"] ) == -1 and self.NJobs > 1:
             msg = ("Maximum number of events (maxevents) not specified: "
                    "cannot use parallel jobs.")
+            raise AllInOneError(msg)
+
+        self.general["excludePixels"] = capitalize(self.general["excludePixels"])
+        if self.general["excludePixels"] == "False":
+            self.excludePixels = False
+        elif self.general["excludePixels"] == "True":
+            self.excludePixels = True
+        else:
+            msg = ("excludePixels needs to be true or false, not " + self.general["excludePixels"] + "\n"
+                   "If you are trying to set it to cms.bool(True/False) because you're getting an error,\n"
+                   "then you probably did not addpkg RecoTracker/TrackProducer")
             raise AllInOneError(msg)
 
         tryPredefinedFirst = (not self.jobmode.split( ',' )[0] == "crab" and self.general["JSON"]    == ""

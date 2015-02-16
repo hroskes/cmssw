@@ -9,7 +9,7 @@ process = cms.Process("OfflineValidator")
 #Set this to true to exclude pixels
 #WARNING: For this to work, you need
 #to git cms-addpkg RecoTracker/TrackProducer
-excludePixels = cms.bool(False)
+excludePixels = .oO[excludePixels]Oo.
 ############################################
 
 .oO[datasetDefinition]Oo.

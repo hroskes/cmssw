@@ -10,6 +10,13 @@ process.MessageLogger.destinations = ['cout', 'cerr']
 process.MessageLogger.cerr.FwkReport.reportEvery = 5000
 
 
+######################################
+#Set this to true to exclude pixels
+#WARNING: For this to work, you need
+#to git cms-addpkg RecoTracker/TrackProducer
+excludePixels = .oO[excludePixels]Oo.
+######################################
+
 ########### DATA FILES  ####################################
 .oO[datasetDefinition]Oo.
 # process.load("Alignment.OfflineValidation..oO[dataset]Oo._cff")
@@ -38,6 +45,7 @@ process.TrackRefitter.src = 'ALCARECOTkAlZMuMu'
 process.TrackRefitter.TrajectoryInEvent = True
 process.TrackRefitter.TTRHBuilder = "WithAngleAndTemplate"
 process.TrackRefitter.NavigationSchool = ""
+process.TrackRefitter.excludePixelHits = excludePixels
 
 ###### MuSclFit SETTINGS  ##############################################
 
