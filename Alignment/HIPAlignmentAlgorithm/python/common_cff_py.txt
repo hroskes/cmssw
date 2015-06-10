@@ -1,8 +1,25 @@
 from CondCore.DBCommon.CondDBSetup_cfi import *
 
 # loading magnetic field and geometry
+#process.load('Configuration.StandardSequences.GeometryExtended_cff')
+process.load("Configuration.StandardSequences.GeometryIdeal_cff")
+
+from Geometry.CommonDetUnit.globalTrackingGeometry_cfi import *
+
+
+#Tracker
+from RecoTracker.GeometryESProducer.TrackerRecoGeometryESProducer_cfi import *
+
+#Muon
+from Geometry.MuonNumbering.muonNumberingInitialization_cfi import *
+from RecoMuon.DetLayers.muonDetLayerGeometry_cfi import *
+
+#  Alignment
+from Geometry.TrackerGeometryBuilder.idealForDigiTrackerGeometry_cff import *
+from Geometry.CSCGeometryBuilder.idealForDigiCscGeometry_cff import *
+from Geometry.DTGeometryBuilder.idealForDigiDtGeometry_cff import *
 process.load("Configuration.StandardSequences.MagneticField_cff")
-process.load("Configuration.Geometry.GeometryRecoDB_cff")
+#process.load("Configuration.Geometry.GeometryRecoDB_cff")
 
 # loading the alignment producer
 process.load("Alignment.CommonAlignmentProducer.AlignmentProducer_cff")
@@ -12,10 +29,10 @@ process.load("Alignment.CommonAlignmentProducer.AlignmentProducer_cff")
 # comment out that line in standard file ... an example is given in release of HIPAlignmentAlgorithm ("FrontierConditions_GlobalTag_cff.py")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
-if 'COSMICS'=='<FLAG>':
-   process.GlobalTag.globaltag='MCRUN2_71_V0::All'
-else :
-   process.GlobalTag.globaltag='MCRUN2_71_V0::All'
+#if 'COSMICS'=='<FLAG>':
+#   process.GlobalTag.globaltag='MCRUN2_71_V0::All'
+#else :
+#   process.GlobalTag.globaltag='MCRUN2_71_V0::All'
  
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 10000
@@ -58,18 +75,53 @@ from CondCore.DBCommon.CondDBSetup_cfi import *
 
 process.GlobalTag.toGet = cms.VPSet(
    cms.PSet(record = cms.string('TrackerAlignmentRcd'),
-            tag = cms.string('TrackerAlignment_2015StartupPessimisticScenario_mc'),
-            connect = cms.untracked.string('frontier://FrontierProd/CMS_COND_31X_ALIGNMENT')
+            tag = cms.string('Alignments'),
+            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/Inflate/CMSSW_7_4_0_pre6/src/Alignment/HIPAlignmentAlgorithm/craftLAPE_module_gt_LA_template/alignments_iter50.db')
+#            tag = cms.string('TrackerAlignment_2015StartupPessimisticScenario_mc'),
+#            connect = cms.untracked.string('frontier://FrontierProd/CMS_COND_31X_ALIGNMENT')
+            ),
+   cms.PSet(record = cms.string('GlobalPositionRcd'),
+            tag = cms.string('GlobalAlignment'),
+            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/CMSSW_7_4_0_pre6/src/Alignment/HIPAlignmentAlgorithm/GR_P_V49_GP.db'),
             ),
    cms.PSet(record = cms.string('TrackerSurfaceDeformationRcd'),
-            tag = cms.string('TrackerSurfaceDeformations_2011Realistic_v2_mc'),
-            connect = cms.untracked.string('frontier://FrontierProd/CMS_COND_310X_ALIGN')
+            tag = cms.string('SurfaceDeformations'),
+            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/CMSSW_7_4_0_pre6/src/Alignment/HIPAlignmentAlgorithm/GR_P_V49_SD.db')
             ),
-   cms.PSet(record = cms.string('TrackerAlignmentErrorExtendedRcd'),
-            tag = cms.string('TrackerAlignmentErrors_2015StartupPessimisticScenario_mc'),
-            connect = cms.untracked.string('frontier://FrontierProd/CMS_COND_31X_ALIGNMENT')
+#   cms.PSet(record = cms.string('TrackerAlignmentErrorExtendedRcd'),
+#            tag = cms.string('TrackerAlignmentErrors_2015StartupPessimisticScenario_mc'),
+#            connect = cms.untracked.string('frontier://FrontierProd/CMS_COND_31X_ALIGNMENT')
             ),
    )
+
+
+############ Load APE separately
+
+######## Zero APE
+from CondCore.DBCommon.CondDBSetup_cfi import *
+process.ZeroAPE = cms.ESSource("PoolDBESSource",CondDBSetup,
+                                        connect = cms.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/CMSSW_7_4_0_pre6/src/Alignment/HIPAlignmentAlgorithm/GR_P_V49_APE.db'),
+                                        timetype = cms.string("runnumber"),
+                                        toGet = cms.VPSet(
+                                                          cms.PSet(record = cms.string('TrackerAlignmentErrorRcd'),
+                                                                   tag = cms.string('AlignmentErr')
+                                                                   ))
+                                        )
+process.es_prefer_ZeroAPE = cms.ESPrefer("PoolDBESSource", "ZeroAPE")
+
+
+####### CRAFT10 APE
+# process.trackerAPE = cms.ESSource("PoolDBESSource",CondDBSetup,
+#                                connect = cms.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN/PayLoads/CRAFT09/TrackerAlignmentErr_2009_v2_prompt/131425-infty/TrackerAlignmentErr_2009_v2_prompt.db'),
+#
+#                                   timetype = cms.string("runnumber"),
+#                                   toGet = cms.VPSet(
+#                                         cms.PSet(record = cms.string('TrackerAlignmentErrorRcd'),
+#                                                  tag = cms.string('AlignmentErrors')
+#                                                 ))
+#                                         )
+# process.es_prefer_TrackerAPE = cms.ESPrefer("PoolDBESSource", "trackerAPE")
+
 
 process.AlignmentProducer.applyDbAlignment = True
 
@@ -78,12 +130,24 @@ process.AlignmentProducer.applyDbAlignment = True
 
 process.AlignmentProducer.ParameterBuilder.Selector = cms.PSet(
                                                     alignParams = cms.vstring(
-                                                                 'PixelHalfBarrelDets,111111',
-                                                                 'PXECDets,111111',
-                                                                 'TrackerTIBModuleUnit,101001',
-                                                                 'TrackerTOBModuleUnit,101001',
-                                                                 'TrackerTIDModuleUnit,101001',
-                                                                 'TrackerTECModuleUnit,101001',
+                                                        'TrackerTPBModule,111111',
+                                                        'TrackerTPEModule,111111',
+                                                        'TrackerTIBModuleUnit,101111',
+                                                        'TrackerTOBModuleUnit,101111',
+                                                        'TrackerTIDModuleUnit,111111',
+                                                        'TrackerTECModuleUnit,111111',
+#                                                                           'TrackerTPBLadder,111111',
+#                                                                           'TrackerTPEBlade,111111',
+#                                                                           'TrackerTIBString,101111',
+#                                                                           'TrackerTOBRod,101111',
+#                                                                           'TrackerTIDRing,111111',
+#                                                                           'TrackerTECRing,111111'
+#                                                                 'PixelHalfBarrelDets,111111',
+#                                                                 'PXECDets,111111',
+#                                                                 'TrackerTIBModuleUnit,101001',
+#                                                                 'TrackerTOBModuleUnit,101001',
+#                                                                 'TrackerTIDModuleUnit,101001',
+#                                                                 'TrackerTECModuleUnit,101001',
                                                                  ),
 )
 

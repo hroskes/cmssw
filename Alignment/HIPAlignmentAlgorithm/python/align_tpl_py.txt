@@ -38,60 +38,60 @@ if 'COSMICS' =='<FLAG>':
     process.AlignmentProducer.algoConfig.eventPrescale= 1
 else :
     process.AlignmentProducer.algoConfig.eventPrescale= 1
-# process.AlignmentProducer.algoConfig.fillTrackMonitoring=True
+#process.AlignmentProducer.algoConfig.fillTrackMonitoring=True
 process.AlignmentProducer.algoConfig.fillTrackMonitoring=False
 process.AlignmentProducer.algoConfig.outfile =  '<PATH>/HIPAlignmentEvents.root'
 process.AlignmentProducer.algoConfig.outfile2 = '<PATH>/HIPAlignmentAlignables.root'
-process.AlignmentProducer.algoConfig.applyAPE = False
+process.AlignmentProducer.algoConfig.applyAPE = True
 process.AlignmentProducer.algoConfig.apeParam = cms.VPSet(cms.PSet(
 															function = cms.string('linear'),
-															apeRPar = cms.vdouble(0.001, 0.001, 100.0),
-															apeSPar = cms.vdouble(0.100, 0.100, 100.0),
+															apeRPar = cms.vdouble(0.000, 0.0000, 100.0),
+															apeSPar = cms.vdouble(0.001, 0.0001, 100.0),
 															Selector = cms.PSet(
-																				alignParams = cms.vstring('TrackerTPBModule,000000')
+																				alignParams = cms.vstring('TrackerTPBModule,111111')
 																				)
 															), 
 												   cms.PSet(
 															function = cms.string('linear'),
-                                                                                                                        apeRPar = cms.vdouble(0.003, 0.003, 100.0),
-															apeSPar = cms.vdouble(0.0600, 0.0600, 100.0),
+															apeRPar = cms.vdouble(0.003, 0.0003, 100.0),
+															apeSPar = cms.vdouble(0.001, 0.0002, 100.0),
 															Selector = cms.PSet(
-																				alignParams = cms.vstring('TrackerTPEModule,000000')
+																				alignParams = cms.vstring('TrackerTPEModule,111111')
 																				)
 															), 
 												   cms.PSet(
 															function = cms.string('linear'),
-															apeRPar = cms.vdouble(0.001, 0.001, 100.0),
-															apeSPar = cms.vdouble(0.0300, 0.0300, 100.0),
+															apeRPar = cms.vdouble(0.000, 0.000, 100.0),
+															apeSPar = cms.vdouble(0.001, 0.0001, 100.0),
                                                                                                                         Selector = cms.PSet(
-																				alignParams = cms.vstring('TIBDets,000000')
+																				alignParams = cms.vstring('TrackerTECModuleUnit,111111')
 																				)
 															), 
-												   cms.PSet(
-															function = cms.string('linear'),
-															apeRPar = cms.vdouble(0.001, 0.001, 100.0),
-															apeSPar = cms.vdouble(0.0600, 0.0600, 100.0),
-															Selector = cms.PSet(
-																				alignParams = cms.vstring('TIDDets,000000')
-																				)
-															), 
-												   cms.PSet(
-															function = cms.string('linear'),
-															apeRPar = cms.vdouble(0.001, 0.001, 100.0),
-															apeSPar = cms.vdouble(0.0300, 0.0300, 100.0),
-															Selector = cms.PSet(
-																				alignParams = cms.vstring('TOBDets,000000')
-																				)
-															), 
-												   cms.PSet(
-															function = cms.string('linear'),
-															apeRPar = cms.vdouble(0.001, 0.001, 100.0),
-															apeSPar = cms.vdouble(0.0600, 0.0600, 100.0),
-															Selector = cms.PSet(
-																				alignParams = cms.vstring('TECDets,000000')
-																			    )
-															)
-												   )	
+												#   cms.PSet(
+												#			function = cms.string('linear'),
+												#			apeRPar = cms.vdouble(0.001, 0.001, 100.0),
+												#			apeSPar = cms.vdouble(0.0600, 0.0600, 100.0),
+												#			Selector = cms.PSet(
+												#								alignParams = cms.vstring('TIDDets,000000')
+												#								)
+												#			), 
+												#   cms.PSet(
+												#			function = cms.string('linear'),
+												#			apeRPar = cms.vdouble(0.001, 0.001, 100.0),
+												#			apeSPar = cms.vdouble(0.0300, 0.0300, 100.0),
+												#			Selector = cms.PSet(
+												#								alignParams = cms.vstring('TOBDets,000000')
+												#								)
+												#			), 
+												#   cms.PSet(
+												#			function = cms.string('linear'),
+												#			apeRPar = cms.vdouble(0.001, 0.001, 100.0),
+												#			apeSPar = cms.vdouble(0.0600, 0.0600, 100.0),
+												#			Selector = cms.PSet(
+												#								alignParams = cms.vstring('TECDets,000000')
+												#							    )
+												#			)
+												#   )	
 
 #### If we are in collisions, apply selections on PhysDeclared bit, L1 trigger bits, LumiSections
 if 'COSMICS' !='<FLAG>':
@@ -117,6 +117,12 @@ if 'COSMICS' !='<FLAG>':
 
 #constraints
 
+process.load("RecoTracker.MeasurementDet.MeasurementTrackerEventProducer_cfi")
+process.MeasurementTrackerEvent.pixelClusterProducer = 'ALCARECOTkAlCosmicsCTF0T'
+process.MeasurementTrackerEvent.stripClusterProducer = 'ALCARECOTkAlCosmicsCTF0T'
+process.MeasurementTrackerEvent.inactivePixelDetectorLabels = cms.VInputTag()
+process.MeasurementTrackerEvent.inactiveStripDetectorLabels = cms.VInputTag()
+process.load("RecoTracker.TrackProducer.TrackRefitters_cff")
 #filter on PhysDecl bit
 process.skimming = cms.EDFilter("PhysDecl",
                                 applyfilter = cms.untracked.bool(True),
@@ -126,7 +132,7 @@ process.skimming = cms.EDFilter("PhysDecl",
 if 'MBVertex'=='<FLAG>':
    process.p = cms.Path(process.initialAlignmentTrackSelector*process.TrackRefitter1*process.TrackerTrackHitFilter*process.ctfProducerCustomised*process.AlignmentTrackSelector*process.TrackRefitter2)
 elif 'COSMICS' =='<FLAG>':
-    process.p = cms.Path(process.offlineBeamSpot*process.TrackRefitter1*process.TrackerTrackHitFilter*process.ctfProducerCustomised*process.AlignmentTrackSelector*process.TrackRefitter2)
+    process.p = cms.Path(process.offlineBeamSpot*process.MeasurementTrackerEvent*process.TrackRefitter1*process.TrackerTrackHitFilter*process.ctfProducerCustomised*process.AlignmentTrackSelector*process.TrackRefitter2)
 else :
     process.p = cms.Path(process.hltLevel1GTSeed*process.skimming*process.offlineBeamSpot*process.TrackRefitter1*process.TrackerTrackHitFilter*process.ctfProducerCustomised*process.AlignmentTrackSelector*process.TrackRefitter2)
 

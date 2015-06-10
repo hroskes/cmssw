@@ -25,7 +25,7 @@ process.AlignmentProducer.algoConfig.outfile =  '/HIPAlignmentEvents.root'
 process.AlignmentProducer.algoConfig.outfile2 = '/HIPAlignmentAlignables.root'
 
 # this part only needed for survey constraint
-"""
+#"""
 process.survey = cms.ESSource("PoolDBESSource",
     process.CondDBSetup,
     timetype = cms.string('runnumber'),
@@ -37,11 +37,11 @@ process.survey = cms.ESSource("PoolDBESSource",
             record = cms.string('TrackerSurveyErrorExtendedRcd'),
             tag = cms.string('errorTag')
         )),
-     connect = cms.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN/HIP/surveyObjects/surveyRcd_ALLTK_PXFoppPXB_tightSSTUltraTightTOB_311.db')
+     connect = cms.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/Inflate/CMSSW_7_4_0_pre6/src/Alignment/HIPAlignmentAlgorithm/test/test_tecInflate.db')
 )
 
-#process.AlignmentProducer.algoConfig.surveyResiduals = ['DetUnit','Det','TOBRod','TECPetal','TECRing','TIDRing','TIDSide']
-process.AlignmentProducer.algoConfig.surveyResiduals = ['Det','TIBString','TOBRod','TECRing','TIDSide','TECPetal']
+#process.AlignmentProducer.algoConfig.surveyResiduals = ['Det','TIBString','TOBRod','TECRing','TIDSide','TECPetal']
+process.AlignmentProducer.algoConfig.surveyResiduals = ['DetUnit','Det']
 process.AlignmentProducer.useSurvey = True
-"""
+#"""
 # end of survey constraint part
