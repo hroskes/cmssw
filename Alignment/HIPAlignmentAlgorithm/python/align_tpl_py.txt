@@ -91,7 +91,7 @@ process.AlignmentProducer.algoConfig.apeParam = cms.VPSet(cms.PSet(
 												#								alignParams = cms.vstring('TECDets,000000')
 												#							    )
 												#			)
-												#   )	
+												   )	
 
 #### If we are in collisions, apply selections on PhysDeclared bit, L1 trigger bits, LumiSections
 if 'COSMICS' !='<FLAG>':

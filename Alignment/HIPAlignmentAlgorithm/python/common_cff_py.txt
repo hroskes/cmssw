@@ -29,10 +29,7 @@ process.load("Alignment.CommonAlignmentProducer.AlignmentProducer_cff")
 # comment out that line in standard file ... an example is given in release of HIPAlignmentAlgorithm ("FrontierConditions_GlobalTag_cff.py")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
-#if 'COSMICS'=='<FLAG>':
-#   process.GlobalTag.globaltag='MCRUN2_71_V0::All'
-#else :
-#   process.GlobalTag.globaltag='MCRUN2_71_V0::All'
+process.GlobalTag.globaltag='GR_P_V49::All'
  
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 10000
