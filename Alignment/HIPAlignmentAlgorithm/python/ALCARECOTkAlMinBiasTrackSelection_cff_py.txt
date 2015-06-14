@@ -1,11 +1,12 @@
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(7500)
+    input = cms.untracked.int32(-1)
 )
 
 import RecoTracker.TrackProducer.TrackRefitters_cff
 process.TrackRefitter1 = RecoTracker.TrackProducer.TrackRefitter_cfi.TrackRefitter.clone()
 #process.TrackRefitter1.src = '<SKIM>'
 process.TrackRefitter1.src = 'initialAlignmentTrackSelector'
+process.TrackRefitter1.NavigationSchool = ''
 
 
 #initial track selector ( new )
@@ -57,16 +58,26 @@ process.AlignmentTrackSelector.src = 'ctfProducerCustomised'
 # track selection for sample in filename...
 process.AlignmentTrackSelector.filter = True
 process.AlignmentTrackSelector.applyBasicCuts = True
-process.AlignmentTrackSelector.pMin    = 6.0
+process.AlignmentTrackSelector.pMin    = 4.0
 process.AlignmentTrackSelector.ptMin   = 0.0
 process.AlignmentTrackSelector.etaMin  = -999.
 process.AlignmentTrackSelector.etaMax  = 999.
 process.AlignmentTrackSelector.nHitMin = 8
 process.AlignmentTrackSelector.nHitMin2D = 2
-process.AlignmentTrackSelector.chi2nMax = 9999.
-process.AlignmentTrackSelector.applyMultiplicityFilter = True
+process.AlignmentTrackSelector.chi2nMax = 999.
+process.AlignmentTrackSelector.applyMultiplicityFilter = False 
 process.AlignmentTrackSelector.maxMultiplicity = 30
 process.AlignmentTrackSelector.applyNHighestPt = False
+
+process.oneGoodVertexFilter = cms.EDFilter("VertexSelector",
+                                           src = cms.InputTag("offlinePrimaryVertices"),
+                                           cut = cms.string("!isFake && ndof > 4 && abs(z) <= 15 && position.Rho <= 2"), # tracksSize() > 3 for the older cut
+                                           filter = cms.bool(True),   # otherwise it won't filter the events, just produce an empty vertex collection.
+                                           )
+
+
+process.FilterGoodEvents=cms.Sequence(#process.HighPuritySelector*
+process.oneGoodVertexFilter)
 
 process.TrackRefitter2 = process.TrackRefitter1.clone()
 process.TrackRefitter2.src = 'AlignmentTrackSelector'
