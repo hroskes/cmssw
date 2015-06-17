@@ -42,7 +42,7 @@ else :
 process.AlignmentProducer.algoConfig.fillTrackMonitoring=False
 process.AlignmentProducer.algoConfig.outfile =  '<PATH>/HIPAlignmentEvents.root'
 process.AlignmentProducer.algoConfig.outfile2 = '<PATH>/HIPAlignmentAlignables.root'
-process.AlignmentProducer.algoConfig.applyAPE = True 
+process.AlignmentProducer.algoConfig.applyAPE = False 
 process.AlignmentProducer.algoConfig.apeParam = cms.VPSet(cms.PSet(
 															function = cms.string('linear'),
 															apeRPar = cms.vdouble(0.001, 0.001, 100.0),

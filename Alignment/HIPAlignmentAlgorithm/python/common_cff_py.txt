@@ -92,16 +92,16 @@ process.AlignmentProducer.ParameterBuilder.Selector = cms.PSet(
                                                     alignParams = cms.vstring(
                                                                            #'TrackerTPBModule,111111',
                                                                            #'TrackerTPEModule,111111',
-																																					 #'TrackerTIBModuleUnit,101111',
-																																					 #'TrackerTOBModuleUnit,101111',
-																																					 #'TrackerTIDModuleUnit,111111',
-																																					 #'TrackerTECModuleUnit,111111'
-																																				    'TrackerTPBHalfBarrel,111111',
-																																				    'TrackerTPEHalfDisk,111111',
-																																				    'TrackerTIBHalfBarrel,111111',
-																																				    'TrackerTOBHalfBarrel,111111',
-																																				    'TrackerTIDEndcap,111111',
-																																				    'TrackerTECEndcap,111111'
+										 #'TrackerTIBModuleUnit,101111',
+										 #'TrackerTOBModuleUnit,101111',
+										 #'TrackerTIDModuleUnit,111111',
+										 #'TrackerTECModuleUnit,111111'
+										  'TrackerTPBHalfBarrel,111111',
+										  'TrackerTPEHalfDisk,111111',
+										  'TrackerTIBHalfBarrel,111111',
+										  'TrackerTOBHalfBarrel,111111',
+										  'TrackerTIDEndcap,111111',
+										  'TrackerTECEndcap,111111'
                                                                  ),
 )
 
