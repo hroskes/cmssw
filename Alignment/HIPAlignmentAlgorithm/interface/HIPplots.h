@@ -1,5 +1,3 @@
-#ifndef HIPplots_h
-#define HIPplots_h
 #include <vector>
 #include <string>
 #include <fstream>
@@ -35,15 +33,15 @@ public:
 	void CheckFiles(int &ierr);
 private:
 	
-	TString _path;
-	TString _outFile;
-	TString _inFile_params;
-	TString _inFile_uservars;	
-	TString _inFile_truepos;
-	TString _inFile_alipos;	
-	TString _inFile_mispos;
-	TString _inFile_HIPalign;
-	TString _inFile_surveys;
+	char _path[256];
+	char _outFile[256];
+	char _inFile_params[256];
+	char _inFile_uservars[256];	
+	char _inFile_truepos[256];
+	char _inFile_alipos[256];	
+	char _inFile_mispos[256];
+	char _inFile_HIPalign[256];
+	char _inFile_surveys[256];
 	enum TKdetector_id{unknown=0,TPBid=1,TPEid=2,TIBid=3,TIDid=4,TOBid=5,TECid=6,ALLid=99};	
 	
 	int GetNIterations(TDirectory *f,TString tag,int startingcounter=0);
@@ -60,4 +58,3 @@ private:
 
 
 };
-#endif
