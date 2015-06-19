@@ -3,26 +3,19 @@
 #include "Alignment/HIPAlignmentAlgorithm/interface/HIPplots.h"
 	
 
-void plotter(TString jobdir, int j, bool only_plotting=false){
+void plotter(int j, bool only_plotting=false){
 
-  char path[512],tag[256],outpath[512];
-
-  while (jobdir.EndsWith("/"))
-    jobdir.Chop();
-
-  TString base_path = jobdir;
-  base_path.Remove(base_path.Last('/'));
-  while (base_path.EndsWith("/"))
-    base_path.Chop();
-
-  TString dir = jobdir;
-  dir.Remove(0, dir.Last('/') + 1);
-
-  TString detname [6]= {"PXB","PXF","TIB","TID","TOB","TEC"};
-  sprintf(tag,"%s_%s",dir.Data(),detname[j].Data());
+  char base_path[512],path[512],tag[256],dir[256],outpath[512];
+  
+  sprintf(base_path,"/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/hroskes/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/");
+  sprintf(dir,"jobs/June19/SMfrommp1744");
+  //sprintf(base_path,"/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN/HIP/benedetta/output/pvc/"); 
+  //sprintf(dir,"step1");
+	TString detname [6]= {"PXB","PXF","TIB","TID","TOB","TEC"};
+  sprintf(tag,"%s_%s",dir,detname[j].Data());
 
   //sprintf(tag,"newLA_TOB");
-  sprintf(path,"%s/%s/main",base_path.Data(),dir.Data());
+  sprintf(path,"%s/%s/main",base_path,dir);
   sprintf(outpath,"%s/HIP_plots_%s.root",path,tag);
   cout<<"Path is "<<path<<endl;
 
@@ -41,7 +34,7 @@ void plotter(TString jobdir, int j, bool only_plotting=false){
       return;
     }
   }
-
+  
   if(!only_plotting){
     //========= Produce histograms ============
     for (int i = 0; i < 6; i++){
@@ -50,35 +43,35 @@ void plotter(TString jobdir, int j, bool only_plotting=false){
   //   c->extractAlignParams( i,0);
       // c->extractAlignShifts( i, 20 ,5);
     }
-
+    
     // c->extractAlignableChiSquare( 20, 1);
     //c->extractAlignableChiSquare( 0,j+1);
     c->extractAlignableChiSquare( 0);
   }
-
+  
   cout<<"\n\nSTARTING TO PLOT "<<endl<<endl;
 
 
   gROOT->ProcessLine(" .L tdrstyle.C");
   gROOT->ProcessLine("setTDRStyle()");
 
-  sprintf(path,"%s/%s/psfiles/",base_path.Data(),dir.Data());
+  sprintf(path,"%s/%s/psfiles/",base_path,dir);
   for(int i=1;i<=6;++i){//loop over subdets
      c->plotHitMap(path,i,0);
   }
 
-
-
+  
+  
   sprintf(outpath,"%s/parsViters_%s.png",path,tag);
   c->plotAlignParams( "PARAMS", outpath);	
-
+  
   // sprintf(outpath,"%s/shiftsViters_%s.ps",path,tag);
   // c->plotAlignParams( "SHIFTS", outpath);
-
+  
   // int iter_you_want_to_plot=1;
   // sprintf(outpath,"%s/shiftsAtIter%d_%s.ps",path,iter_you_want_to_plot,tag);
   //  c->plotAlignParamsAtIter( iter_you_want_to_plot, "SHIFTS", outpath );
-
+   
   sprintf(outpath,"%s/AlignableChi2n_%s",path,tag);//do not put the file extension here!!!!
   c->plotAlignableChiSquare(outpath ,0.1);
 
@@ -86,10 +79,11 @@ void plotter(TString jobdir, int j, bool only_plotting=false){
   delete c;
   cout<<"cleaned up HIPplots object ! We are done  and good luck !"<<endl;
 
+  
 }
 
-void plotter(TString jobdir, bool only_plotting = false)
+void plotter(bool only_plotting = false)
 {
     for (int i = 0; i < 6; i++)
-        plotter(jobdir, i);
+        plotter(i);
 }

@@ -6,17 +6,17 @@
 
 using namespace std;
 
-HIPplots::HIPplots( TString path, TString outFile ){
-	
-	sprintf( _path, path );
-	sprintf( _outFile, outFile );
-	sprintf( _inFile_params, "%s/IOAlignmentParameters.root", _path );
-	sprintf( _inFile_uservars, "%s/IOUserVariables.root", _path );
-	sprintf( _inFile_truepos, "%s/IOTruePositions.root", _path );
-	sprintf( _inFile_alipos, "%s/IOAlignedPositions.root", _path );
-	sprintf( _inFile_mispos, "%s/IOMisalignedPositions.root", _path );
-	sprintf( _inFile_HIPalign, "%s/HIPAlignmentAlignables.root", _path );
-	sprintf( _inFile_surveys, "%s/HIPSurveyResiduals.root", _path );
+HIPplots::HIPplots( TString path, TString outFile )
+{
+	_path = path;
+	_outFile = outFile;
+	_inFile_params = TString(_path) += "/IOAlignmentParameters.root";
+	_inFile_uservars = TString(_path) += "/IOUserVariables.root";
+	_inFile_truepos = TString(_path) += "/IOTruePositions.root";
+	_inFile_alipos = TString(_path) += "/IOAlignedPositions.root";
+	_inFile_mispos = TString(_path) += "/IOMisalignedPositions.root";
+	_inFile_HIPalign = TString(_path) += "/HIPAlignmentAlignables.root";
+	_inFile_surveys = TString(_path) += "/HIPSurveyResiduals.root";
 	SetPeakThreshold(8.0);
 	plotbadchi2=true;
 }
