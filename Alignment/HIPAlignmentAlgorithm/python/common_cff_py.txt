@@ -61,11 +61,11 @@ from CondCore.DBCommon.CondDBSetup_cfi import *
 process.GlobalTag.toGet = cms.VPSet(
    cms.PSet(record = cms.string('TrackerAlignmentRcd'),
             tag = cms.string('Alignments'),
-            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/hroskes/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/dbfiles/mp1744.db')
+            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/dmcinern/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/dbfiles/mp1757.db')
             ),
    cms.PSet(record = cms.string('TrackerSurfaceDeformationRcd'),
-            tag = cms.string('Deformations_mp'),
-            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/hroskes/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/dbfiles/mp1744_deformations.db')
+            tag = cms.string('Deformations'),
+            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/dmcinern/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/dbfiles/mp1757.db')
             ),
    cms.PSet(record = cms.string('TrackerAlignmentErrorExtendedRcd'),
             tag = cms.string('TrackerAlignmentExtendedErr_2009_v2_express_IOVs'),
