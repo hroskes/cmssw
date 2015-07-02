@@ -444,8 +444,10 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
   // alignable-wise tree is only filled once
   if (theIteration==1) { // only for 1st iteration
     theFile2->cd();
-    theTree2->Write(); 
+    theTree2->Write();
+    hitTree->Write(); 
     delete theFile2;
+    delete hitTree;
   }  
 	
 }
@@ -660,7 +662,16 @@ bool HIPAlignmentAlgorithm::processHit2D(const AlignableDetOrUnitPtr& alidet,
   //  hitresidual[1] =0.0;
   //  nhitDim=1;
   // }
-	 
+
+  m4_Id = ali->id();
+  m4_subdet = GeomDetEnumerators::subDetId[hit->det()->subDetector()];
+  m4_du = hitresidual[0];
+  m4_dv = hitresidual[1];
+  m4_u = coor[0];
+  m4_v = coor[1];
+  m4_cosalpha = tsos.localDirection().dot(LocalVector(0,0,1));
+  hitTree->Fill();
+
   AlgebraicMatrix hitresidualT;
   hitresidualT = hitresidual.T();
   // std::cout << "HitResidualT = \n" << hitresidualT << std::endl;
@@ -787,7 +798,7 @@ void HIPAlignmentAlgorithm::run(const edm::EventSetup& setup, const EventInfo &e
 		
     std::vector<const TransientTrackingRecHit*> hitvec;
     std::vector<TrajectoryStateOnSurface> tsosvec;
-		
+
     // loop over measurements	
     std::vector<TrajectoryMeasurement> measurements = traj->measurements();
     for (std::vector<TrajectoryMeasurement>::iterator im=measurements.begin();
@@ -879,9 +890,13 @@ void HIPAlignmentAlgorithm::run(const edm::EventSetup& setup, const EventInfo &e
 	}
 	
 	TrajectoryStateOnSurface tsos = tsoscomb.combine(meas.forwardPredictedState(),
-							 meas.backwardPredictedState());
-	
+							 meas.backwardPredictedState());	
+
 	if(tsos.isValid()){
+          std::cout << std::endl << std::endl << std::endl;
+	  std::cout << tsos.localDirection().dot(LocalVector(0,0,1));
+	  std::cout << std::endl << std::endl << std::endl;
+
 	  // hitvec.push_back(ttrhit);
 	  hitvec.push_back(hit);
 	  tsosvec.push_back(tsos);
@@ -898,7 +913,7 @@ void HIPAlignmentAlgorithm::run(const edm::EventSetup& setup, const EventInfo &e
 		
     std::vector<TrajectoryStateOnSurface>::const_iterator itsos=tsosvec.begin();
     std::vector<const TransientTrackingRecHit*>::const_iterator ihit=hitvec.begin();
-    
+
     // loop over vectors(hit,tsos)
     while (itsos != tsosvec.end()) {
 
@@ -1108,7 +1123,17 @@ void HIPAlignmentAlgorithm::bookRoot(void)
   theTree2->Branch("Phi",    &m2_Phi,     "Phi/F");
   theTree2->Branch("Id",     &m2_Id,      "Id/i");
   theTree2->Branch("ObjId",  &m2_ObjId,   "ObjId/I");
-	
+
+  hitTree = new TTree("hitTreeJered","hitTreeJered"); 
+  hitTree->Branch("Id", &m4_Id, "Id/I");
+  hitTree->Branch("subdet", &m4_subdet, "subdet/I");
+  hitTree->Branch("du", &m4_du, "du/D");
+  hitTree->Branch("dv", &m4_dv, "dv/D");
+  hitTree->Branch("u", &m4_u, "u/D");
+  hitTree->Branch("v", &m4_v, "v/D");
+  hitTree->Branch("cosalpha", &m4_cosalpha, "cosalpha/F");
+	     
+
   // book survey-wise ROOT Tree only if survey is enabled
   if (theLevels.size() > 0){
 		

@@ -110,6 +110,7 @@ class HIPAlignmentAlgorithm : public AlignmentAlgorithmBase
   TTree* theTree2; // alignable-wise tree
   TFile* theFile3;
   TTree* theTree3; // survey tree
+  TTree* hitTree;
 
   // variables for event-wise tree
   static const int MAXREC = 99;
@@ -127,6 +128,10 @@ class HIPAlignmentAlgorithm : public AlignmentAlgorithmBase
   align::ID m3_Id;
   align::StructureType m3_ObjId;
   float m3_par[6];
+
+  int m4_Id, m4_subdet;
+  double m4_du, m4_dv, m4_u, m4_v;
+  float m4_cosalpha;
 };
 
 #endif
