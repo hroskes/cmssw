@@ -130,8 +130,9 @@ class HIPAlignmentAlgorithm : public AlignmentAlgorithmBase
   float m3_par[6];
 
   int m4_Id, m4_subdet;
-  double m4_du, m4_dv, m4_u, m4_v;
-  float m4_cosalpha;
+  double m4_du, m4_dv, m4_u, m4_v, m4_Suu, m4_Suv, m4_Svv;
+  float m4_xoftraj, m4_yoftraj, m4_zoftraj;
+  double m4_width, m4_length;
 };
 
 #endif

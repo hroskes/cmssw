@@ -624,7 +624,11 @@ bool HIPAlignmentAlgorithm::processHit2D(const AlignableDetOrUnitPtr& alidet,
   // invert covariance matrix
   int ierr;
   // if (covmat[1][1]>4.0) nhitDim = hitDim;
-				  
+	
+  m4_Suu = covmat[0][0];
+  m4_Suv = covmat[0][1];
+  m4_Svv = covmat[1][1];
+			  
   covmat.invert(ierr);
   if (ierr != 0) { 
     edm::LogError("Alignment") << "Matrix inversion failed!"; 
@@ -669,7 +673,14 @@ bool HIPAlignmentAlgorithm::processHit2D(const AlignableDetOrUnitPtr& alidet,
   m4_dv = hitresidual[1];
   m4_u = coor[0];
   m4_v = coor[1];
-  m4_cosalpha = tsos.localDirection().dot(LocalVector(0,0,1));
+  m4_xoftraj = tsos.localDirection().dot(LocalVector(1,0,0));
+  m4_yoftraj = tsos.localDirection().dot(LocalVector(0,1,0));
+  m4_zoftraj = tsos.localDirection().dot(LocalVector(0,0,1));
+  AlignableDetUnit *alidetunit = alidet.AlignableDetUnit();
+  if (!alidetunit) throw cms::Exception("GeometryError") << "alidetunit == 0 !!!";
+  AlignableSurface& surface = alidetunit->surface();
+  m4_length = surface.length();
+  m4_width = surface.width();
   hitTree->Fill();
 
   AlgebraicMatrix hitresidualT;
@@ -1131,8 +1142,15 @@ void HIPAlignmentAlgorithm::bookRoot(void)
   hitTree->Branch("dv", &m4_dv, "dv/D");
   hitTree->Branch("u", &m4_u, "u/D");
   hitTree->Branch("v", &m4_v, "v/D");
-  hitTree->Branch("cosalpha", &m4_cosalpha, "cosalpha/F");
-	     
+  hitTree->Branch("Suu", &m4_Suu, "Suu/D");
+  hitTree->Branch("Suv", &m4_Suv, "Suv/D");
+  hitTree->Branch("Svv", &m4_Svv, "Svv/D");
+  hitTree->Branch("xoftraj", &m4_xoftraj, "xoftraj/F");
+  hitTree->Branch("yoftraj", &m4_yoftraj, "yoftraj/F");
+  hitTree->Branch("zoftraj", &m4_zoftraj, "zoftraj/F");
+  hitTree->Branch("length", &m4_length, "length/D");
+  hitTree->Branch("width", &m4_width, "width/D");
+
 
   // book survey-wise ROOT Tree only if survey is enabled
   if (theLevels.size() > 0){
