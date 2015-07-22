@@ -15,6 +15,7 @@
 #include "Alignment/CommonAlignment/interface/AlignableNavigator.h"  
 #include "Alignment/CommonAlignment/interface/AlignableObjectId.h"  
 #include "Alignment/CommonAlignment/interface/AlignmentParameters.h"
+#include "Alignment/CommonAlignment/interface/AlignableDetUnit.h"
 #include "Alignment/CommonAlignment/interface/SurveyResidual.h"
 #include "Alignment/CommonAlignmentAlgorithm/interface/AlignmentParameterStore.h"
 #include "Alignment/CommonAlignmentAlgorithm/interface/AlignmentParameterSelector.h"
@@ -676,9 +677,9 @@ bool HIPAlignmentAlgorithm::processHit2D(const AlignableDetOrUnitPtr& alidet,
   m4_xoftraj = tsos.localDirection().dot(LocalVector(1,0,0));
   m4_yoftraj = tsos.localDirection().dot(LocalVector(0,1,0));
   m4_zoftraj = tsos.localDirection().dot(LocalVector(0,0,1));
-  AlignableDetUnit *alidetunit = alidet.AlignableDetUnit();
+  const AlignableDetUnit *alidetunit = alidet.alignableDetUnit();
   if (!alidetunit) throw cms::Exception("GeometryError") << "alidetunit == 0 !!!";
-  AlignableSurface& surface = alidetunit->surface();
+  const AlignableSurface surface = alidetunit->surface();
   m4_length = surface.length();
   m4_width = surface.width();
   hitTree->Fill();
