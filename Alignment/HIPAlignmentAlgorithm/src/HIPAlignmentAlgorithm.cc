@@ -448,7 +448,6 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
     theTree2->Write();
     hitTree->Write(); 
     delete theFile2;
-    delete hitTree;
   }  
 	
 }
@@ -679,7 +678,7 @@ bool HIPAlignmentAlgorithm::processHit2D(const AlignableDetOrUnitPtr& alidet,
   m4_zoftraj = tsos.localDirection().dot(LocalVector(0,0,1));
   const AlignableDetUnit *alidetunit = alidet.alignableDetUnit();
   if (!alidetunit) throw cms::Exception("GeometryError") << "alidetunit == 0 !!!";
-  const AlignableSurface surface = alidetunit->surface();
+  const AlignableSurface &surface = alidetunit->surface();
   m4_length = surface.length();
   m4_width = surface.width();
   hitTree->Fill();
