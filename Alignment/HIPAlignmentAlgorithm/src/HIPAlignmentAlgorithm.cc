@@ -904,10 +904,6 @@ void HIPAlignmentAlgorithm::run(const edm::EventSetup& setup, const EventInfo &e
 							 meas.backwardPredictedState());	
 
 	if(tsos.isValid()){
-          std::cout << std::endl << std::endl << std::endl;
-	  std::cout << tsos.localDirection().dot(LocalVector(0,0,1));
-	  std::cout << std::endl << std::endl << std::endl;
-
 	  // hitvec.push_back(ttrhit);
 	  hitvec.push_back(hit);
 	  tsosvec.push_back(tsos);
