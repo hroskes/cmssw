@@ -11,6 +11,7 @@ eval `scramv1 runtime -csh`
 cd Alignment/HIPAlignmentAlgorithm
 
 set odir = `cd $2; pwd` # get full output path
+echo '*' > $2/.gitignore
 
 
 # configure all of the scripts
