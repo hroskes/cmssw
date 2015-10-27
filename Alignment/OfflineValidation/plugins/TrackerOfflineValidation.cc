@@ -633,7 +633,7 @@ TrackerOfflineValidation::bookGlobalHists(DirectoryWrapper& tfd )
 
   for (std::vector<TFile*>::const_iterator itfile = mergeTFiles_.begin(); itfile != mergeTFiles_.end(); ++itfile) {
     for (std::vector<TH1*>::const_iterator ithist = vTrackHistos_.begin(); ithist != vTrackHistos_.end(); ++ithist) {
-      TH1 *filehist = (TH1*)((*itfile)->Get((tfd.directoryString+"/"+(*ithist)->GetName()).c_str()));
+      TH1 *filehist = (TH1*)((*itfile)->Get((tfd.tfd->fullPath()+"/"+(*ithist)->GetName()).c_str()));
       sumHistStructure_.emplace_back(*ithist, filehist);
     }
   }
@@ -825,19 +825,19 @@ TrackerOfflineValidation::bookHists(DirectoryWrapper& tfd, const Alignable& ali,
     }
     if (mergeMode_) {
       for (std::vector<TFile*>::const_iterator it = mergeTFiles_.begin(); it != mergeTFiles_.end(); ++it) {
-        TH1 *ResHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+histoname.str()).c_str()));
-        TH1 *NormResHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+normhistoname.str()).c_str()));
-        TH1 *ResXprimeHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+xprimehistoname.str()).c_str()));
-        TH1 *NormResXprimeHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+normxprimehistoname.str()).c_str()));
-        TH1 *LocalX = (TH1*)((*it)->Get((tfd.directoryString+"/"+localxname.str()).c_str()));
-        TH1 *LocalY = (TH1*)((*it)->Get((tfd.directoryString+"/"+localyname.str()).c_str()));
-        TH1 *ResXvsXProfile = (TH1*)((*it)->Get((tfd.directoryString+"/"+resxvsxprofilename.str()).c_str()));
-        TH1 *ResXvsYProfile = (TH1*)((*it)->Get((tfd.directoryString+"/"+resxvsyprofilename.str()).c_str()));
-        TH1 *ResYprimeHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+yprimehistoname.str()).c_str()));
-        TH1 *ResYHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+yhistoname.str()).c_str()));
-        TH1 *NormResYprimeHisto = (TH1*)((*it)->Get((tfd.directoryString+"/"+normyprimehistoname.str()).c_str()));
-        TH1 *ResYvsXProfile = (TH1*)((*it)->Get((tfd.directoryString+"/"+resyvsxprofilename.str()).c_str()));
-        TH1 *ResYvsYProfile = (TH1*)((*it)->Get((tfd.directoryString+"/"+resyvsyprofilename.str()).c_str()));
+        TH1 *ResHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+histoname.str()).c_str()));
+        TH1 *NormResHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+normhistoname.str()).c_str()));
+        TH1 *ResXprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+xprimehistoname.str()).c_str()));
+        TH1 *NormResXprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+normxprimehistoname.str()).c_str()));
+        TH1 *LocalX = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+localxname.str()).c_str()));
+        TH1 *LocalY = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+localyname.str()).c_str()));
+        TH1 *ResXvsXProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resxvsxprofilename.str()).c_str()));
+        TH1 *ResXvsYProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resxvsyprofilename.str()).c_str()));
+        TH1 *ResYprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+yprimehistoname.str()).c_str()));
+        TH1 *ResYHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+yhistoname.str()).c_str()));
+        TH1 *NormResYprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+normyprimehistoname.str()).c_str()));
+        TH1 *ResYvsXProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resyvsxprofilename.str()).c_str()));
+        TH1 *ResYvsYProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resyvsyprofilename.str()).c_str()));
 
         if (ResHisto) sumHistStructure_.emplace_back(histStruct.ResHisto, ResHisto);
         if (NormResHisto) sumHistStructure_.emplace_back(histStruct.NormResHisto, NormResHisto);
@@ -1050,6 +1050,7 @@ TrackerOfflineValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
 {
   if (useOverflowForRMS_)TH1::StatOverflows(kTRUE);
   this->checkBookHists(iSetup); // check whether hists are booked and do so if not yet done
+  if (mergeMode_) return;
   
   TrackerValidationVariables avalidator_(iSetup,parSet_);
     
