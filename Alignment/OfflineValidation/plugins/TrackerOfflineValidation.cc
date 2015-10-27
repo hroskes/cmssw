@@ -28,13 +28,14 @@
 #include <iostream>
 
 // ROOT includes
+#include "TF1.h"
+#include "TFile.h"
 #include "TH1.h"
 #include "TH2.h"
-#include "TProfile.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TF1.h"
 #include "TMath.h"
+#include "TProfile.h"
+#include "TROOT.h"
+#include "TTree.h"
 
 // user include files
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -397,6 +398,13 @@ TrackerOfflineValidation::~TrackerOfflineValidation()
   for( std::vector<TH1*>::const_iterator it = vDeleteObjects_.begin(), itEnd = vDeleteObjects_.end(); 
        it != itEnd;
        ++it) delete *it;
+  for (std::vector<TFile*>::const_iterator it = mergeTFiles_.begin(); it != mergeTFiles_.end(); ++it) {
+    //https://sft.its.cern.ch/jira/browse/ROOT-1508
+    gROOT->GetListOfFiles()->Remove(*it);
+  }
+  for (std::vector<TFile*>::const_iterator it = mergeTFiles_.begin(); it != mergeTFiles_.end(); ++it) {
+    delete *it;
+  }
 }
 
 
