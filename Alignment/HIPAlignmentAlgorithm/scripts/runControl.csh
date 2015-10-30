@@ -24,9 +24,9 @@ set jobs = `ls -d $odir/job*/ | wc -l`
           else
           echo 1 > $odir/job$ii/DONE 
           rm -f $odir/job$ii/IOUserVariables.root
-          bkill -J $name/align$iter\[$ii\]  
+          bkill -J $name/align"$iter"_'*'\[$ii\]  
                      	 
-          echo kill the job $name/align$iter\[$ii\]    
+          echo kill the job $name/align"$iter"_'*'\[$ii\]    
          
           endif
          endif
