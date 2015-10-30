@@ -1,5 +1,6 @@
 #include <Riostream.h>
 #include "TROOT.h"
+#include "TSystem.h"
 #include "Alignment/HIPAlignmentAlgorithm/interface/HIPplots.h"
 	
 
@@ -63,6 +64,7 @@ void plotter(TString jobdir, int j, bool only_plotting=false){
   gROOT->ProcessLine("setTDRStyle()");
 
   sprintf(path,"%s/%s/psfiles/",base_path.Data(),dir.Data());
+  gSystem->mkdir(path);
   for(int i=1;i<=6;++i){//loop over subdets
      c->plotHitMap(path,i,0);
   }
