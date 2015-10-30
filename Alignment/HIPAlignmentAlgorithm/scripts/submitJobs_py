@@ -19,6 +19,7 @@ while (`bjobs -d -w |& grep $name/requeue$i` != "") # check if job name exists
 end
 
 @ MAX_JOB_ARRAY_SIZE = `bparams -a | grep MAX_JOB_ARRAY_SIZE | sed "s/.* = //"`
+@ MAX_JOB_ARRAY_SIZE = 5
 @ jobarrays = ( $jobs - 1 ) / $MAX_JOB_ARRAY_SIZE + 1
 
 echo Starting iteration = $i, final iteration = $iter, number of jobs = $jobs in $jobarrays arrays
@@ -32,18 +33,19 @@ while ($i <= $iter)
     echo "submit parallel jobs..."
     @ minjob = 1
     foreach j (`seq 1 $jobarrays`)
-        @ maxjob = $minjob + 999
+        @ maxjob = $minjob + $MAX_JOB_ARRAY_SIZE - 1
         if ( $maxjob > $jobs ) then
-	    bsub -q $queue -C 0 -J $name/align"$i"_$j\[$minjob-$maxjob\] \
-             -oo $odir/job%I/align$i.out $odir/job\$LSB_JOBINDEX/runScript.csh $workdir
-        fi
-        @ minjob = $minjob + 1000
+            @ maxjob = $jobs
+        endif
+	bsub -q $queue -C 0 -J $name/align"$i"_$j\[$minjob-$maxjob\] \
+         -oo $odir/job%I/align$i.out $odir/job\$LSB_JOBINDEX/runScript.csh $workdir
+        @ minjob = $minjob + $MAX_JOB_ARRAY_SIZE
     end
 
     sleep 15
 
     foreach j (`seq 1 $jobarrays`)
-        set id = `bjobs -J $name/align"$i"_$j | tail -n1 | awk '{print $1}'
+        set id = `bjobs -J $name/align"$i"_$j | tail -n1 | awk '{print $1}'`
         echo "ID=$id"
         if ( ! $?waitcondition ) then
             set waitcondition = "done($id)"
@@ -52,7 +54,7 @@ while ($i <= $iter)
         endif
     end
     echo "submit collect..."
-    bsub -q $queue -C 0 -J $name/collect$i -w "done($id)" \
+    bsub -q $queue -C 0 -J $name/collect$i -w "$waitcondition" \
          -oo $odir/main/collect$i.out $odir/main/runScript.csh $workdir
 
 	 echo "submit stoprequeue"
