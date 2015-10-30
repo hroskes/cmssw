@@ -1,5 +1,10 @@
 #!/bin/tcsh
 
+grep FatalRootError <ODIR>/*.out >& /dev/null
+if ( $? == 0 ) then    #then a previous job failed to close the root file
+    rm <ODIR>/*.root
+endif
+
 # working dir
 set workdir = $1
 
