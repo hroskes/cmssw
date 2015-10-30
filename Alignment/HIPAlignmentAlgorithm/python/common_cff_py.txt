@@ -18,8 +18,8 @@ from RecoMuon.DetLayers.muonDetLayerGeometry_cfi import *
 from Geometry.TrackerGeometryBuilder.idealForDigiTrackerGeometry_cff import *
 from Geometry.CSCGeometryBuilder.idealForDigiCscGeometry_cff import *
 from Geometry.DTGeometryBuilder.idealForDigiDtGeometry_cff import *
-#process.load("Configuration.StandardSequences.MagneticField_cff")
-process.load("Configuration.StandardSequences.MagneticField_0T_cff")  ## FOR 0T
+process.load("Configuration.StandardSequences.MagneticField_cff")
+#process.load("Configuration.StandardSequences.MagneticField_0T_cff")  ## FOR 0T
 
 # loading the alignment producer
 process.load("Alignment.CommonAlignmentProducer.AlignmentProducer_cff")
@@ -32,9 +32,9 @@ process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_condD
 
 #process.GlobalTag.globaltag='GR_P_V54'
 if 'COSMICS'=='<FLAG>':
-   process.GlobalTag.globaltag='MCRUN2_74_V9'
+   process.GlobalTag.globaltag='74X_dataRun2_Prompt_v2'
 else :
-   process.GlobalTag.globaltag='MCRUN2_74_V9'
+   process.GlobalTag.globaltag='74X_dataRun2_Prompt_v2'
  
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 10000
@@ -63,10 +63,10 @@ process.GlobalTag.toGet = cms.VPSet(
    #         tag = cms.string('Alignments'),
    #         connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/dmcinern/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/dbfiles/mp1757.db')
    #         ),
-   cms.PSet(record = cms.string('TrackerSurfaceDeformationRcd'),
-            tag = cms.string('Deformations'),
-            connect = cms.untracked.string('sqlite_file:/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/hroskes/CMSSW_7_4_4/src/Alignment/HIPAlignmentAlgorithm/dbfiles/mp1744.db')
-            ),
+   #cms.PSet(record = cms.string('TrackerSurfaceDeformationRcd'),
+   #         tag = cms.string('TrackerSurfaceDeformations_zero'),
+   #         connect = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS')
+   #         ),
    #cms.PSet(record = cms.string('TrackerAlignmentErrorExtendedRcd'),
    #         tag = cms.string('TrackerAlignmentExtendedErr_2009_v2_express_IOVs'),
    #         connect = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS')
@@ -89,12 +89,12 @@ process.AlignmentProducer.applyDbAlignment = True
 
 process.AlignmentProducer.ParameterBuilder.Selector = cms.PSet(
                                                     alignParams = cms.vstring(
-                                                                            #'TrackerTPBModule,111111',
-                                                                            #'TrackerTPEModule,111111',
-										  #'TrackerTIBModuleUnit,101111',
-										  #'TrackerTOBModuleUnit,101111',
-										  #'TrackerTIDModuleUnit,111111',
-										  #'TrackerTECModuleUnit,111111'
+                                                                            'TrackerTPBModule,111111',
+                                                                            'TrackerTPEModule,111111',
+										  'TrackerTIBModule,101111',
+										  'TrackerTOBModule,101111',
+										  'TrackerTIDModule,111111',
+										  'TrackerTECModule,111111'
 										  'TrackerTPBHalfBarrel,111111',
 										  'TrackerTPEHalfDisk,111111',
 										  'TrackerTIBHalfBarrel,111111',
