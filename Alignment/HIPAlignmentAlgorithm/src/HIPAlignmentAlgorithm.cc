@@ -7,6 +7,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/Run.h"
 
 #include "TrackingTools/PatternTools/interface/Trajectory.h"
 #include "TrackingTools/TrackFitters/interface/TrajectoryStateCombiner.h"
@@ -29,6 +30,7 @@
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 
 #include "CondFormats/AlignmentRecord/interface/GlobalPositionRcd.h"
+#include "CondFormats/AlignmentRecord/interface/TrackerAlignmentRcd.h"
 #include "FWCore/Framework/interface/ValidityInterval.h"
 #include "FWCore/Framework/interface/ESTransientHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -71,7 +73,9 @@ HIPAlignmentAlgorithm::HIPAlignmentAlgorithm(const edm::ParameterSet& cfg):
 	
   // parameters for APE
   theApplyAPE = cfg.getParameter<bool>("applyAPE");
+  themultiIOV = cfg.getParameter<bool>("multiIOV");
   theAPEParameterSet = cfg.getParameter<std::vector<edm::ParameterSet> >("apeParam");
+  theIOVrangeSet = cfg.getParameter<std::vector<unsigned> >("IOVrange");
 	
   theMaxAllowedHitPull = cfg.getParameter<double>("maxAllowedHitPull");
   theMinimumNumberOfHits = cfg.getParameter<int>("minimumNumberOfHits");
@@ -107,16 +111,55 @@ HIPAlignmentAlgorithm::initialize( const edm::EventSetup& setup,
 
   edm::ESHandle<Alignments> globalPositionRcd;
   // FIXME! temporary solution to get highest possible run number
-  const unsigned int MAX_VAL(std::numeric_limits<unsigned int>::max());
-  edm::ValidityInterval iov(setup.get<GlobalPositionRcd>().validityInterval() );
-  if (iov.first().eventID().run()!=1 || iov.last().eventID().run()!=MAX_VAL) {
-    throw cms::Exception("DatabaseError")
-      << "@SUB=AlignmentProducer::applyDB"
-      << "\nTrying to apply "<< setup.get<GlobalPositionRcd>().key().name()
-      << " with multiple IOVs in tag.\n"
-      << "Validity range is "
-      << iov.first().eventID().run() << " - " << iov.last().eventID().run();
-  }
+//  const unsigned int MAX_VAL(std::numeric_limits<unsigned int>::max());
+ // edm::ValidityInterval iov(setup.get<GlobalPositionRcd>().validityInterval() );
+//  if (iov.first().eventID().run()!=1 || iov.last().eventID().run()!=MAX_VAL) {
+//    throw cms::Exception("DatabaseError")
+//      << "@SUB=AlignmentProducer::applyDB"
+//      << "\nTrying to apply "<< setup.get<GlobalPositionRcd>().key().name()
+//      << " with multiple IOVs in tag.\n"
+//      << "Validity range is "
+//      << iov.first().eventID().run() << " - " << iov.last().eventID().run();
+//  }
+
+//  const Rcd & record = setup.get<TrackerAlignmentRcd>();
+  const edm::ValidityInterval & validity = setup.get<TrackerAlignmentRcd>().validityInterval();
+  const edm::IOVSyncValue first1 = validity.first();
+	std::cout << "xiaomeng "<<first1.eventID().run()<<std::endl;
+	unsigned int firstrun = first1.eventID().run();
+	if(themultiIOV){
+		if(theIOVrangeSet.size()!=1){
+		bool findMatchIOV=false;
+		for (unsigned int iovl = 0; iovl <theIOVrangeSet.size(); iovl++){
+			if(firstrun == theIOVrangeSet.at(iovl)){
+				std::string iovapp = std::to_string(firstrun);
+				iovapp.append(".root");
+				iovapp.insert(0,"_");
+				salignedfile.replace(salignedfile.end()-5, salignedfile.end(),iovapp);
+				siterationfile.replace(siterationfile.end()-5, siterationfile.end(),iovapp);
+				sparameterfile.replace(sparameterfile.end()-5, sparameterfile.end(),iovapp);
+				if(isCollector){
+					outfile2.replace(outfile2.end()-5, outfile2.end(),iovapp);
+					ssurveyfile.replace(ssurveyfile.end()-5, ssurveyfile.end(),iovapp);
+				}
+
+				findMatchIOV=true;
+				break;
+			}
+		}
+		if(!findMatchIOV){
+			std::cout <<"error! Didn't find the matched IOV file"<<std::endl;
+		}
+		}
+		else{
+				std::string iovapp = std::to_string(theIOVrangeSet.at(0));
+				iovapp.append(".root");
+				iovapp.insert(0,"_");
+				salignedfile.replace(salignedfile.end()-5, salignedfile.end(),iovapp);
+				siterationfile.replace(siterationfile.end()-5, siterationfile.end(),iovapp);
+		}
+		std::cout<< "xiaomeng "<< salignedfile <<std::endl;
+	}
 	
   // accessor Det->AlignableDet
   if ( !muon )
@@ -198,6 +241,7 @@ void HIPAlignmentAlgorithm::startNewLoop( void )
     }
 	
   // try to read in alignment parameters from a previous iteration
+	//
   AlignablePositions theAlignablePositionsFromFile =
     theIO.readAlignableAbsolutePositions(theAlignables,
 					 salignedfile.c_str(),-1,ioerr);
@@ -230,10 +274,14 @@ void HIPAlignmentAlgorithm::startNewLoop( void )
 		
     // get iteration number from file     
     theIteration = readIterationFile(siterationfile);
+		theIO.readAlignableAbsolutePositions(theAlignables,
+		           salignedfile.c_str(),theIteration,ioerr);
 		
     // increase iteration
-    theIteration++;
-    edm::LogWarning("Alignment") <<"[HIPAlignmentAlgorithm] Iteration increased by one!";
+		if(ioerr==0){
+	    theIteration++;
+  	  edm::LogWarning("Alignment") <<"[HIPAlignmentAlgorithm] Iteration increased by one!";
+		}
 		
     // now apply psotions of file from prev iteration
     edm::LogWarning("Alignment") <<"[HIPAlignmentAlgorithm] Apply positions from file ...";
@@ -325,12 +373,14 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
   edm::LogWarning("Alignment") << "[HIPAlignmentAlgorithm] Terminating";
 	
   // calculating survey residuals
-  if (theLevels.size() > 0)
+  if (theLevels.size() > 0 )
     {
       edm::LogWarning("Alignment") << "[HIPAlignmentAlgorithm] Using survey constraint";
 		
       unsigned int nAlignable = theAlignables.size();
-		
+	  edm::ESHandle<TrackerTopology> tTopoHandle;
+  iSetup.get<IdealGeometryRecord>().get(tTopoHandle);
+  const TrackerTopology* const tTopo = tTopoHandle.product();	
       for (unsigned int i = 0; i < nAlignable; ++i)
 	{
 	  const Alignable* ali = theAlignables[i];
@@ -339,7 +389,15 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
 			
 	  HIPUserVariables* uservar =
 	    dynamic_cast<HIPUserVariables*>(ap->userVariables());
-			
+   int nhit = uservar->nhit;
+
+      // get position
+      std::pair<int,int> tl = theAlignmentParameterStore->typeAndLayer(ali, tTopo);
+      int tmp_Type = tl.first;
+      int tmp_Layer = tl.second;
+      GlobalPoint pos = ali->surface().position();
+      float tmpz = pos.z();
+  if(nhit< 1500 || (tmp_Type==5 && tmp_Layer==4 && fabs(tmpz)>90)){	
 	  for (unsigned int l = 0; l < theLevels.size(); ++l)
 	    {
 	      SurveyResidual res(*ali, theLevels[l], true);
@@ -361,6 +419,7 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
 		  theTree3->Fill();
 		}
 	    }
+	}
 			
 	  // 	align::LocalVectors residuals = res1.pointsResidual();
 			
@@ -384,7 +443,8 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
 	
   // write user variables
   HIPUserVariablesIORoot HIPIO;
-  HIPIO.writeHIPUserVariables (theAlignables,suvarfile.c_str(),
+	if(!isCollector)
+   HIPIO.writeHIPUserVariables (theAlignables,suvarfile.c_str(),
 			       theIteration,false,ioerr);
 	
   // now calculate alignment corrections ...
@@ -429,11 +489,13 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup)
   writeIterationFile(siterationfile,theIteration);
 	
   // write out trees and close root file
-	
+		
   // eventwise tree
+  if (theFillTrackMonitoring) {
   theFile->cd();
   theTree->Write();
   delete theFile;
+	}
 	
   if (theLevels.size() > 0){
     theFile3->cd();
@@ -1059,17 +1121,19 @@ HIPAlignmentAlgorithm::calcAPE(double* par, int iter, double function)
 
 void HIPAlignmentAlgorithm::bookRoot(void)
 {
-  // create ROOT files
-  theFile = new TFile(outfile.c_str(),"update");
-  theFile->cd();
-	
-  // book event-wise ROOT Tree
-	
   TString tname="T1";
   char iterString[5];
   snprintf(iterString, sizeof(iterString), "%i",theIteration);
   tname.Append("_");
   tname.Append(iterString);
+
+  // create ROOT files
+ //if (theFillTrackMonitoring) {
+  theFile = new TFile(outfile.c_str(),"update");
+  theFile->cd();
+	
+  // book event-wise ROOT Tree
+	
 	
   theTree  = new TTree(tname,"Eventwise tree");
 	
@@ -1090,7 +1154,7 @@ void HIPAlignmentAlgorithm::bookRoot(void)
   theTree->Branch("Chi2n",    m_Chi2n,   "Chi2n[Ntracks]/F");
   theTree->Branch("d0",       m_d0,      "d0[Ntracks]/F");
   theTree->Branch("dz",       m_dz,      "dz[Ntracks]/F");
-  
+	//}  
   // book Alignable-wise ROOT Tree
 	
   theFile2 = new TFile(outfile2.c_str(),"update");

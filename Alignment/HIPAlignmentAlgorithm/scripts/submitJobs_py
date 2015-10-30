@@ -7,12 +7,24 @@ set workdir = `cd ../../; pwd`
 set iter = $1                          # final iteration number
 set odir = `cd $2; pwd`                # get full output path
 set name = `basename $odir`            # for job name
+set iovfile = `basename $3`
 set jobs = `ls -d $odir/job*/ | wc -l` # number of jobs
-set queue = cmscaf1nh                   # pick queue to run on
+set queue = cmscaf1nd                   # pick queue to run on
 set startdir = `pwd`
 ## Submit jobs and iterate
 
-@ i = `cat $odir/main/IOIteration.root` + 1
+cp $3 $odir
+set k = 0
+
+foreach line ( "`cat $odir/$iovfile`" )
+	@ k++
+  echo $line
+	cmsRun $odir/main/initial_cfg_$k.py >& $odir/main/initial_$line.out
+	set lastrun = $line
+end
+
+
+@ i = `cat $odir/main/IOIteration_$lastrun.root` + 1
 
 while (`bjobs -d -w |& grep $name/requeue$i` != "") # check if job name exists
   set name = $name/ # make job name unique to avoid name clash
@@ -58,11 +70,21 @@ while ($i <= $iter)
         endif
     end
     echo "submit collect..."
-    bsub -q $queue -C 0 -J $name/collect$i -w "$collectwaitcondition" \
-         -oo $odir/main/collect$i.out $odir/main/runScript.csh $workdir
+    bsub -q $queue -C 0 -J $name/collect$i\[1-$k\] -w "$collectwaitcondition" \
+    	   -oo $odir/main/collect$i"_"%I.out $odir/main/runScript_\$LSB_JOBINDEX.csh $workdir
+#    foreach line ( "`cat $odir/$iovfile`" )
+#  		echo $line
+#    	bsub -q $queue -C 0 -J $name/collect_$i"_$line" -w "done($id)" \
+#      	   -oo $odir/main/collect_$line"_$i.out" $odir/main/runScript_$line.csh $workdir
+#      set id = `bjobs -J $name/collect_$line"_$i" | tail -n1 | awk '{print $1}'`
+#			set lastcollect = $name/collect_$line"_$i"
+#		end
 
+   set collectid = `bjobs -J $name/collect$i | tail -n1 | awk '{print $1}'`
 	 echo "submit stoprequeue"
-    bsub -q $queue -C 0 -J $name/stopreq$i -w "ended($name/collect$i)" \
+    #bsub -q $queue -C 0 -J $name/stopreq$i -w "ended($name/collect$i)" \
+    #bsub -q $queue -C 0 -J $name/stopreq$i -w "ended($lastcollect)" \
+    bsub -q $queue -C 0 -J $name/stopreq$i -w "ended($collectid)" \
          -o /dev/null bkill -J $name/requeue$i
 
     #new
@@ -84,22 +106,29 @@ while ($i <= $iter)
   endif
 
   sleep 5
-  if (`bjobs -d -J $name/collect$i | tail -n1 | grep EXIT` != "") exit 1
+#  foreach line ( "`cat $odir/$iovfile`" )
+   if (`bjobs -d -J $name/collect_$i | tail -n1 | grep EXIT` != "") exit 1
+#	end
 #check if something went wrong, in case warn the owner of the job
 #create a db every 10 iters as a backup
   cd $odir/main/
     ./checkError.sh $USER
     @ errstatus = $?
     if ($errstatus == 0) then
-    @ mod =  $i % 5 
+    @ mod =  $i % 1 
    # echo "Modulus is $mod"
 	if ( $mod == 0 && $COLLECT_ERROR == 0 )	then
 	cd ${CMSSW_BASE}/src/
 	eval `scramv1 runtime -csh`
 	cd $odir
-	cp $odir/main/IOIteration.root $odir/
-	cp $odir/main/IOAlignedPositions.root $odir/
-	cmsRun upload_cfg.py > upload_iter${i}.out
+	cp $odir/main/IOIteration*.root $odir/
+	cp $odir/main/IOAlignedPositions*.root $odir/
+#	cmsRun upload_cfg.py > upload_iter${i}.out
+	set kk = 0
+  foreach line ( "`cat $odir/$iovfile`" )
+	  @ kk++
+    cmsRun upload_cfg_$kk".py" > upload_$line"_$i.out"
+  end
 	mv alignments.db alignments_iter${i}.db
 	rm -f $odir/*.root
 	cd -
