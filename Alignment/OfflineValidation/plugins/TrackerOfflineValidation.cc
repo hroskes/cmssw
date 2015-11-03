@@ -274,7 +274,6 @@ private:
   const std::string moduleDirectory_;
   const bool mergeMode_;
   const std::vector<std::string> mergeFiles_;
-  std::vector<TFile*> mergeTFiles_;
   
   // a vector to keep track which pointers should be deleted at the very end
   std::vector<TH1*> vDeleteObjects_;
@@ -302,6 +301,8 @@ private:
   std::vector<std::tuple<int,TH1*,TH1*> > summaryBins_;
   //To fill the sum hists, just store pairs of TH1*.  At the end, first->Add(second).
   std::vector<std::pair<TH1*,TH1*> > sumHistStructure_;
+  //for merge mode - this is done before sumHistStructure_
+  std::vector<std::pair<TH1*,std::string> > mergeHistStructure_;
   //sum hists are fit at the end using fitResiduals()
   std::vector<TH1*> toFit_;
 };
@@ -398,13 +399,6 @@ TrackerOfflineValidation::~TrackerOfflineValidation()
   for( std::vector<TH1*>::const_iterator it = vDeleteObjects_.begin(), itEnd = vDeleteObjects_.end(); 
        it != itEnd;
        ++it) delete *it;
-  for (std::vector<TFile*>::const_iterator it = mergeTFiles_.begin(); it != mergeTFiles_.end(); ++it) {
-    //https://sft.its.cern.ch/jira/browse/ROOT-1508
-    gROOT->GetListOfFiles()->Remove(*it);
-  }
-  for (std::vector<TFile*>::const_iterator it = mergeTFiles_.begin(); it != mergeTFiles_.end(); ++it) {
-    delete *it;
-  }
 }
 
 
@@ -422,13 +416,6 @@ TrackerOfflineValidation::checkBookHists(const edm::EventSetup& es)
   if (newBareTkGeomPtr == bareTkGeomPtr_) return; // already booked hists, nothing changed
 
   if (!bareTkGeomPtr_) { // pointer not yet set: called the first time => book hists
-
-    if (mergeMode_) {
-      //open the files to merge
-      for (std::vector<std::string>::const_iterator it = mergeFiles_.begin(); it != mergeFiles_.end(); ++it) {
-        mergeTFiles_.push_back(TFile::Open(it->c_str()));
-      }
-    }
 
     //Retrieve tracker topology from geometry
     edm::ESHandle<TrackerTopology> tTopoHandle;
@@ -639,11 +626,9 @@ TrackerOfflineValidation::bookGlobalHists(DirectoryWrapper& tfd )
 					   "res_{y'} vs momentum in FPix;p [GeV]; res_{y'}",
 					   15,0.,15., 200, -0.1,0.1)); 
 
-  for (std::vector<TFile*>::const_iterator itfile = mergeTFiles_.begin(); itfile != mergeTFiles_.end(); ++itfile) {
-    for (std::vector<TH1*>::const_iterator ithist = vTrackHistos_.begin(); ithist != vTrackHistos_.end(); ++ithist) {
-      TH1 *filehist = (TH1*)((*itfile)->Get((tfd.tfd->fullPath()+"/"+(*ithist)->GetName()).c_str()));
-      sumHistStructure_.emplace_back(*ithist, filehist);
-    }
+  for (std::vector<TH1*>::const_iterator ithist = vTrackHistos_.begin(); ithist != vTrackHistos_.end(); ++ithist) {
+    std::string histname = tfd.tfd->fullPath()+"/"+(*ithist)->GetName();
+    mergeHistStructure_.emplace_back(*ithist, histname);
   }
 }
 
@@ -832,35 +817,33 @@ TrackerOfflineValidation::bookHists(DirectoryWrapper& tfd, const Alignable& ali,
       }
     }
     if (mergeMode_) {
-      for (std::vector<TFile*>::const_iterator it = mergeTFiles_.begin(); it != mergeTFiles_.end(); ++it) {
-        TH1 *ResHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+histoname.str()).c_str()));
-        TH1 *NormResHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+normhistoname.str()).c_str()));
-        TH1 *ResXprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+xprimehistoname.str()).c_str()));
-        TH1 *NormResXprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+normxprimehistoname.str()).c_str()));
-        TH1 *LocalX = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+localxname.str()).c_str()));
-        TH1 *LocalY = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+localyname.str()).c_str()));
-        TH1 *ResXvsXProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resxvsxprofilename.str()).c_str()));
-        TH1 *ResXvsYProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resxvsyprofilename.str()).c_str()));
-        TH1 *ResYprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+yprimehistoname.str()).c_str()));
-        TH1 *ResYHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+yhistoname.str()).c_str()));
-        TH1 *NormResYprimeHisto = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+normyprimehistoname.str()).c_str()));
-        TH1 *ResYvsXProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resyvsxprofilename.str()).c_str()));
-        TH1 *ResYvsYProfile = (TH1*)((*it)->Get((tfd.tfd->fullPath()+"/"+resyvsyprofilename.str()).c_str()));
+      std::string ResHistoName = tfd.tfd->fullPath()+"/"+histoname.str();
+      std::string NormResHistoName = tfd.tfd->fullPath()+"/"+normhistoname.str();
+      std::string ResXprimeHistoName = tfd.tfd->fullPath()+"/"+xprimehistoname.str();
+      std::string NormResXprimeHistoName = tfd.tfd->fullPath()+"/"+normxprimehistoname.str();
+      std::string LocalXName = tfd.tfd->fullPath()+"/"+localxname.str();
+      std::string LocalYName = tfd.tfd->fullPath()+"/"+localyname.str();
+      std::string ResXvsXProfileName = tfd.tfd->fullPath()+"/"+resxvsxprofilename.str();
+      std::string ResXvsYProfileName = tfd.tfd->fullPath()+"/"+resxvsyprofilename.str();
+      std::string ResYprimeHistoName = tfd.tfd->fullPath()+"/"+yprimehistoname.str();
+      std::string ResYHistoName = tfd.tfd->fullPath()+"/"+yhistoname.str();
+      std::string NormResYprimeHistoName = tfd.tfd->fullPath()+"/"+normyprimehistoname.str();
+      std::string ResYvsXProfileName = tfd.tfd->fullPath()+"/"+resyvsxprofilename.str();
+      std::string ResYvsYProfileName = tfd.tfd->fullPath()+"/"+resyvsyprofilename.str();
 
-        if (ResHisto) sumHistStructure_.emplace_back(histStruct.ResHisto, ResHisto);
-        if (NormResHisto) sumHistStructure_.emplace_back(histStruct.NormResHisto, NormResHisto);
-        if (ResXprimeHisto) sumHistStructure_.emplace_back(histStruct.ResXprimeHisto, ResXprimeHisto);
-        if (NormResXprimeHisto) sumHistStructure_.emplace_back(histStruct.NormResXprimeHisto, NormResXprimeHisto);
-        if (LocalX) sumHistStructure_.emplace_back(histStruct.LocalX, LocalX);
-        if (LocalY) sumHistStructure_.emplace_back(histStruct.LocalY, LocalY);
-        if (ResXvsXProfile) sumHistStructure_.emplace_back(histStruct.ResXvsXProfile, ResXvsXProfile);
-        if (ResXvsYProfile) sumHistStructure_.emplace_back(histStruct.ResXvsYProfile, ResXvsYProfile);
-        if (ResYprimeHisto) sumHistStructure_.emplace_back(histStruct.ResYprimeHisto, ResYprimeHisto);
-        if (ResYHisto) sumHistStructure_.emplace_back(histStruct.ResYHisto, ResYHisto);
-        if (NormResYprimeHisto) sumHistStructure_.emplace_back(histStruct.NormResYprimeHisto, NormResYprimeHisto);
-        if (ResYvsXProfile) sumHistStructure_.emplace_back(histStruct.ResYvsXProfile, ResYvsXProfile);
-        if (ResYvsYProfile) sumHistStructure_.emplace_back(histStruct.ResYvsYProfile, ResYvsYProfile);
-      }
+      if (histStruct.ResHisto) mergeHistStructure_.emplace_back(histStruct.ResHisto, ResHistoName);
+      if (histStruct.NormResHisto) mergeHistStructure_.emplace_back(histStruct.NormResHisto, NormResHistoName);
+      if (histStruct.ResXprimeHisto) mergeHistStructure_.emplace_back(histStruct.ResXprimeHisto, ResXprimeHistoName);
+      if (histStruct.NormResXprimeHisto) mergeHistStructure_.emplace_back(histStruct.NormResXprimeHisto, NormResXprimeHistoName);
+      if (histStruct.LocalX) mergeHistStructure_.emplace_back(histStruct.LocalX, LocalXName);
+      if (histStruct.LocalY) mergeHistStructure_.emplace_back(histStruct.LocalY, LocalYName);
+      if (histStruct.ResXvsXProfile) mergeHistStructure_.emplace_back(histStruct.ResXvsXProfile, ResXvsXProfileName);
+      if (histStruct.ResXvsYProfile) mergeHistStructure_.emplace_back(histStruct.ResXvsYProfile, ResXvsYProfileName);
+      if (histStruct.ResYprimeHisto) mergeHistStructure_.emplace_back(histStruct.ResYprimeHisto, ResYprimeHistoName);
+      if (histStruct.ResYHisto) mergeHistStructure_.emplace_back(histStruct.ResYHisto, ResYHistoName);
+      if (histStruct.NormResYprimeHisto) mergeHistStructure_.emplace_back(histStruct.NormResYprimeHisto, NormResYprimeHistoName);
+      if (histStruct.ResYvsXProfile) mergeHistStructure_.emplace_back(histStruct.ResYvsXProfile, ResYvsXProfileName);
+      if (histStruct.ResYvsYProfile) mergeHistStructure_.emplace_back(histStruct.ResYvsYProfile, ResYvsYProfileName);
     }
   }
 }
@@ -1385,6 +1368,31 @@ TrackerOfflineValidation::prepareSummaryHists( DirectoryWrapper& tfd, const Alig
 void
 TrackerOfflineValidation::collateSummaryHists()
 {
+    for (std::vector<std::string>::const_iterator itfile = mergeFiles_.begin();
+             itfile != mergeFiles_.end();
+             ++itfile)
+    {
+      const TString file(*itfile);
+      std::cout << "opening " << file << std::endl;
+      TFile *f = TFile::Open(file);
+      int i = 1;
+      const unsigned int hists = mergeHistStructure_.size();
+      for (std::vector<std::pair<TH1*,std::string> >::const_iterator ithist = mergeHistStructure_.begin();
+             ithist != mergeHistStructure_.end();
+             ++ithist, ++i)
+      {
+        ithist->first->Add((TH1*)(f->Get(ithist->second.c_str())));
+        if (i % 1000 == 0)
+        {
+          delete f;
+          f = TFile::Open(file);
+          std::cout << "Merged " << i << " of " << hists << " histograms from " << *itfile << std::endl;
+        }
+      }
+      std::cout << "closing " << file << std::endl;
+      delete f;
+    }
+
     for (std::vector<std::pair<TH1*,TH1*> >::const_iterator it = sumHistStructure_.begin();
            it != sumHistStructure_.end();
            ++it)
