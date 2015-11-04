@@ -626,10 +626,11 @@ TrackerOfflineValidation::bookGlobalHists(DirectoryWrapper& tfd )
 					   "res_{y'} vs momentum in FPix;p [GeV]; res_{y'}",
 					   15,0.,15., 200, -0.1,0.1)); 
 
-  for (std::vector<TH1*>::const_iterator ithist = vTrackHistos_.begin(); ithist != vTrackHistos_.end(); ++ithist) {
-    std::string histname = tfd.tfd->fullPath()+"/"+(*ithist)->GetName();
-    mergeHistStructure_.emplace_back(*ithist, histname);
-  }
+  if (mergeMode_)
+    for (std::vector<TH1*>::const_iterator ithist = vTrackHistos_.begin(); ithist != vTrackHistos_.end(); ++ithist) {
+      std::string histname = tfd.tfd->fullPath()+"/"+(*ithist)->GetName();
+      mergeHistStructure_.emplace_back(*ithist, histname);
+    }
 }
 
 
@@ -1368,29 +1369,41 @@ TrackerOfflineValidation::prepareSummaryHists( DirectoryWrapper& tfd, const Alig
 void
 TrackerOfflineValidation::collateSummaryHists()
 {
-    for (std::vector<std::string>::const_iterator itfile = mergeFiles_.begin();
-             itfile != mergeFiles_.end();
-             ++itfile)
+    if (mergeMode_)
     {
-      const TString file(*itfile);
-      std::cout << "opening " << file << std::endl;
-      TFile *f = TFile::Open(file);
-      int i = 1;
-      const unsigned int hists = mergeHistStructure_.size();
-      for (std::vector<std::pair<TH1*,std::string> >::const_iterator ithist = mergeHistStructure_.begin();
-             ithist != mergeHistStructure_.end();
-             ++ithist, ++i)
+      edm::LogInfo("TrackerOfflineValidation") << "Merging histograms from " << mergeFiles_.size() << " files";
+      for (std::vector<std::string>::const_iterator itfile = mergeFiles_.begin();
+               itfile != mergeFiles_.end();
+               ++itfile)
       {
-        ithist->first->Add((TH1*)(f->Get(ithist->second.c_str())));
-        if (i % 1000 == 0)
+        const TString file(*itfile);
+        edm::LogVerbatim("TrackerOfflineValidation") << "opening " << file;
+        TFile *f = TFile::Open(file);
+        int i = 1;
+        const unsigned int hists = mergeHistStructure_.size();
+        for (std::vector<std::pair<TH1*,std::string> >::const_iterator ithist = mergeHistStructure_.begin();
+               ithist != mergeHistStructure_.end();
+               ++ithist, ++i)
         {
-          delete f;
-          f = TFile::Open(file);
-          std::cout << "Merged " << i << " of " << hists << " histograms from " << *itfile << std::endl;
+          ithist->first->Add((TH1*)(f->Get(ithist->second.c_str())));
+          if (i % 1000 == 0)
+          {
+            if (!file.Contains("root://");
+            {
+              /*
+              Closing the ROOT files is very slow if many histograms from them have been used.
+              Closing and reopening them every 1000 histograms makes it a bit (~10%) faster if the files are local.
+              In my tests 100 or 10000 are worse than not closing at all.
+              */
+              delete f;
+              f = TFile::Open(file);
+            }
+            edm::LogVerbatim("TrackerOfflineValidation") << "Merged " << i << " of " << hists << " histograms from " << *itfile;
+          }
         }
+        edm::LogVerbatim("TrackerOfflineValidation") << "closing " << file;
+        delete f;
       }
-      std::cout << "closing " << file << std::endl;
-      delete f;
     }
 
     for (std::vector<std::pair<TH1*,TH1*> >::const_iterator it = sumHistStructure_.begin();
