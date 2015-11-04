@@ -47,6 +47,7 @@ cd .oO[CMSSW_BASE]Oo./src
 export SCRAM_ARCH=.oO[SCRAM_ARCH]Oo.
 eval `scramv1 ru -sh`
 #rfmkdir -p .oO[datadir]Oo. &>! /dev/null
+$eos mkdir -p /store/caf/user/$USER/.oO[eosdir]Oo./
 
 #remove possible result file from previous runs
 previous_results=$($eos ls /store/caf/user/$USER/.oO[eosdir]Oo.)
@@ -88,7 +89,6 @@ gzip -f LOGFILE_*_.oO[name]Oo..log
 find . -maxdepth 1 -name "LOGFILE*.oO[alignmentName]Oo.*" -print | xargs -I {} bash -c "rfcp {} .oO[logdir]Oo."
 
 #copy root files to eos
-$eos mkdir -p /store/caf/user/$USER/.oO[eosdir]Oo.
 if [ .oO[parallelJobs]Oo. -eq 1 ]
 then
     root_files=$(ls --color=never -d *.oO[alignmentName]Oo.*.root)
