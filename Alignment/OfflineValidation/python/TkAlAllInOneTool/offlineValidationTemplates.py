@@ -187,27 +187,16 @@ process.offlineBeamSpot*process.HighPuritySelector*process.TrackRefitter1*proces
 
 """
 
-
-######################################################################
-######################################################################
-mergeOfflineParJobsTemplate="""
-#include ".oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation/scripts/merge_TrackerOfflineValidation.C"
-
-int TkAlOfflineJobsMerge(TString pars, TString outFile)
-{
-// load framework lite just to find the CMSSW libs...
-gSystem->Load("libFWCoreFWLite");
-AutoLibraryLoader::enable();
-
-return hadd(pars, outFile);
-}
-"""
-
-
 ######################################################################
 ######################################################################
 offlineFileOutputTemplate = """
 process.TFileService.fileName = '.oO[outputFile]Oo.'
+"""
+
+######################################################################
+######################################################################
+offlineMergeFileOutputTemplate = """
+process.TFileService.fileName = '.oO[finalOutputFile]Oo.'
 """
 
 ######################################################################
@@ -218,11 +207,6 @@ process.DqmSaverTkAl.workflow = '.oO[workflow]Oo.'
 process.DqmSaverTkAl.dirName = '.oO[workdir]Oo./.'
 process.DqmSaverTkAl.forceRunNumber = .oO[firstRunNumber]Oo.
 """
-#offlineDqmFileOutputTemplate = """
-#process.TrackerOfflineValidation.oO[offlineValidationMode]Oo..workflow =  .oO[workflow]Oo.
-#process.TrackerOfflineValidation.oO[offlineValidationMode]Oo..dirName = .oO[workdir]Oo./.
-#process.TrackerOfflineValidation.oO[offlineValidationMode]Oo..forceRunNumber = .oO[firstRunNumber]Oo.
-#"""
 
 
 ######################################################################
@@ -283,3 +267,9 @@ process.TrackerTrackHitFilter.usePixelQualityFlag= True
 
 """
 
+mergeModeCfgTemplateAddOn = """
+process.TrackerOfflineValidation.oO[offlineValidationMode]Oo..useInMergeMode = True
+process.TrackerOfflineValidation.oO[offlineValidationMode]Oo..mergeFiles = cms.untracked.vstring([
+".oO[mergeFiles]Oo.",
+])
+"""

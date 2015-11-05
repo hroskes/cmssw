@@ -124,7 +124,7 @@ class GenericValidation:
                 raise AllInOneError(msg)
             return result[ requestId.split(".")[-1] ]
 
-    def createFiles(self, fileContents, path, repMap = None, repMaps = None):
+    def createFiles(self, fileContents, path, repMap = None, repMaps = None, oneperjob = True):
         """repMap: single map for all files
            repMaps: a dict, with the filenames as the keys"""
         if repMap is not None and repMaps is not None:
@@ -133,8 +133,12 @@ class GenericValidation:
         for fileName in fileContents:
             filePath = os.path.join(path, fileName)
             result.append(filePath)
+            if oneperjob:
+                filePaths = addIndex(filePath, self.NJobs)
+            else:
+                filePaths = [filePath]
 
-            for (i, filePathi) in enumerate(addIndex(filePath, self.NJobs)):
+            for (i, filePathi) in enumerate(filePaths):
                 theFile = open( filePathi, "w" )
                 fileContentsi = fileContents[ fileName ]
                 if repMaps is not None:
@@ -147,9 +151,9 @@ class GenericValidation:
 
         return result
 
-    def createConfiguration(self, fileContents, path, schedule = None, repMap = None, repMaps = None):
+    def createConfiguration(self, fileContents, path, schedule = None, repMap = None, repMaps = None, oneperjob = True):
         self.configFiles = GenericValidation.createFiles(self, fileContents,
-                                                         path, repMap = repMap, repMaps = repMaps)
+                                                         path, repMap = repMap, repMaps = repMaps, oneperjob = oneperjob)
         if not schedule == None:
             schedule = [os.path.join( path, cfgName) for cfgName in schedule]
             for cfgName in schedule:
@@ -165,9 +169,9 @@ class GenericValidation:
             self.configFiles = schedule
         return self.configFiles
 
-    def createScript(self, fileContents, path, downloadFiles=[], repMap = None, repMaps = None):
+    def createScript(self, fileContents, path, downloadFiles=[], repMap = None, repMaps = None, oneperjob = True):
         self.scriptFiles = GenericValidation.createFiles(self, fileContents,
-                                                         path, repMap = repMap, repMaps = repMaps)
+                                                         path, repMap = repMap, repMaps = repMaps, oneperjob = oneperjob)
         for script in self.scriptFiles:
             for scriptwithindex in addIndex(script, self.NJobs):
                 os.chmod(scriptwithindex,0755)
@@ -340,7 +344,7 @@ class GenericValidationData(GenericValidation):
                 "finalResultFile": resultfile,
                 "outputFile": ".oO[outputFiles[.oO[nIndex]Oo.]]Oo.",
                 "outputFiles": addIndex(outputfile, self.NJobs),
-                "finalOutputFile": outputfile
+                "finalOutputFile": outputfile,
                 })
         return result
 

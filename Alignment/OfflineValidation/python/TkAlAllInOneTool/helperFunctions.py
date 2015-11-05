@@ -20,12 +20,16 @@ def replaceByMap(target, the_map):
                     result = result.replace(".oO["+key+"]Oo.",the_map[key])
                 except TypeError:   #try a dict
                     try:
-                        for keykey, value in the_map[key].iteritems():
-                           result = result.replace(".oO[" + key + "['" + keykey + "']]Oo.", value)
-                           result = result.replace(".oO[" + key + '["' + keykey + '"]]Oo.', value)
-                    except AttributeError:   #try a list
-                        for index, value in enumerate(the_map[key]):
-                            result = result.replace(".oO[" + key + "[" + str(index) + "]]Oo.", value)
+                        try:
+                            for keykey, value in the_map[key].iteritems():
+                               result = result.replace(".oO[" + key + "['" + keykey + "']]Oo.", value)
+                               result = result.replace(".oO[" + key + '["' + keykey + '"]]Oo.', value)
+                        except AttributeError:   #try a list
+                            for index, value in enumerate(the_map[key]):
+                                result = result.replace(".oO[" + key + "[" + str(index) + "]]Oo.", value)
+                    except TypeError:   #give up
+                        raise AllInOneError("value in repMap needs to be a string, not " + type(the_mapkey) + "\n {" + key + ", " + value + "}")
+                                
                 iteration += 1
             if iteration > lifeSaver:
                 problematicLines = ""

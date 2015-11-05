@@ -28,6 +28,7 @@ class OfflineValidation(GenericValidationData):
         self.resultBaseName = resultBaseName
         self.outputBaseName = outputBaseName
         self.needParentFiles = False
+        self.mergeConfig = None
         GenericValidationData.__init__(self, valName, alignment, config,
                                        "offline", addDefaults=defaults,
                                        addMandatories=mandatories)
@@ -41,16 +42,16 @@ class OfflineValidation(GenericValidationData):
                    " set offlineModuleLevelHistsTransient to false.")
             raise AllInOneError(msg)
 
-        templateToUse = configTemplates.offlineTemplate
+        self.templateToUse = configTemplates.offlineTemplate
         if self.AutoAlternates:
             if "Cosmics" in self.general["trackcollection"]:
                 Bfield = self.dataset.magneticFieldForRun()
                 if Bfield > 3.3 and Bfield < 4.3:                 #Should never be 4.3, but this covers strings, which always compare bigger than ints
-                    templateToUse = configTemplates.CosmicsOfflineValidation
+                    self.templateToUse = configTemplates.CosmicsOfflineValidation
                     print ("B field for %s = %sT.  Using the template for cosmics at 3.8T.\n"
                            "To override this behavior, specify AutoAlternates = false in the [alternateTemplates] section") % (self.dataset.name(), Bfield)
                 elif Bfield < 0.5:
-                    templateToUse = configTemplates.CosmicsAt0TOfflineValidation
+                    self.templateToUse = configTemplates.CosmicsAt0TOfflineValidation
                     print ("B field for %s = %sT.  Using the template for cosmics at 0T.\n"
                            "To override this behavior, specify AutoAlternates = false in the [alternateTemplates] section") % (self.dataset.name(), Bfield)
                 else:
@@ -65,10 +66,21 @@ class OfflineValidation(GenericValidationData):
                                         "To use this data, turn off the automatic alternates using AutoAlternates = false\n"
                                         "in the [alternateTemplates] section, and choose the alternate template yourself.")
 
-        cfgs = {cfgName: templateToUse}
+        cfgs = {cfgName: self.templateToUse}
         self.filesToCompare[
             GenericValidationData.defaultReferenceName ] = repMap["finalResultFile"]
+        if self.NJobs > 1:
+            self.mergeConfig = self.createMergeConfiguration(path)[0]
         return GenericValidationData.createConfiguration(self, cfgs, path, repMap = repMap)
+
+    def createMergeConfiguration(self, path):
+        if self.NJobs == 1:
+            return []
+        cfgName = "%s.%s.%s_merge_cfg.py"%( self.configBaseName, self.name,
+                                            self.alignmentToValidate.name )
+        repMap = self.getRepMap(mergeMode = True)
+        cfgs = {cfgName: self.templateToUse + configTemplates.mergeModeCfgTemplateAddOn}
+        return GenericValidationData.createConfiguration(self, cfgs, path, repMap = repMap, oneperjob = False)
 
     def createScript(self, path):
         return GenericValidationData.createScript(self, path)
@@ -77,16 +89,25 @@ class OfflineValidation(GenericValidationData):
     def createCrabCfg(self, path):
         return GenericValidationData.createCrabCfg(self, path, self.crabCfgBaseName)
 
-    def getRepMap(self, alignment = None):
+    def getRepMap(self, alignment = None, mergeMode = False):
         repMap = GenericValidationData.getRepMap(self, alignment)
         repMap.update({
-            "nEvents": self.general["maxevents"],
             "TrackSelectionTemplate": configTemplates.TrackSelectionTemplate,
             "LorentzAngleTemplate": configTemplates.LorentzAngleTemplate,
             "offlineValidationMode": "Standalone",
-            "offlineValidationFileOutput": configTemplates.offlineFileOutputTemplate,
             "TrackCollection": self.general["trackcollection"],
             })
+        if not mergeMode:   #for the standard configs
+            repMap.update({
+                 "nEvents": self.general["maxevents"],
+                 "offlineValidationFileOutput": configTemplates.offlineFileOutputTemplate,
+                 })
+        else:              #for the merge config
+            repMap.update({
+                "nEvents": str(self.NJobs),  #so maxevents = 1
+                "offlineValidationFileOutput": configTemplates.offlineMergeFileOutputTemplate,
+                "mergeFiles": '",\n"'.join(repMap["outputFiles"]),
+                })
 
         return repMap
 
@@ -111,12 +132,8 @@ class OfflineValidation(GenericValidationData):
         """
         repMap = self.getRepMap()
 
-        parameters = "root://eoscms//eos/cms" + ",root://eoscms//eos/cms".join(repMap["resultFiles"])
-
-        mergedoutputfile = "root://eoscms//eos/cms%(finalResultFile)s"%repMap
-        validationsSoFar += ('root -x -b -q -l "TkAlOfflineJobsMerge.C(\\\"'
-                             +parameters+'\\\",\\\"'+mergedoutputfile+'\\\")"'
-                             +"\n")
+        validationsSoFar += "cmsRun " + self.mergeConfig + " &&\n"
+        validationsSoFar += "xrdcp -f %(finalOutputFile)s root://eoscms//eos/cms%(finalResultFile)s\n"%repMap
         return validationsSoFar
 
 class OfflineValidationDQM(OfflineValidation):

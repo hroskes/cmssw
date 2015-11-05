@@ -1388,7 +1388,7 @@ TrackerOfflineValidation::collateSummaryHists()
           ithist->first->Add((TH1*)(f->Get(ithist->second.c_str())));
           if (i % 1000 == 0)
           {
-            if (!file.Contains("root://");
+            if (!file.Contains("root://"))
             {
               /*
               Closing the ROOT files is very slow if many histograms from them have been used.

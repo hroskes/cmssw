@@ -239,13 +239,6 @@ class ValidationJob:
 
 
 ####################--- Functions ---############################
-def createOfflineParJobsMergeScript(offlineValidationList, outFilePath):
-    repMap = offlineValidationList[0].getRepMap() # bit ugly since some special features are filled
-    
-    theFile = open( outFilePath, "w" )
-    theFile.write( replaceByMap( configTemplates.mergeOfflineParJobsTemplate ,repMap ) )
-    theFile.close()
-
 def createExtendedValidationScript(offlineValidationList, outFilePath, resultPlotFile):
     repMap = offlineValidationList[0].getRepMap() # bit ugly since some special features are filled
     repMap[ "CMSSW_BASE" ] = os.environ['CMSSW_BASE']
@@ -334,13 +327,6 @@ def createMergeScript( path, validations ):
                              " files won't be deleted.\\n"
                              "(Ignore this warning if merging was done earlier)\"\n"
                              "fi\n")
-
-    if "OfflineValidation" in anythingToMerge:
-        repMap["mergeOfflineParJobsScriptPath"] = os.path.join(path, "TkAlOfflineJobsMerge.C")
-        createOfflineParJobsMergeScript( comparisonLists["OfflineValidation"],
-                                         repMap["mergeOfflineParJobsScriptPath"] )
-        repMap["copyMergeScripts"] += ("cp .oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation/scripts/merge_TrackerOfflineValidation.C .\n"
-                                       "rfcp %s .\n" % repMap["mergeOfflineParJobsScriptPath"])
 
     if anythingToMerge:
         # DownloadData is the section which merges output files from parallel jobs
