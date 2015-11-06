@@ -386,8 +386,8 @@ TrackerOfflineValidation::TrackerOfflineValidation(const edm::ParameterSet& iCon
     useOverflowForRMS_(parSet_.getParameter<bool>("useOverflowForRMS")),
     dqmMode_(parSet_.getParameter<bool>("useInDqmMode")),
     moduleDirectory_(parSet_.getParameter<std::string>("moduleDirectoryInOutput")),
-    mergeMode_(parSet_.getParameter<bool>("useInMergeMode")),
-    mergeFiles_(parSet_.getParameter<std::vector<std::string>>("mergeFiles"))
+    mergeMode_(parSet_.getUntrackedParameter<bool>("useInMergeMode")),
+    mergeFiles_(parSet_.getUntrackedParameter<std::vector<std::string>>("mergeFiles"))
 {
 }
 

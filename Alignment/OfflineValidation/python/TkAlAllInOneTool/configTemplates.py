@@ -138,8 +138,8 @@ root_files=$(cmsLs -l /store/caf/user/$USER/.oO[eosdir]Oo. | awk '{print $5}' \
              | grep ".root$" | grep -v "result.root$")
 for file in ${root_files}
 do
-    cmsStage -f ${file} .
-    # echo ${file}
+    xrdcp -f root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./${file} .
+    echo ${file}
 done
 
 
