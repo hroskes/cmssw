@@ -1,9 +1,9 @@
-#include "tdrstyle.C"
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TH1F.h"
 #include "THStack.h"
 #include "TLegend.h"
+#include "TStyle.h"
 #include "TSystem.h"
 #include "TTree.h"
 #include <iostream>
@@ -40,11 +40,39 @@ const int bins = 50;
 vector<double> zerovector3(3);
 vector<double> zerovector13(13);
 
+void style(bool statbox)
+{
+    gStyle->SetCanvasDefH(600);
+    gStyle->SetCanvasDefW(600);
+    gStyle->SetCanvasDefX(0);
+    gStyle->SetCanvasDefY(0);
+    gStyle->SetHistLineColor(1);
+    if (!statbox)
+        gStyle->SetOptStat(0);
+    gStyle->SetStatColor(kWhite);
+    gStyle->SetStatFont(42);
+    gStyle->SetStatFontSize(0.025);
+    gStyle->SetStatTextColor(1);
+    gStyle->SetStatFormat("6.4g");
+    gStyle->SetStatBorderSize(1);
+    gStyle->SetStatH(0.2);
+    gStyle->SetStatW(0.2);
+    gStyle->SetPadTopMargin(0.05);
+    gStyle->SetPadBottomMargin(0.13);
+    gStyle->SetPadLeftMargin(0.16);
+    gStyle->SetPadRightMargin(0.02);
+    gStyle->SetAxisColor(1, "XYZ");
+    gStyle->SetStripDecimals(kTRUE);
+    gStyle->SetTickLength(0.03, "XYZ");
+    gStyle->SetNdivisions(510, "XYZ");
+    gStyle->SetPadTickX(1);
+    gStyle->SetPadTickY(1);
+}
+
 void compareSurfaceDeformations(TString file1, TString file2, TString plotsdir)
 //sign of the plot: file1 - file2
 {
-    setTDRStyle(false);
-    gSystem->mkdir(plotsdir, true);
+    style(true);
     TFile *f = TFile::Open(file1);
     TFile *f2 = TFile::Open(file2);
     TTree *t = (TTree*)f->Get("alignTreeDeformations");
@@ -66,6 +94,7 @@ void compareSurfaceDeformations(TString file1, TString file2, TString plotsdir)
             sname << "h" << l << k;
             stitle << ";" << parametertitles[k] << "(" << parameterunits[k] << ");number of modules / " << 2 * xmax[k] / bins << " " << parameterunits[k];
             h[l][k] = new TH1F(TString(sname.str()), TString(stitle.str()), bins, -xmax[k], xmax[k]);
+            h[l][k]->SetLineColor(1);
         }
     }
     vector<bool> usedentryt2(t2->GetEntries());
@@ -110,10 +139,11 @@ void compareSurfaceDeformations(TString file1, TString file2, TString plotsdir)
         for (int k = 0; k < nparams[l]; k++)
         {
             h[l][k]->Draw();
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".png");
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".eps");
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".pdf");
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".root");
+            TString saveasbase = subdetdir + "/" + TString::Itoa(k, 10) + "_" + parameternames[k];
+            c1->SaveAs(saveasbase + ".png");
+            c1->SaveAs(saveasbase + ".eps");
+            c1->SaveAs(saveasbase + ".pdf");
+            c1->SaveAs(saveasbase + ".root");
             delete h[l][k];
         }
     }
@@ -122,12 +152,12 @@ void compareSurfaceDeformations(TString file1, TString file2, TString plotsdir)
 
 void compareSurfaceDeformations(vector<TString> files, vector<TString> titles, vector<int> colors, vector<int> linestyles, TString plotsdir)
 {
+    style(false);
     if (files.size() != titles.size() || files.size() != colors.size() || files.size() != linestyles.size())
     {
         cout << "files, titles, colors, and linestyles all need to be the same size!" << endl;
         return;
     }
-    setTDRStyle(true);
     THStack *hstack[nsubdets][maxnparams];
     TLegend *leg[nsubdets][maxnparams];
     for (int l = 0; l < nsubdets; l++)
@@ -199,15 +229,16 @@ void compareSurfaceDeformations(vector<TString> files, vector<TString> titles, v
     for (int l = 0; l < nsubdets; l++)
     {
         TString subdetdir = plotsdir + "/" + subdetnames[l];
-        gSystem->mkdir(subdetdir);
+        gSystem->mkdir(subdetdir, true);
         for (int k = 0; k < nparams[l]; k++)
         {
             hstack[l][k]->Draw("nostack");
             leg[l][k]->Draw();
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".png");
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".eps");
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".pdf");
-            c1->SaveAs(subdetdir + "/" + parameternames[k] + ".root");
+            TString saveasbase = subdetdir + "/" + TString::Itoa(k, 10) + "_" + parameternames[k];
+            c1->SaveAs(saveasbase + ".png");
+            c1->SaveAs(saveasbase + ".eps");
+            c1->SaveAs(saveasbase + ".pdf");
+            c1->SaveAs(saveasbase + ".root");
             delete hstack[l][k];
             delete leg[l][k];
             for (unsigned int i = 0; i < files.size(); i++)
@@ -217,4 +248,3 @@ void compareSurfaceDeformations(vector<TString> files, vector<TString> titles, v
     delete[] h;
     delete c1;
 }
-

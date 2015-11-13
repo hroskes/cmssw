@@ -163,3 +163,11 @@ void TkAl3DVisualization_.oO[name]Oo.(){
                     lineycoord );
 }
 """
+
+compareSurfaceDeformationsTemplate = """
+#include ".oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation/macros/compareSurfaceDeformations.C"
+void TkAlCompareSurfaceDeformations_.oO[name]Oo.()
+{
+    compareSurfaceDeformations(".oO[comparedGeometry]Oo.", ".oO[referenceGeometry]Oo.", "CompareSurfaceDeformations");
+}
+"""

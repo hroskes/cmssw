@@ -115,8 +115,8 @@ class GeometryComparison(GenericValidation):
             if  '"DetUnit"' in self.__compares[name][0].split(","):
                 repMap["outputFile"] = (".oO[name]Oo..Comparison_common"+name+".root")
                 repMap["nIndex"] = ("")
-                repMap["runComparisonScripts"] += \
-                    ("rfcp .oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation"
+                repMap["runComparisonScripts"] += (
+                     "rfcp .oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation"
                      "/scripts/comparisonScript.C .\n"
                      "rfcp .oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation"
                      "/scripts/GeometryComparisonPlotter.h .\n"
@@ -126,7 +126,10 @@ class GeometryComparison(GenericValidation):
                      ".oO[name]Oo..Comparison_common"+name+".root\",\""
                      "./\")'\n"
 		     "rfcp "+path+"/TkAl3DVisualization_.oO[name]Oo..C .\n"
-		     "root -l -b -q TkAl3DVisualization_.oO[name]Oo..C+\n")
+		     "root -l -b -q TkAl3DVisualization_.oO[name]Oo..C+\n"
+		     "rfcp "+path+"/TkAlCompareSurfaceDeformations_.oO[name]Oo..C .\n"
+		     "root -l -b -q TkAlCompareSurfaceDeformations_.oO[name]Oo..C+\n"
+                )
                 if  self.copyImages:
                    repMap["runComparisonScripts"] += \
                        ("rfmkdir -p .oO[datadir]Oo./.oO[name]Oo."
@@ -220,6 +223,9 @@ class GeometryComparison(GenericValidation):
                         "-maxdepth 1 -name \".oO[name]Oo..Visualization_rotated.gif\" -print | xargs -I {} bash "
                         "-c \"rfcp {} .oO[datadir]Oo./.oO[name]Oo."
                         ".Comparison_common"+name+"_Images/.oO[name]Oo..Visualization.gif\"\n")
+		   repMap["runComparisonScripts"] += \
+                       ("cp -r CompareSurfaceDeformations/ .oO[datadir]Oo./.oO[name]Oo."
+                        ".Comparison_common"+name+"_Images/\n")
 
                 resultingFile = replaceByMap(("/store/caf/user/$USER/.oO[eosdir]Oo./compared%s_"
                                               ".oO[name]Oo..root"%name), repMap)
@@ -247,7 +253,10 @@ class GeometryComparison(GenericValidation):
 
         #~ print configTemplates.scriptTemplate
         scripts = {scriptName: replaceByMap( configTemplates.scriptTemplate, repMap )}
-	files = {replaceByMap("TkAl3DVisualization_.oO[name]Oo..C", repMap ): replaceByMap(configTemplates.visualizationTrackerTemplate, repMap )}
+	files = {
+            replaceByMap("TkAl3DVisualization_.oO[name]Oo..C", repMap ): replaceByMap(configTemplates.visualizationTrackerTemplate, repMap ),
+            replaceByMap("TkAlCompareSurfaceDeformations_.oO[name]Oo..C", repMap): replaceByMap(configTemplates.compareSurfaceDeformationsTemplate, repMap ),
+        }
 	self.createFiles(files, path)
         return GenericValidation.createScript(self, scripts, path)
 
