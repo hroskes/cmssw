@@ -264,3 +264,25 @@ class GeometryComparison(GenericValidation):
         msg = ("Parallelization not supported for geometry comparison. Please "
                "choose another 'jobmode'.")
         raise AllInOneError(msg)
+
+    def appendToExtendedValidation( self, validationsSoFar = "" ):
+        """
+        if no argument or "" is passed a string with an instantiation is
+        returned, else the validation is appended to the list
+        """
+        repMap = self.getRepMap()
+        rootfiles = {
+            ".oO[comparedGeometry]Oo.": self.alignmentToValidate,
+            ".oO[referenceGeometry]Oo.": self.referenceAlignment,
+        }
+        for rootfile in rootfiles:
+            eosfilename = replaceByMap("root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./" + rootfile, repMap)
+            if eosfilename not in validationsSoFar:
+                repMap.update({
+                    "eosfilename": eosfilename,
+                    "title": rootfiles[rootfile].title,
+                    "color": rootfiles[rootfile].color,
+                    "style": rootfiles[rootfile].style,
+                })
+                validationsSoFar += replaceByMap('\n    filenames.push_back(".oO[eosfilename]Oo.");  titles.push_back(".oO[title]Oo.");  colors.push_back(.oO[color]Oo.);  linestyles.push_back(.oO[style]Oo.);', repMap)
+        return validationsSoFar

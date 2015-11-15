@@ -103,17 +103,25 @@ void compareSurfaceDeformations(TString file1, TString file2, TString plotsdir)
         t->GetEntry(i);
         for (int j = 0; j < t2->GetEntries(); j++)
         {
+            if (usedentryt2[j]) continue;
             t2->GetEntry(j);
-            if (irawid == irawid2) break;
+            if (irawid == irawid2)
+            {
+                usedentryt2[j] = true;
+                break;
+            }
         }
-        if (irawid == irawid2)
-            usedentryt2[i] = true;
-        else    //objects with no surface deformations are not written to the tree
+        if (irawid != irawid2)    //objects with no surface deformations are not written to the tree
         {
             if (dpar->size() == 3)
                 dpar2 = &zerovector3;
             else if (dpar->size() == 13)
                 dpar2 = &zerovector13;
+            else
+            {
+                cout << "There is a problem, dpar has size " << dpar->size() << endl;
+                return;
+            }
         }
 
         for (unsigned int k = 0; k < dpar->size(); k++)
@@ -207,8 +215,8 @@ void compareSurfaceDeformations(vector<TString> files, vector<TString> titles, v
         for (int j = 0; j < length; j++)
         {
             t->GetEntry(j);
-            for (int k = 0; k < nparams[subdet-1]; k++)
-                h[subdet-1][k][i]->Fill(dpar->at(k));
+            for (int k = 0; k < dpar->size(); k++)
+                h[i][subdet-1][k]->Fill(dpar->at(k)*parameterscaleby[k]);
         }
         delete f;
         for (int l = 0; l < nsubdets; l++)

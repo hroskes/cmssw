@@ -248,7 +248,6 @@ def createExtendedValidationScript(offlineValidationList, outFilePath, resultPlo
         repMap[ "extendedInstantiation" ] = validation.appendToExtendedValidation( repMap[ "extendedInstantiation" ] )
 
     theFile = open( outFilePath, "w" )
-    # theFile.write( replaceByMap( configTemplates.extendedValidationTemplate ,repMap ) )
     theFile.write( replaceByMap( configTemplates.extendedValidationTemplate ,repMap ) )
     theFile.close()
     
@@ -261,10 +260,21 @@ def createTrackSplitPlotScript(trackSplittingValidationList, outFilePath):
         repMap[ "trackSplitPlotInstantiation" ] = validation.appendToExtendedValidation( repMap[ "trackSplitPlotInstantiation" ] )
     
     theFile = open( outFilePath, "w" )
-    # theFile.write( replaceByMap( configTemplates.trackSplitPlotTemplate ,repMap ) )
     theFile.write( replaceByMap( configTemplates.trackSplitPlotTemplate ,repMap ) )
     theFile.close()
+
+def createPlotSurfaceDeformationsScript(geometryComparisonList, outFilePath):
+    repMap = geometryComparisonList[0].getRepMap() # bit ugly since some special features are filled
+    repMap[ "CMSSW_BASE" ] = os.environ['CMSSW_BASE']
+    repMap[ "PlotSurfaceDeformationsInstantiation" ] = "" #give it a "" at first in order to get the initialisation back
+
+    for validation in geometryComparisonList:
+        repMap[ "PlotSurfaceDeformationsInstantiation" ] = validation.appendToExtendedValidation( repMap[ "PlotSurfaceDeformationsInstantiation" ] )
     
+    theFile = open( outFilePath, "w" )
+    theFile.write( replaceByMap( configTemplates.plotSurfaceDeformationsTemplate ,repMap ) )
+    theFile.close()
+
 def createMergeScript( path, validations ):
     if(len(validations) == 0):
         raise AllInOneError("Cowardly refusing to merge nothing!")
@@ -275,6 +285,7 @@ def createMergeScript( path, validations ):
             "CompareAlignments":"",
             "RunExtendedOfflineValidation":"",
             "RunTrackSplitPlot":"",
+            "RunPlotSurfaceDeformations":"",
             "CMSSW_BASE": os.environ["CMSSW_BASE"],
             "SCRAM_ARCH": os.environ["SCRAM_ARCH"],
             "CMSSW_RELEASE_BASE": os.environ["CMSSW_RELEASE_BASE"],
@@ -354,11 +365,22 @@ def createMergeScript( path, validations ):
         repMap["trackSplitPlotScriptPath"] = \
             os.path.join(path, "TkAlTrackSplitPlot.C")
         createTrackSplitPlotScript(comparisonLists["TrackSplittingValidation"],
-                                       repMap["trackSplitPlotScriptPath"] )
+                                   repMap["trackSplitPlotScriptPath"] )
         repMap["RunTrackSplitPlot"] = \
             replaceByMap(configTemplates.trackSplitPlotExecution, repMap)
 
-    repMap["CompareAlignments"] = "#run comparisons"
+    geometryComparisonList = []
+    for validationId in comparisonLists:
+        if "GeometryComparison" in validationId:
+            geometryComparisonList += comparisonLists[validationId]
+    if geometryComparisonList:
+        repMap["plotSurfaceDeformationsPath"] = \
+            os.path.join(path, "TkAlPlotSurfaceDeformations.C")
+        createPlotSurfaceDeformationsScript(geometryComparisonList,
+                                            repMap["plotSurfaceDeformationsPath"] )
+        repMap["RunPlotSurfaceDeformations"] = \
+            replaceByMap(configTemplates.plotSurfaceDeformationsExecution, repMap)
+
     for validationId in comparisonLists:
         compareStrings = [ val.getCompareStrings(validationId) for val in comparisonLists[validationId] ]
         compareStringsPlain = [ val.getCompareStrings(validationId, plain=True) for val in comparisonLists[validationId] ]

@@ -171,3 +171,25 @@ void TkAlCompareSurfaceDeformations_.oO[name]Oo.()
     compareSurfaceDeformations(".oO[comparedGeometry]Oo.", ".oO[referenceGeometry]Oo.", "CompareSurfaceDeformations");
 }
 """
+
+plotSurfaceDeformationsExecution="""
+#make track splitting plots
+
+rfcp .oO[plotSurfaceDeformationsPath]Oo. .
+root -x -b -q TkAlPlotSurfaceDeformations.C++
+
+"""
+
+
+plotSurfaceDeformationsTemplate = """
+#include ".oO[CMSSW_BASE]Oo./src/Alignment/OfflineValidation/macros/compareSurfaceDeformations.C"
+void TkAlPlotSurfaceDeformations()
+{
+    vector<TString> filenames; vector<TString> titles; vector<int> colors; vector<int> linestyles;
+
+    .oO[PlotSurfaceDeformationsInstantiation]Oo.
+
+
+    compareSurfaceDeformations(filenames, titles, colors, linestyles, ".oO[datadir]Oo./SurfaceDeformationPlots");
+}
+"""
