@@ -247,9 +247,13 @@ class GeometryComparison(GenericValidation):
             repMap["CommandLine"]+= \
                 repMap["CommandLineTemplate"]%{"cfgFile":cfg,
                                                "postProcess":postProcess}
-        repMap["CommandLine"]+= ("# overall postprocessing\n"
+        repMap["CommandLine"]+= (
+                                 "# overall postprocessing\n"
+                                 "for file in $(ls --color=never -d *.oO[reference]Oo.*.root); do\n"
+                                 "    xrdcp -f ${file} root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo.\n"
+                                 "done\n"
                                  ".oO[runComparisonScripts]Oo.\n"
-                                 )
+                                )
 
         #~ print configTemplates.scriptTemplate
         scripts = {scriptName: replaceByMap( configTemplates.scriptTemplate, repMap )}
