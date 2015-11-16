@@ -147,7 +147,9 @@ void compareSurfaceDeformations(TString file1, TString file2, TString plotsdir)
         for (int k = 0; k < nparams[l]; k++)
         {
             h[l][k]->Draw();
-            TString saveasbase = subdetdir + "/" + TString::Itoa(k, 10) + "_" + parameternames[k];
+            TString saveasbase = subdetdir + "/";
+            if (nparams[l] > 10 && k < 10) saveasbase += "0";
+            saveasbase += TString::Itoa(k, 10) + "_" + parameternames[k];
             c1->SaveAs(saveasbase + ".png");
             c1->SaveAs(saveasbase + ".eps");
             c1->SaveAs(saveasbase + ".pdf");
@@ -215,7 +217,7 @@ void compareSurfaceDeformations(vector<TString> files, vector<TString> titles, v
         for (int j = 0; j < length; j++)
         {
             t->GetEntry(j);
-            for (int k = 0; k < dpar->size(); k++)
+            for (unsigned int k = 0; k < dpar->size(); k++)
                 h[i][subdet-1][k]->Fill(dpar->at(k)*parameterscaleby[k]);
         }
         delete f;
@@ -242,7 +244,9 @@ void compareSurfaceDeformations(vector<TString> files, vector<TString> titles, v
         {
             hstack[l][k]->Draw("nostack");
             leg[l][k]->Draw();
-            TString saveasbase = subdetdir + "/" + TString::Itoa(k, 10) + "_" + parameternames[k];
+            TString saveasbase = subdetdir + "/";
+            if (nparams[l] > 10 && k < 10) saveasbase += "0";
+            saveasbase += TString::Itoa(k, 10) + "_" + parameternames[k];
             c1->SaveAs(saveasbase + ".png");
             c1->SaveAs(saveasbase + ".eps");
             c1->SaveAs(saveasbase + ".pdf");
