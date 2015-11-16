@@ -47,7 +47,9 @@ void style(bool statbox)
     gStyle->SetCanvasDefX(0);
     gStyle->SetCanvasDefY(0);
     gStyle->SetHistLineColor(1);
-    if (!statbox)
+    if (statbox)
+        gStyle->SetOptStat(1110);
+    else
         gStyle->SetOptStat(0);
     gStyle->SetStatColor(kWhite);
     gStyle->SetStatFont(42);
