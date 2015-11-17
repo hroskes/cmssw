@@ -26,29 +26,29 @@ class TrackerSystematicMisalignments:
 public edm::EDAnalyzer
 {
 public:
-	
-	TrackerSystematicMisalignments(
-								   const edm::ParameterSet&
-								   );
-	
+
+	TrackerSystematicMisalignments(const edm::ParameterSet&);
+
 	/// Read ideal tracker geometry from DB
 	virtual void beginJob();
-	
+
 	virtual void analyze(const edm::Event&, const edm::EventSetup&);
-	
+
 private:
-	
-	void applySystematicMisalignment( Alignable* ); 
+
+	void applySystematicMisalignment( Alignable* );
 	//align::GlobalVector findSystematicMis( align::PositionType );
 	align::GlobalVector findSystematicMis( const align::PositionType&, const bool blindToZ, const bool blindToR );
-	
+	SurfaceDeformationFactory::Type getDeformationType(const GeomDetUnit *geomDetUnit, const TrackerTopology* const tTopo);
+	void applySystematicDeformation(TrackerGeometry* geometry, const TrackerTopology* const tTopo);
+
 	AlignableTracker* theAlignableTracker;
-	
-	
-	
+
+	const edm::ParameterSet theParameterSet;
+
 	// configurables needed for the systematic misalignment
 	bool m_fromDBGeom;
-	
+
 	double m_radialEpsilon;
 	double m_telescopeEpsilon;
 	double m_layerRotEpsilon;
@@ -59,18 +59,18 @@ private:
 	double m_skewEpsilon;
 	double m_sagittaEpsilon;
 
-        //misalignment phases
-        double m_ellipticalDelta;
-        double m_skewDelta;
-        double m_sagittaDelta;
+	//misalignment phases
+	double m_ellipticalDelta;
+	double m_skewDelta;
+	double m_sagittaDelta;
+
+	std::vector<double> m_addDeformations;
 
 	// flag to steer suppression of blind movements
 	bool suppressBlindMvmts;
 
 	// flag for old z behaviour, version <= 1.5
 	bool oldMinusZconvention;
-
-  const edm::ParameterSet theParameterSet;
 };
 
 #endif
