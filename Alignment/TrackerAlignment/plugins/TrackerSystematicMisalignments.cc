@@ -146,9 +146,9 @@ void TrackerSystematicMisalignments::analyze(const edm::Event& event, const edm:
 		aligner.attachSurfaceDeformations<TrackerGeometry>( &(*tracker), &(*deformations) );
 	}
 
-	applySystematicDeformation( &(*tracker), tTopo );
 	theAlignableTracker = new AlignableTracker(&(*tracker), tTopo);
 	applySystematicMisalignment( &(*theAlignableTracker) );
+	applySystematicDeformation( &(*theAlignableTracker) );
 
 	// -------------- writing out to alignment record --------------
 	Alignments* myAlignments = theAlignableTracker->alignments() ;
@@ -277,79 +277,75 @@ align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( const ali
 	return gV;
 }
 
+/*
 SurfaceDeformationFactory::Type
-TrackerSystematicMisalignments::getDeformationType(const GeomDetUnit *geomDetUnit, const TrackerTopology* const tTopo){
+TrackerSystematicMisalignments::getDeformationType(const Alignable *ali, const TrackerTopology* const tTopo){
        if (
-              geomDetUnit->subDetector() == GeomDetEnumerators::PixelBarrel
-           || geomDetUnit->subDetector() == GeomDetEnumerators::PixelEndcap
-           || geomDetUnit->subDetector() == GeomDetEnumerators::TIB
-           || geomDetUnit->subDetector() == GeomDetEnumerators::TID
+	      geomDetUnit->subDetector() == GeomDetEnumerators::PixelBarrel
+	   || geomDetUnit->subDetector() == GeomDetEnumerators::PixelEndcap
+	   || geomDetUnit->subDetector() == GeomDetEnumerators::TIB
+	   || geomDetUnit->subDetector() == GeomDetEnumerators::TID
        )
-               return SurfaceDeformationFactory::kBowedSurface;
+	       return SurfaceDeformationFactory::kBowedSurface;
        else if (geomDetUnit->subDetector() == GeomDetEnumerators::TOB)
-               return SurfaceDeformationFactory::kTwoBowedSurfaces;
+	       return SurfaceDeformationFactory::kTwoBowedSurfaces;
        else if (geomDetUnit->subDetector() == GeomDetEnumerators::TEC)
        {
-               if (tTopo->tecRing(geomDetUnit->geographicalId()) <= 4)
-                       return SurfaceDeformationFactory::kBowedSurface;
-               else
-                       return SurfaceDeformationFactory::kTwoBowedSurfaces;
+	       if (tTopo->tecRing(geomDetUnit->geographicalId()) <= 4)
+		       return SurfaceDeformationFactory::kBowedSurface;
+	       else
+		       return SurfaceDeformationFactory::kTwoBowedSurfaces;
        }
        else
-               throw cms::Exception("GeometryError")
-               << "[TrackerSystematicMisalignments] Error, tried to get reference for non-tracker subdet " << geomDetUnit->subDetector();
-               return SurfaceDeformationFactory::kBowedSurface;
+	       throw cms::Exception("GeometryError")
+	       << "[TrackerSystematicMisalignments] Error, tried to get reference for non-tracker subdet " << geomDetUnit->subDetector();
+	       return SurfaceDeformationFactory::kBowedSurface;
 }
+*/
 
-void TrackerSystematicMisalignments::applySystematicDeformation(TrackerGeometry* geometry, const TrackerTopology* const tTopo){
-//the structure of this function is copied from Alignment/OfflineValidation/plugins/TrackerGeometryIntoNtuples.cc
-	AlignmentSurfaceDeformations *newDeformations = new AlignmentSurfaceDeformations();
-	auto const & detUnits =  geometry->detUnits();
-	for (auto iunit = detUnits.begin(); iunit != detUnits.end(); ++iunit) {
-		auto geomDetUnit = *iunit;
-		const SurfaceDeformation *oldDeformation = geomDetUnit->surfaceDeformation();
-
-		std::vector<double> oldparams = oldDeformation->parameters();
+void TrackerSystematicMisalignments::applySystematicDeformation(Alignable *ali){
+	const align::Alignables& comp = ali->components();
+	unsigned int nComp = comp.size();
+	bool usecomps = true;
+	if ((ali->alignableObjectId()==2)&&(nComp>=1)) usecomps = false;
+	for (unsigned int i = 0; i < nComp; ++i){
+		if (usecomps) applySystematicDeformation(comp[i]);
+	}
+	const int level = ali->alignableObjectId();
+	const AlignmentSurfaceDeformations *oldDeformations = ali->surfaceDeformations();
+	if (((level == 1)||(level == 2)) && oldDeformations->items().size() == 1){
 		std::vector<double> addparams(12, 0);
 		for (unsigned int i = 0; i < m_addDeformations.size(); i++){  //already checked in the constructor that m_addDeformations.size() = 0, 3, or 12
 			addparams[i] += m_addDeformations[i];
 		}
 		//can also add other values (e.g. position-dependent) to addparams
 
-		if (oldDeformation) {
-			SurfaceDeformationFactory::Type type = getDeformationType(geomDetUnit, tTopo);
-			std::vector<double> newparams;
-			switch (type) {
-				case SurfaceDeformationFactory::kBowedSurface:
-					for (int i = 0; i < 3; i++)
-						newparams.push_back(oldparams[i] + addparams[i]);
-					break;
-				case SurfaceDeformationFactory::kTwoBowedSurfaces:
-				{
-					for (int i = 0; i < 12; i++)
-						newparams.push_back(oldparams[i] + addparams[i]);
-					const TwoBowedSurfacesDeformation *oldTwoBowedDeformation = dynamic_cast<const TwoBowedSurfacesDeformation*>(oldDeformation);
-					if (!oldTwoBowedDeformation)
-						throw cms::Exception("GeometryError")
-						<< "[TrackerSystematicMisalignments] " << geomDetUnit->geographicalId().rawId()
-						<< " has the wrong kind of deformations!" << oldparams.size();
-					newparams.push_back(oldDeformation->parameters()[oldTwoBowedDeformation->k_ySplit()]);
-					break;
-				}
-				default:
-					throw cms::Exception("GeometryError") << "[TrackerSystematicMisalignments] "
-					<< geomDetUnit->geographicalId().rawId() << " has an unknown kind of deformation "
-					<< "with " << oldparams.size() << " parameters";
-			}
-			newDeformations->add(geomDetUnit->geographicalId(), type, newparams);
-		}
-		else
-			edm::LogWarning("MisalignedTracker")
-			<< "GeomDetUnit " << geomDetUnit->geographicalId().rawId() << " has no surface deformations!  Can't add to it.";
-	}
 
-	GeometryAligner aligner;
-	aligner.attachSurfaceDeformations<TrackerGeometry>( &(*geometry), newDeformations );
+		auto oldDeformationParametersIteratorPair = oldDeformations->parameters(0);
+		std::vector<align::Scalar> oldDeformationParameters(oldDeformationParametersIteratorPair.first,
+								    oldDeformationParametersIteratorPair.second);
+		SurfaceDeformationFactory::Type type;
+		switch (oldDeformationParameters.size()) {
+			case 3:
+				type = SurfaceDeformationFactory::kBowedSurface;
+				addparams.resize(3);
+				break;
+			case 13:
+			{
+				type = SurfaceDeformationFactory::kTwoBowedSurfaces;
+				TwoBowedSurfacesDeformation oldDeformation(oldDeformationParameters);
+				addparams.push_back(oldDeformation.parameters()[oldDeformation.k_ySplit()]);
+				break;
+			}
+			default:
+				throw cms::Exception("GeometryError") << "[TrackerSystematicMisalignments] "
+				<< ali->geomDetId().rawId() << " has an unknown kind of deformation "
+				<< "with " << oldDeformationParameters.size() << " parameters";
+		}
+		auto newDeformation = SurfaceDeformationFactory::create(type, addparams);
+		ali->addSurfaceDeformation(newDeformation, 1);
+		delete newDeformation;
+	}
 }
 
 // Plug in to framework

@@ -100,6 +100,10 @@ process.PoolDBOutputService = cms.Service("PoolDBOutputService",
                                                                      record = cms.string('TrackerAlignmentErrorExtendedRcd'),
                                                                      tag = cms.string('AlignmentErrorsExtended'),
                                                             ),
+                                                            cms.PSet(
+                                                                     record = cms.string('TrackerSurfaceDeformationRcd'),
+                                                                     tag = cms.string('Deformations'),
+                                                            ),
                                           ),
                                           connect = cms.string('sqlite_file:'+outputfilename),
 )
