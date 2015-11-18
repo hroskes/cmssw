@@ -41,7 +41,6 @@ private:
 	align::GlobalVector findSystematicMis( const align::PositionType&, const bool blindToZ, const bool blindToR );
 	SurfaceDeformationFactory::Type getDeformationType(const GeomDetUnit *geomDetUnit, const TrackerTopology* const tTopo);
 	void applySystematicDeformation(TrackerGeometry* geometry, const TrackerTopology* const tTopo);
-
 	AlignableTracker* theAlignableTracker;
 
 	const edm::ParameterSet theParameterSet;

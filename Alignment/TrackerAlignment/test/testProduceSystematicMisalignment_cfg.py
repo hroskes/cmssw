@@ -26,6 +26,9 @@ sagittaEpsilon    = -999. # 5.0e-4
 ellipticalDelta   = 0.
 skewDelta         = 0.
 sagittaDelta      = 0.
+
+#deformation shifts, must be empty or have length 3 or 12
+addDeformations = []
 #=================================
 
 
@@ -81,6 +84,9 @@ process.TrackerSystematicMisalignments.sagittaEpsilon    = sagittaEpsilon
 process.TrackerSystematicMisalignments.ellipticalDelta   = ellipticalDelta
 process.TrackerSystematicMisalignments.skewDelta         = skewDelta
 process.TrackerSystematicMisalignments.sagittaDelta      = sagittaDelta
+
+#add constant deformation
+process.TrackerSystematicMisalignments.addDeformations   = addDeformations
 
 # output
 process.PoolDBOutputService = cms.Service("PoolDBOutputService",

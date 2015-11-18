@@ -22,9 +22,10 @@ TrackerSystematicMisalignments = cms.EDAnalyzer("TrackerSystematicMisalignments"
     skewDelta = cms.untracked.double(0),
     sagittaDelta = cms.untracked.double(0),
 
+    addDeformations = cms.untracked.vdouble(),
+
     # suppress blind movements
     suppressBlindMvmts = cms.untracked.bool(False),
-	# compatibility flag for old z convention
-	oldMinusZconvention = cms.untracked.bool(False)
+    # compatibility flag for old z convention
+    oldMinusZconvention = cms.untracked.bool(False)
 )
-
