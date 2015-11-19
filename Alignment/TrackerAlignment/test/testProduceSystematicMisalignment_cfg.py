@@ -1,9 +1,12 @@
 #=================================
 #inputs
-globaltag = '74X_dataRun2_Prompt_v4'    #APEs are copied from this GT (and IdealGeometry is used)
-inputsqlitefile = None                  #if None, uses the GT alignment
+globaltag = '74X_dataRun2_Prompt_v4'    #Alignments and deformations are used unless overwritten.
+                                        #  also APEs are copied from this GT (and other things are used internally, e.g. topology)
+inputalignmentsqlitefile = None         #if None, uses the GT alignment
+inputdeformationsqlitefile = None       #if None, uses the GT deformations
 alignmenttag = 'Alignments'             #tag name for TrackerAlignmentRcd in the input file, also used for the output file
-runnumberalignmentIOV = 1               #any run number in the iov that you want to start from
+deformationtag = 'Deformations'         #tag name for TrackerSurfaceDeformationRcd in the input file, also used for the output file
+runnumberIOV = 1                        #any run number in the iov that you want to start from (output iov is 1-infinity)
 
 outputfilename = 'outputfile.db'
 
@@ -28,7 +31,26 @@ skewDelta         = 0.
 sagittaDelta      = 0.
 
 #deformation shifts, must be empty or have length 3 or 12
-addDeformations = []
+#the commented numbers are 50 microns for lengths, 0.5 mrad for angles
+#  (for sensor width ~10cm this is also 50 micron max movement)
+addDeformations = [
+                   -999., #5e-3                    #sagittaX
+                   -999., #5e-3                    #sagittaXY
+                   -999., #5e-3                    #sagittaY
+#rest of the parameters are for double sensors in TOB and TEC:
+#  half of the difference between the two parts
+                   -999., #5e-3                    #deltau
+                   -999., #5e-3                    #deltav
+                   -999., #5e-3                    #deltaw
+                   -999., #5e-4                    #deltaalpha
+                   -999., #5e-4                    #deltabeta
+                   -999., #5e-4                    #deltagamma
+                   -999., #5e-3                    #deltasagittaX
+                   -999., #5e-3                    #deltasagittaXY
+                   -999., #5e-3                    #deltasagittaY
+#another parameter, ySplit, is in the deformation object.  It gives the place along y where the
+#two sensors are split, and never changes.
+                  ]
 #=================================
 
 
@@ -43,7 +65,7 @@ process.load("Configuration.Geometry.GeometryRecoDB_cff")
 
 process.load("CondCore.DBCommon.CondDBSetup_cfi")
 process.source = cms.Source("EmptySource",
-                            firstRun=cms.untracked.uint32(runnumberalignmentIOV),
+                            firstRun=cms.untracked.uint32(runnumberIOV),
 )
 
 process.maxEvents = cms.untracked.PSet(
@@ -54,12 +76,20 @@ process.maxEvents = cms.untracked.PSet(
 # configure the database file - use survey one for default
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff")
 process.GlobalTag.globaltag=globaltag
-if inputsqlitefile is not None:
+if inputalignmentsqlitefile is not None:
     process.GlobalTag.toGet = cms.VPSet(
                                         cms.PSet(
                                                  record = cms.string('TrackerAlignmentRcd'),
                                                  tag = cms.string(alignmenttag),
-                                                 connect = cms.untracked.string('sqlite_file:'+inputsqlitefile),
+                                                 connect = cms.untracked.string('sqlite_file:'+inputalignmentsqlitefile),
+                                        ),
+    )
+if inputdeformationsqlitefile is not None:
+    process.GlobalTag.toGet = cms.VPSet(
+                                        cms.PSet(
+                                                 record = cms.string('TrackerSurfaceDeformationRcd'),
+                                                 tag = cms.string(deformationtag),
+                                                 connect = cms.untracked.string('sqlite_file:'+inputdeformationsqlitefile),
                                         ),
     )
 
@@ -102,7 +132,7 @@ process.PoolDBOutputService = cms.Service("PoolDBOutputService",
                                                             ),
                                                             cms.PSet(
                                                                      record = cms.string('TrackerSurfaceDeformationRcd'),
-                                                                     tag = cms.string('Deformations'),
+                                                                     tag = cms.string(deformationtag),
                                                             ),
                                           ),
                                           connect = cms.string('sqlite_file:'+outputfilename),

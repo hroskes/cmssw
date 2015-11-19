@@ -107,7 +107,16 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 		if (m_addDeformations.size() != 3 && m_addDeformations.size() != 12){
 			throw cms::Exception("BadSetup") << "addDeformations needs to have size 0, 3, or 12!";
 		}
-		edm::LogWarning("MisalignedTracker") << "Adding constant deformations ...";
+		bool anynonzero = false;
+		for (unsigned int i = 0; i < m_addDeformations.size(); i++)
+			if (m_addDeformations[i] < -990)
+				m_addDeformations[i] = 0;
+			else if (m_addDeformations[i] != 0)
+				anynonzero = true;
+		if (anynonzero)
+			edm::LogWarning("MisalignedTracker") << "Adding constant deformations ...";
+		else
+			m_addDeformations.clear();
 	}
 
 }
