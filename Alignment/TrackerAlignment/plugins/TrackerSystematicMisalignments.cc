@@ -33,6 +33,8 @@
 #include "CondCore/DBOutputService/interface/PoolDBOutputService.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
+#include "TTree.h"
+
 // -----------------------------------------------------------------
 // 2010-05-20 Frank Meier
 // Changed sign of z-correction, i.e. z-expansion is now an expansion
@@ -58,7 +60,11 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 	  m_ellipticalDelta(cfg.getUntrackedParameter< double > ("ellipticalDelta")),
 	  m_skewDelta(cfg.getUntrackedParameter< double > ("skewDelta")),
 	  m_sagittaDelta(cfg.getUntrackedParameter< double > ("sagittaDelta")),
-	  m_addDeformations(cfg.getUntrackedParameter< std::vector<double> > ("addDeformations"))
+
+	  m_addDeformations(cfg.getUntrackedParameter< std::vector<double> > ("addDeformations")),
+
+	  m_geometryComparisonRootFilename(cfg.getUntrackedParameter< std::string > ("geometryComparisonRootFilename")),
+	  m_geometryComparisonRootFile(0)
 {
 	if (m_radialEpsilon > -990.0){
 		edm::LogWarning("MisalignedTracker") << "Applying radial ...";
@@ -122,6 +128,45 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 			m_addDeformations.clear();
 	}
 
+	if (!m_geometryComparisonRootFilename.empty())
+	{
+		edm::LogWarning("MisalignedTracker") << "Adding geometry differences from file " << m_geometryComparisonRootFilename;
+		m_geometryComparisonRootFile = TFile::Open(m_geometryComparisonRootFilename.c_str());
+		if (!m_geometryComparisonRootFile)
+			throw cms::Exception("BadSetup") << m_geometryComparisonRootFilename << " does not exist!";
+
+		TTree *alignTree = (TTree*)m_geometryComparisonRootFile->Get("alignTree");
+		if (alignTree == 0 || alignTree->GetEntries() == 0)
+			throw cms::Exception("BadSetup") << m_geometryComparisonRootFilename << " does not contain a tree, or the tree is empty!";
+
+		int id, level;
+		float dx, dy, dz, dalpha, dbeta, dgamma;
+
+		alignTree->SetBranchAddress("id", &id);
+		alignTree->SetBranchAddress("level", &level);
+		alignTree->SetBranchAddress("dx", &dx);
+		alignTree->SetBranchAddress("dy", &dy);
+		alignTree->SetBranchAddress("dz", &dz);
+		alignTree->SetBranchAddress("dalpha", &dalpha);
+		alignTree->SetBranchAddress("dbeta", &dbeta);
+		alignTree->SetBranchAddress("dgamma", &dgamma);
+
+		int length = alignTree->GetEntries();
+		for (int i = 0; i < length; i++){
+			alignTree->GetEntry(i);
+			if (level != 1) continue;
+			align::EulerAngles angles(3);
+			angles(1) = dalpha;
+			angles(2) = dbeta;
+			angles(3) = dgamma;
+			auto pair = std::make_pair(align::GlobalVector(dx, dy, dz), align::toMatrix(angles));
+			m_movementsFromRootFile.emplace(id, pair);
+		}
+	}
+}
+
+TrackerSystematicMisalignments::~TrackerSystematicMisalignments(){
+	delete m_geometryComparisonRootFile;
 }
 
 void TrackerSystematicMisalignments::beginJob()
@@ -184,6 +229,8 @@ void TrackerSystematicMisalignments::analyze(const edm::Event& event, const edm:
 	poolDbService->writeOne<Alignments>(&(*myAlignments), poolDbService->beginOfTime(), theAlignRecordName);
 	poolDbService->writeOne<AlignmentErrorsExtended>(&(*myAlignmentErrorsExtended), poolDbService->beginOfTime(), theErrorRecordName);
 	poolDbService->writeOne<AlignmentSurfaceDeformations>(&(*mySurfaceDeformations), poolDbService->beginOfTime(), theDeformRecordName);
+
+	delete theAlignableTracker;
 }
 
 void TrackerSystematicMisalignments::applySystematicMisalignment(Alignable* ali)
@@ -224,18 +271,37 @@ void TrackerSystematicMisalignments::applySystematicMisalignment(Alignable* ali)
 	const int level = ali->alignableObjectId();
 	if ((level == 1)||(level == 2)){
 		const align::PositionType gP = ali->globalPosition();
-		const align::GlobalVector gVec = findSystematicMis( gP, blindToZ, blindToR);
-		ali->move( gVec );
+
+		if (!m_movementsFromRootFile.empty()){
+			auto it = m_movementsFromRootFile.find(ali->id());
+			if (it == m_movementsFromRootFile.end())
+			{
+				//not found - this means level == 2
+				it = m_movementsFromRootFile.find(comp[0]->id());
+				if (it == m_movementsFromRootFile.end())
+					edm::LogWarning("MisalignedTracker") << "Module " <<  ali->id() << " not found in ROOT file!  Will not be moved!";
+			}
+			ali->move( it->second.first );
+			ali->rotateInGlobalFrame( it->second.second );
+		}
+
+		auto systematicmisalignment = findSystematicMis( gP, blindToZ, blindToR);
+		ali->move( systematicmisalignment.first );
+		ali->rotateInGlobalFrame( systematicmisalignment.second );
 	}
 }
 
-align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( const align::PositionType& globalPos, const bool blindToZ, const bool blindToR ){
+const std::pair<const align::GlobalVector, const align::RotationType>
+TrackerSystematicMisalignments::findSystematicMis( const align::PositionType& globalPos, const bool blindToZ, const bool blindToR ){
 //align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( align::PositionType globalPos ){
 	// calculates shift for the current alignable
 	// all corrections are calculated w.r.t. the original geometry
 	double deltaX = 0.0;
 	double deltaY = 0.0;
 	double deltaZ = 0.0;
+	double deltaalpha = 0.0;
+	double deltabeta = 0.0;
+	double deltagamma = 0.0;
 	const double oldX = globalPos.x();
 	const double oldY = globalPos.y();
 	const double oldZ = globalPos.z();
@@ -289,35 +355,12 @@ align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( const ali
 	// Compatibility with old version <= 1.5
 	if (oldMinusZconvention) deltaZ = -deltaZ;
 
-	align::GlobalVector gV( deltaX, deltaY, deltaZ );
-	return gV;
+	align::EulerAngles angles(3);
+	angles(1) = deltaalpha;
+	angles(2) = deltabeta;
+	angles(3) = deltagamma;
+	return std::make_pair( align::GlobalVector(deltaX, deltaY, deltaZ), align::toMatrix(angles) );
 }
-
-/*
-SurfaceDeformationFactory::Type
-TrackerSystematicMisalignments::getDeformationType(const Alignable *ali, const TrackerTopology* const tTopo){
-       if (
-	      geomDetUnit->subDetector() == GeomDetEnumerators::PixelBarrel
-	   || geomDetUnit->subDetector() == GeomDetEnumerators::PixelEndcap
-	   || geomDetUnit->subDetector() == GeomDetEnumerators::TIB
-	   || geomDetUnit->subDetector() == GeomDetEnumerators::TID
-       )
-	       return SurfaceDeformationFactory::kBowedSurface;
-       else if (geomDetUnit->subDetector() == GeomDetEnumerators::TOB)
-	       return SurfaceDeformationFactory::kTwoBowedSurfaces;
-       else if (geomDetUnit->subDetector() == GeomDetEnumerators::TEC)
-       {
-	       if (tTopo->tecRing(geomDetUnit->geographicalId()) <= 4)
-		       return SurfaceDeformationFactory::kBowedSurface;
-	       else
-		       return SurfaceDeformationFactory::kTwoBowedSurfaces;
-       }
-       else
-	       throw cms::Exception("GeometryError")
-	       << "[TrackerSystematicMisalignments] Error, tried to get reference for non-tracker subdet " << geomDetUnit->subDetector();
-	       return SurfaceDeformationFactory::kBowedSurface;
-}
-*/
 
 void TrackerSystematicMisalignments::applySystematicDeformation(Alignable *ali){
 	const align::Alignables& comp = ali->components();

@@ -51,6 +51,13 @@ addDeformations = [
 #another parameter, ySplit, is in the deformation object.  It gives the place along y where the
 #two sensors are split, and never changes.
                   ]
+
+#to add the difference between 2 geometries (alignment1 - alignment2) as misalignment:
+#  run the geometry comparison
+#    https://twiki.cern.ch/twiki/bin/viewauth/CMS/TkAlAllInOneValidation#Geometry_Comparison
+#    compare Tracker: alignment1, alignment2
+#  and use the output ROOT file here
+geometryComparisonRootFilename = ""
 #=================================
 
 
@@ -76,21 +83,22 @@ process.maxEvents = cms.untracked.PSet(
 # configure the database file - use survey one for default
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff")
 process.GlobalTag.globaltag=globaltag
+process.GlobalTag.ToGet = cms.VPSet()
 if inputalignmentsqlitefile is not None:
-    process.GlobalTag.toGet = cms.VPSet(
-                                        cms.PSet(
-                                                 record = cms.string('TrackerAlignmentRcd'),
-                                                 tag = cms.string(alignmenttag),
-                                                 connect = cms.untracked.string('sqlite_file:'+inputalignmentsqlitefile),
-                                        ),
+    process.GlobalTag.toGet += cms.VPSet(
+                                         cms.PSet(
+                                                  record = cms.string('TrackerAlignmentRcd'),
+                                                  tag = cms.string(alignmenttag),
+                                                  connect = cms.untracked.string('sqlite_file:'+inputalignmentsqlitefile),
+                                         ),
     )
 if inputdeformationsqlitefile is not None:
-    process.GlobalTag.toGet = cms.VPSet(
-                                        cms.PSet(
-                                                 record = cms.string('TrackerSurfaceDeformationRcd'),
-                                                 tag = cms.string(deformationtag),
-                                                 connect = cms.untracked.string('sqlite_file:'+inputdeformationsqlitefile),
-                                        ),
+    process.GlobalTag.toGet += cms.VPSet(
+                                         cms.PSet(
+                                                  record = cms.string('TrackerSurfaceDeformationRcd'),
+                                                  tag = cms.string(deformationtag),
+                                                  connect = cms.untracked.string('sqlite_file:'+inputdeformationsqlitefile),
+                                         ),
     )
 
 
@@ -117,6 +125,9 @@ process.TrackerSystematicMisalignments.sagittaDelta      = sagittaDelta
 
 #add constant deformation
 process.TrackerSystematicMisalignments.addDeformations   = addDeformations
+
+#add difference between 2 geometries
+process.TrackerSystematicMisalignments.geometryComparisonRootFilename = geometryComparisonRootFilename
 
 # output
 process.PoolDBOutputService = cms.Service("PoolDBOutputService",

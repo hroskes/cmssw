@@ -11,9 +11,10 @@
  */
 // user include files
 
+#include "CondFormats/Alignment/interface/Definitions.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-
+#include "TFile.h"
 
 class AlignableSurface;
 class Alignments;
@@ -28,6 +29,7 @@ public edm::EDAnalyzer
 public:
 
 	TrackerSystematicMisalignments(const edm::ParameterSet&);
+	~TrackerSystematicMisalignments();
 
 	/// Read ideal tracker geometry from DB
 	virtual void beginJob();
@@ -37,9 +39,8 @@ public:
 private:
 
 	void applySystematicMisalignment( Alignable* );
-	//align::GlobalVector findSystematicMis( align::PositionType );
-	align::GlobalVector findSystematicMis( const align::PositionType&, const bool blindToZ, const bool blindToR );
-	SurfaceDeformationFactory::Type getDeformationType(const GeomDetUnit *geomDetUnit, const TrackerTopology* const tTopo);
+	const std::pair<const align::GlobalVector, const align::RotationType>
+		findSystematicMis( const align::PositionType&, const bool blindToZ, const bool blindToR );
 	void applySystematicDeformation(Alignable *ali);
 	AlignableTracker* theAlignableTracker;
 
@@ -64,6 +65,10 @@ private:
 	double m_sagittaDelta;
 
 	std::vector<double> m_addDeformations;
+
+	std::string m_geometryComparisonRootFilename;
+	TFile *m_geometryComparisonRootFile;
+	std::map<int, std::pair<align::GlobalVector, align::RotationType> > m_movementsFromRootFile;
 
 	// flag to steer suppression of blind movements
 	bool suppressBlindMvmts;

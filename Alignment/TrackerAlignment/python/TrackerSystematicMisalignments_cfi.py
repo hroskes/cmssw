@@ -24,8 +24,16 @@ TrackerSystematicMisalignments = cms.EDAnalyzer("TrackerSystematicMisalignments"
 
     addDeformations = cms.untracked.vdouble(),
 
+    #apply the differences between 2 alignments to a third alignment,
+    #using the output of the geometry comparison tool.
+    #https://twiki.cern.ch/twiki/bin/viewauth/CMS/TkAlAllInOneValidation#Geometry_Comparison
+    #if the ROOT file was produced using
+    #    compare Tracker: alignment1, alignment2
+    #then running on the it will give output (inputalignment + alignment1 - alignment2)
+    geometryComparisonRootFilename = cms.untracked.string(""),
+
     # suppress blind movements
     suppressBlindMvmts = cms.untracked.bool(False),
     # compatibility flag for old z convention
-    oldMinusZconvention = cms.untracked.bool(False)
+    oldMinusZconvention = cms.untracked.bool(False),
 )
