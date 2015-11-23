@@ -154,7 +154,9 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 		int length = alignTree->GetEntries();
 		for (int i = 0; i < length; i++){
 			alignTree->GetEntry(i);
-			if (level != 1) continue;
+			if (level == 39) continue;
+			if (m_movementsFromRootFile.count(id))
+				throw cms::Exception("BadSetup") << id << " is in the tree twice!";
 			align::EulerAngles angles(3);
 			angles(1) = dalpha;
 			angles(2) = dbeta;
@@ -238,13 +240,10 @@ void TrackerSystematicMisalignments::applySystematicMisalignment(Alignable* ali)
 
 	const align::Alignables& comp = ali->components();
 	unsigned int nComp = comp.size();
-	//move then do for lower level object
-	//for issue of det vs detunit
-	bool usecomps = true;
-	if ((ali->alignableObjectId()==2)&&(nComp>=1)) usecomps = false;
 	for (unsigned int i = 0; i < nComp; ++i){
-		if (usecomps) applySystematicMisalignment(comp[i]);
+		applySystematicMisalignment(comp[i]);
 	}
+	if (nComp > 0) return;
 
 	// if suppression of blind mvmts: check if subdet is blind to a certain mode
 	bool blindToZ(false), blindToR(false);
@@ -275,12 +274,7 @@ void TrackerSystematicMisalignments::applySystematicMisalignment(Alignable* ali)
 		if (!m_movementsFromRootFile.empty()){
 			auto it = m_movementsFromRootFile.find(ali->id());
 			if (it == m_movementsFromRootFile.end())
-			{
-				//not found - this means level == 2
-				it = m_movementsFromRootFile.find(comp[0]->id());
-				if (it == m_movementsFromRootFile.end())
-					edm::LogWarning("MisalignedTracker") << "Module " <<  ali->id() << " not found in ROOT file!  Will not be moved!";
-			}
+				throw cms::Exception("MisalignedTracker") << "Module " <<  ali->id() << " not found in ROOT file!  id=" << ali->id() << " level=" << ali->alignableObjectId() << " motherid=" << ali->mother()->geomDetId().rawId() << " motherlevel=" << ali->mother()->alignableObjectId() << " subdetector=" << DetId(ali->id()).subdetId();
 			ali->move( it->second.first );
 			ali->rotateInGlobalFrame( it->second.second );
 		}
