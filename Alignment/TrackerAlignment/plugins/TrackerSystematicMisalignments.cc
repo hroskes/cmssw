@@ -158,9 +158,9 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 			if (m_movementsFromRootFile.count(id))
 				throw cms::Exception("BadSetup") << id << " is in the tree twice!";
 			align::EulerAngles angles(3);
-			angles(1) = dalpha;
-			angles(2) = dbeta;
-			angles(3) = dgamma;
+			angles(1) = 0;
+			angles(2) = 0;
+			angles(3) = 0;
 			auto pair = std::make_pair(align::GlobalVector(dx, dy, dz), align::toMatrix(angles));
 			m_movementsFromRootFile.emplace(id, pair);
 		}
