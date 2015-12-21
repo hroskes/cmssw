@@ -15,6 +15,20 @@ Features in addition to CMSSW_7_4_16
 ------------------------------------
 
 ### Remove obsolete cms* scripts for eos file operations
-This corresponds to PR #12795: https://github.com/cms-sw/cmssw/pull/12795/commits
+This corresponds to PRs [#12795](https://github.com/cms-sw/cmssw/pull/12795/commits)
+and [#11830](https://github.com/cms-sw/cmssw/pull/11830/commits)
 
 Replaces cms* scripts for eos file system operations by appropriate eos commands.
+
+### Zmumu validation update
+Originally in PR [#11197](https://github.com/cms-sw/cmssw/pull/11197/commits), rebased in [#11830](https://github.com/cms-sw/cmssw/pull/11830/commits)
+
+Updates to fitting and plotting code
+
+### Bugfixes
+This corresponds to PR [#12526](https://github.com/cms-sw/cmssw/pull/12526)
+
+Fixes in the systematic misalignment tool, offline validation, and 3D geometry comparison
+
+### Faster surface deformation plots
+This corresponds to PR [#11024](https://github.com/cms-sw/cmssw/pull/11024)
