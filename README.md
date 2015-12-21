@@ -14,5 +14,7 @@ Feel free to tag the current version of this branch with a meaningful tag name b
 Features in addition to CMSSW_7_4_16
 ------------------------------------
 
-### Example feature
-Add a brief description about the commits(s) and any other information that is important about this features
+### Remove obsolete cms* scripts for eos file operations
+This corresponds to PR #12795: https://github.com/cms-sw/cmssw/pull/12795/commits
+
+Replaces cms* scripts for eos file system operations by appropriate eos commands.
