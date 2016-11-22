@@ -1,8 +1,8 @@
 import math
 #=================================
 #inputs
-globaltag = '74X_dataRun2_Prompt_v4'    #APEs are copied from this GT (and IdealGeometry and TrackerTopology are used)
-inputsqlitefile = None                  #if None, uses the GT alignment
+globaltag = '74X_dataRun2_Prompt_v4'    #APEs are copied from this GT (and IdealGeometry is used)
+inputsqlitefile = '/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/develop/CMSSW_7_4_12_patch4/src/Alignment/HIPAlignmentAlgorithm/hp1519.db'                  #if None, uses the GT alignment
 alignmenttag = 'Alignments'             #tag name for TrackerAlignmentRcd in the input file, also used for the output file
 runnumberalignmentIOV = 257968          #any run number in the iov that you want to start from
 
@@ -15,7 +15,7 @@ runnumberalignmentIOV = 257968          #any run number in the iov that you want
 radialEpsilon            = -1000. # 5e-4
 telescopeEpsilon         = -1000. # 5e-4
 layerRotEpsilon          = -1000. # 9.43e-6               #cm^-1
-modulatedLayerRotEpsilon = -1000.            #cm^-2
+modulatedLayerRotEpsilon = -1.4e-8            #cm^-2
 modulatedLayerRotDoubleSineEpsilon = -1000. # 3.46888e-8            #cm^-2
 bowingEpsilon            = -1000. # 6.77e-9               #cm^-2
 zExpEpsilon              = -1000. # 2.02e-4
@@ -25,12 +25,12 @@ skewEpsilon              = -1000. # 5.5e-2                #cm
 sagittaEpsilon           = -1000. # 5.0e-4
 
 #phases for phi dependent misalignments
-ellipticalDelta          = math.pi
+ellipticalDelta          = 0.
 skewDelta                = 0.
 sagittaDelta             = 0.
-modulatedLayerRotDelta   = 0.   #converted to radians later
+modulatedLayerRotDelta   = -30.   #converted to radians later
 
-outputfilename = 'dbfiles/trytofix/hp1519_runDIOV3_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
+outputfilename = 'dbfiles/trytofix/IOV/hp1519_run257968_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
 
 #=================================
 
@@ -55,7 +55,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # initial geom
 # configure the database file - use survey one for default
-process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff")
 process.GlobalTag.globaltag=globaltag
 if inputsqlitefile is not None:
     process.GlobalTag.toGet = cms.VPSet(

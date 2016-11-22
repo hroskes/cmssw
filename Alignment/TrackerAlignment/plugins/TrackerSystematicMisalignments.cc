@@ -48,6 +48,8 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 	m_radialEpsilon = cfg.getUntrackedParameter< double > ("radialEpsilon");
 	m_telescopeEpsilon = cfg.getUntrackedParameter< double > ("telescopeEpsilon");
 	m_layerRotEpsilon = cfg.getUntrackedParameter< double > ("layerRotEpsilon");
+	m_modulatedLayerRotEpsilon = cfg.getUntrackedParameter< double > ("modulatedLayerRotEpsilon");
+	m_modulatedLayerRotDoubleSineEpsilon = cfg.getUntrackedParameter< double > ("modulatedLayerRotDoubleSineEpsilon");
 	m_bowingEpsilon = cfg.getUntrackedParameter< double > ("bowingEpsilon");
 	m_zExpEpsilon = cfg.getUntrackedParameter< double > ("zExpEpsilon");
 	m_twistEpsilon = cfg.getUntrackedParameter< double > ("twistEpsilon");
@@ -58,6 +60,8 @@ TrackerSystematicMisalignments::TrackerSystematicMisalignments(const edm::Parame
 	m_ellipticalDelta = cfg.getUntrackedParameter< double > ("ellipticalDelta");
 	m_skewDelta = cfg.getUntrackedParameter< double > ("skewDelta");
 	m_sagittaDelta = cfg.getUntrackedParameter< double > ("sagittaDelta");
+	m_modulatedLayerRotDelta = cfg.getUntrackedParameter< double > ("modulatedLayerRotDelta");
+	m_modulatedLayerRotDoubleSineDelta = cfg.getUntrackedParameter< double > ("modulatedLayerRotDoubleSineDelta");
 
 	if (m_radialEpsilon > -990.0){
 		edm::LogWarning("MisalignedTracker") << "Applying radial ...";
@@ -200,6 +204,8 @@ void TrackerSystematicMisalignments::applySystematicMisalignment(Alignable* ali)
 				break;
 		}
 	}
+	if (ali->geomDetId().subdetId() != SiStripDetId::TEC)
+		return;
 
 	const int level = ali->alignableObjectId();
 	if ((level == 1)||(level == 2)){
@@ -253,7 +259,21 @@ align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( const ali
 		deltaX += (xP - oldX);
 		deltaY += (yP - oldY);
 	}
-	if (m_ellipticalEpsilon > -990.0 && !blindToR){
+        if (m_modulatedLayerRotEpsilon > -990.0 && oldZ < 0){
+		const double Roffset = 57.0;
+                const double xP = oldR*cos(oldPhi+m_modulatedLayerRotEpsilon*(oldR-Roffset)*oldZ*cos(oldPhi+m_modulatedLayerRotDelta));
+                const double yP = oldR*sin(oldPhi+m_modulatedLayerRotEpsilon*(oldR-Roffset)*oldZ*cos(oldPhi+m_modulatedLayerRotDelta));
+                deltaX += (xP - oldX);
+                deltaY += (yP - oldY);
+        }
+        if (m_modulatedLayerRotDoubleSineEpsilon > -990.0 && oldZ > 0){
+		const double Roffset = 57.0;
+                const double xP = oldR*cos(oldPhi+m_modulatedLayerRotDoubleSineEpsilon*(oldR-Roffset)*oldZ*cos(2*(oldPhi+m_modulatedLayerRotDoubleSineDelta)));
+                const double yP = oldR*sin(oldPhi+m_modulatedLayerRotDoubleSineEpsilon*(oldR-Roffset)*oldZ*cos(2*(oldPhi+m_modulatedLayerRotDoubleSineDelta)));
+                deltaX += (xP - oldX);
+                deltaY += (yP - oldY);
+        }
+	if (m_ellipticalEpsilon > -990.0 && !blindToR && oldZ > 0){
 		deltaX += oldX*m_ellipticalEpsilon*cos(2.0*oldPhi + m_ellipticalDelta);
 		deltaY += oldY*m_ellipticalEpsilon*cos(2.0*oldPhi + m_ellipticalDelta);
 	}
@@ -268,6 +288,8 @@ align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( const ali
 
 	// Compatibility with old version <= 1.5
 	if (oldMinusZconvention) deltaZ = -deltaZ;
+
+        //if (oldZ>0) deltaX = deltaY = deltaZ = 0;
 
 	align::GlobalVector gV( deltaX, deltaY, deltaZ );
 	return gV;
