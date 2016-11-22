@@ -7,6 +7,8 @@ TrackerSystematicMisalignments = cms.EDAnalyzer("TrackerSystematicMisalignments"
     radialEpsilon = cms.untracked.double(-999.0), # default 5e-4 ~ 600 um
     telescopeEpsilon = cms.untracked.double(-999.0), # default 5e-4 ~ 600 um
     layerRotEpsilon = cms.untracked.double(-999.0), # 9.43e-6                   cm^-1
+    modulatedLayerRotEpsilon = cms.untracked.double(-999.0), # 3.46888e-8       cm^-2
+    modulatedLayerRotDoubleSineEpsilon = cms.untracked.double(-999.0), # 3.46888e-8       cm^-2
     bowingEpsilon = cms.untracked.double(-999.0), #6.77e-9                      cm^-2
     zExpEpsilon = cms.untracked.double(-999.0), # 2.02e-4
     twistEpsilon = cms.untracked.double(-999.0),# 2.04e-6                       cm^-1
@@ -21,6 +23,8 @@ TrackerSystematicMisalignments = cms.EDAnalyzer("TrackerSystematicMisalignments"
     ellipticalDelta = cms.untracked.double(0),
     skewDelta = cms.untracked.double(0),
     sagittaDelta = cms.untracked.double(0),
+    modulatedLayerRotDelta = cms.untracked.double(0),
+    modulatedLayerRotDoubleSineDelta = cms.untracked.double(0),
 
     # suppress blind movements
     suppressBlindMvmts = cms.untracked.bool(False),

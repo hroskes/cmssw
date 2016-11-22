@@ -52,6 +52,8 @@ private:
 	double m_radialEpsilon;
 	double m_telescopeEpsilon;
 	double m_layerRotEpsilon;
+	double m_modulatedLayerRotEpsilon;
+	double m_modulatedLayerRotDoubleSineEpsilon;
 	double m_bowingEpsilon;
 	double m_zExpEpsilon;
 	double m_twistEpsilon;
@@ -63,6 +65,8 @@ private:
         double m_ellipticalDelta;
         double m_skewDelta;
         double m_sagittaDelta;
+	double m_modulatedLayerRotDelta;
+	double m_modulatedLayerRotDoubleSineDelta;
 
 	// flag to steer suppression of blind movements
 	bool suppressBlindMvmts;

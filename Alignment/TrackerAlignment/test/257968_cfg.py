@@ -15,7 +15,7 @@ runnumberalignmentIOV = 257968          #any run number in the iov that you want
 radialEpsilon            = -1000. # 5e-4
 telescopeEpsilon         = -1000. # 5e-4
 layerRotEpsilon          = -1000. # 9.43e-6               #cm^-1
-modulatedLayerRotEpsilon = -1000.            #cm^-2
+modulatedLayerRotEpsilon = -1.4e-8            #cm^-2
 modulatedLayerRotDoubleSineEpsilon = -1000. # 3.46888e-8            #cm^-2
 bowingEpsilon            = -1000. # 6.77e-9               #cm^-2
 zExpEpsilon              = -1000. # 2.02e-4
@@ -25,12 +25,12 @@ skewEpsilon              = -1000. # 5.5e-2                #cm
 sagittaEpsilon           = -1000. # 5.0e-4
 
 #phases for phi dependent misalignments
-ellipticalDelta          = math.pi
+ellipticalDelta          = 0.
 skewDelta                = 0.
 sagittaDelta             = 0.
-modulatedLayerRotDelta   = 0.   #converted to radians later
+modulatedLayerRotDelta   = -30.   #converted to radians later
 
-outputfilename = 'dbfiles/trytofix/hp1519_runDIOV3_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
+outputfilename = 'dbfiles/trytofix/IOV/hp1519_run257968_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
 
 #=================================
 

@@ -20,17 +20,17 @@ modulatedLayerRotDoubleSineEpsilon = -1000. # 3.46888e-8            #cm^-2
 bowingEpsilon            = -1000. # 6.77e-9               #cm^-2
 zExpEpsilon              = -1000. # 2.02e-4
 twistEpsilon             = -1000. # 2.04e-6               #cm^-1
-ellipticalEpsilon        = -1000.
+ellipticalEpsilon        = -5e-4 # 5e-4
 skewEpsilon              = -1000. # 5.5e-2                #cm
 sagittaEpsilon           = -1000. # 5.0e-4
 
 #phases for phi dependent misalignments
-ellipticalDelta          = math.pi
+ellipticalDelta          = -90.  #converted to radians later
 skewDelta                = 0.
 sagittaDelta             = 0.
 modulatedLayerRotDelta   = 0.   #converted to radians later
 
-outputfilename = 'dbfiles/trytofix/hp1519_runDIOV3_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
+outputfilename = 'dbfiles/trytofix/TEC+/hp1519_runDIOV3_elliptical_TEC+only_epsilon%s_delta%s.db' % (ellipticalEpsilon, ellipticalDelta)
 
 #=================================
 
@@ -86,7 +86,7 @@ process.TrackerSystematicMisalignments.skewEpsilon       = skewEpsilon
 process.TrackerSystematicMisalignments.sagittaEpsilon    = sagittaEpsilon
 
 #misalignment phases
-process.TrackerSystematicMisalignments.ellipticalDelta   = ellipticalDelta
+process.TrackerSystematicMisalignments.ellipticalDelta   = math.radians(ellipticalDelta)
 process.TrackerSystematicMisalignments.skewDelta         = skewDelta
 process.TrackerSystematicMisalignments.sagittaDelta      = sagittaDelta
 process.TrackerSystematicMisalignments.modulatedLayerRotDelta      = math.radians(modulatedLayerRotDelta)
