@@ -1,8 +1,8 @@
 import math
 #=================================
 #inputs
-globaltag = '74X_dataRun2_Prompt_v4'    #APEs are copied from this GT (and IdealGeometry is used)
-inputsqlitefile = '/afs/cern.ch/cms/CAF/CMSALCA/ALCA_TRACKERALIGN2/HIP/xiaomeng/develop/CMSSW_7_4_12_patch4/src/Alignment/HIPAlignmentAlgorithm/hp1519.db'                  #if None, uses the GT alignment
+globaltag = '80X_dataRun2_Prompt_v15_forTkAlNovCamp_singleIOV_v1'    #APEs are copied from this GT (and IdealGeometry is used)
+inputsqlitefile = None                  #if None, uses the GT alignment
 alignmenttag = 'Alignments'             #tag name for TrackerAlignmentRcd in the input file, also used for the output file
 runnumberalignmentIOV = RUNRUNRUN          #any run number in the iov that you want to start from
 
@@ -30,7 +30,8 @@ skewDelta                = 0.
 sagittaDelta             = 0.
 modulatedLayerRotDelta   = -30.   #converted to radians later
 
-outputfilename = 'dbfiles/trytofix/IOV/hp1519_runRUNRUNRUN_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
+#outputfilename = 'dbfiles/trytofix/IOV/hp1519_runRUNRUNRUN_modulatedLayerRot_TEC-only_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
+outputfilename = 'dbfiles/multiIOV/runRUNRUNRUN_modulatedLayerRot_epsilon%s_delta%s.db' % (modulatedLayerRotEpsilon, modulatedLayerRotDelta)
 
 #=================================
 
