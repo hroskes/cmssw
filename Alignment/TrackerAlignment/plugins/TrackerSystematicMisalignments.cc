@@ -204,8 +204,8 @@ void TrackerSystematicMisalignments::applySystematicMisalignment(Alignable* ali)
 				break;
 		}
 	}
-	if (ali->geomDetId().subdetId() != SiStripDetId::TEC)
-		return;
+	//if (ali->geomDetId().subdetId() != SiStripDetId::TEC)
+	//	return;
 
 	const int level = ali->alignableObjectId();
 	if ((level == 1)||(level == 2)){
@@ -259,14 +259,14 @@ align::GlobalVector TrackerSystematicMisalignments::findSystematicMis( const ali
 		deltaX += (xP - oldX);
 		deltaY += (yP - oldY);
 	}
-        if (m_modulatedLayerRotEpsilon > -990.0 && oldZ < 0){
+        if (m_modulatedLayerRotEpsilon > -990.0){
 		const double Roffset = 57.0;
                 const double xP = oldR*cos(oldPhi+m_modulatedLayerRotEpsilon*(oldR-Roffset)*oldZ*cos(oldPhi+m_modulatedLayerRotDelta));
                 const double yP = oldR*sin(oldPhi+m_modulatedLayerRotEpsilon*(oldR-Roffset)*oldZ*cos(oldPhi+m_modulatedLayerRotDelta));
                 deltaX += (xP - oldX);
                 deltaY += (yP - oldY);
         }
-        if (m_modulatedLayerRotDoubleSineEpsilon > -990.0 && oldZ > 0){
+        if (m_modulatedLayerRotDoubleSineEpsilon > -990.0){
 		const double Roffset = 57.0;
                 const double xP = oldR*cos(oldPhi+m_modulatedLayerRotDoubleSineEpsilon*(oldR-Roffset)*oldZ*cos(2*(oldPhi+m_modulatedLayerRotDoubleSineDelta)));
                 const double yP = oldR*sin(oldPhi+m_modulatedLayerRotDoubleSineEpsilon*(oldR-Roffset)*oldZ*cos(2*(oldPhi+m_modulatedLayerRotDoubleSineDelta)));
