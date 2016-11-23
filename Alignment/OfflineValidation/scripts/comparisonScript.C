@@ -117,7 +117,7 @@ void comparisonScript (TString inFile,//="mp1510_vs_mp1509.Comparison_commonTrac
     // now the object to produce the comparison plots is created
     
     // Plot Translations
-    GeometryComparisonPlotter * trans = new GeometryComparisonPlotter (inFile, outDir,modulesToPlot,alignmentName,referenceName,plotOnlyGlobal);
+    GeometryComparisonPlotter * trans = new GeometryComparisonPlotter (inFile, outDir+"/Translations/",modulesToPlot,alignmentName,referenceName,plotOnlyGlobal);
     // x and y contain the couples to plot
     // -> every combination possible will be performed
     // /!\ always give units (otherwise, unexpected bug from root...)
@@ -153,7 +153,7 @@ void comparisonScript (TString inFile,//="mp1510_vs_mp1509.Comparison_commonTrac
 
     
     // Plot Rotations
-    GeometryComparisonPlotter * rot = new GeometryComparisonPlotter (inFile, outDir,modulesToPlot,alignmentName,referenceName,plotOnlyGlobal);
+    GeometryComparisonPlotter * rot = new GeometryComparisonPlotter (inFile, outDir+"/Rotations/",modulesToPlot,alignmentName,referenceName,plotOnlyGlobal);
     // x and y contain the couples to plot
     // -> every combination possible will be performed
     // /!\ always give units (otherwise, unexpected bug from root...)

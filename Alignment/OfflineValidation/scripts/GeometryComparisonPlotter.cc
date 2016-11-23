@@ -63,6 +63,8 @@ GeometryComparisonPlotter::GeometryComparisonPlotter (TString tree_file_name,
     cout << __FILE__ << ":"<< __LINE__ << ":Info: inside constructor of GeometryComparisonPlotter utility"<< endl;
 #endif
 
+    gSystem->mkdir(_output_directory, true);
+
     //_sublevel_names = {"PXB", "PXF", "TIB", "TID", "TOB", "TEC"}; // C++11
     _sublevel_names[0] = TString("PXB");
     _sublevel_names[1] = TString("PXF");
