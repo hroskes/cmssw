@@ -79,7 +79,25 @@ class PrimaryVertexValidation(GenericValidationData, ValidationWithPlots):
 
         mergedoutputfile = os.path.join("root://eoscms//eos/cms", repMap["finalResultFile"].lstrip("/"))
         return "hadd -f %s %s\n" % (mergedoutputfile, parameters)
+    
+    @classmethod 
+    def runPlots(cls, validations):
+        retstr='''
+rfcp .oO[plottingscriptpath]Oo. .
+root -x -b -q .oO[plottingscriptname]Oo.++
 
+for PdfOutputFile in $(ls *pdf ); do
+  #xrdcp -f ${PdfOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
+  rfcp ${PdfOutputFile}  .oO[datadir]Oo./
+done
+for PngOutputFile in $(ls *png ); do
+    #xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
+    rfcp ${PngOutputFile}  .oO[datadir]Oo./
+done
+        '''
+        return retstr
+        
+        
     def appendToPlots(self):
         repMap = self.getRepMap()
         return (' loadFileList("root://eoscms//eos/cms%(finalResultFile)s",'
@@ -88,7 +106,8 @@ class PrimaryVertexValidation(GenericValidationData, ValidationWithPlots):
     @classmethod
     def plottingscriptname(cls):
         return "TkAlPrimaryVertexValidationPlot.C"
-
+        
+	
     @classmethod
     def plottingscripttemplate(cls):
         return configTemplates.PrimaryVertexPlotTemplate
