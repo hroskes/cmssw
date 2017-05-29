@@ -96,34 +96,9 @@ process.TFileService.fileName = cms.string("TkSurfDeform_.oO[name]Oo..Comparison
 
 process.TrackerGeometryCompare.levels = [ .oO[levels]Oo. ]
 
-  ##FIXME!!!!!!!!!
-  ##replace TrackerGeometryCompare.writeToDB = .oO[dbOutput]Oo.
-  ##removed: dbOutputService
-
 process.p = cms.Path(process.TrackerGeometryCompare)
 """
   
-
-######################################################################
-######################################################################
-dbOutputTemplate= """
-//_________________________ db Output ____________________________
-        # setup for writing out to DB
-        include "CondCore/DBCommon/CondDBSetup.cfi"
-#       include "CondCore/DBCommon/data/CondDBCommon.cfi"
-
-    service = PoolDBOutputService {
-        using CondDBSetup
-        VPSet toPut = {
-            { string record = "TrackerAlignmentRcd"  string tag = ".oO[tag]Oo." },
-            { string record = "TrackerAlignmentErrorExtendedRcd"  string tag = ".oO[errortag]Oo." }
-        }
-                # string connect = "sqlite_file:.oO[workdir]Oo./.oO[name]Oo.Common.oO[common]Oo..db"
-                string connect = "sqlite_file:.oO[name]Oo.Common.oO[common]Oo..db"
-                # untracked string catalog = "file:alignments.xml"
-        untracked string timetype = "runnumber"
-    }
-"""
 
 ######################################################################
 ######################################################################

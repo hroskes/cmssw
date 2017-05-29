@@ -37,7 +37,7 @@ class GeometryComparison(GenericValidation):
         "dgamma_min":"-99999",
         "dgamma_max":"-99999",
         }
-    mandatories = {"levels", "dbOutput"}
+    mandatories = {"levels"}
     valType = "compare"
     def __init__( self, valName, alignment, referenceAlignment,
                   config, copyImages = True):
@@ -85,7 +85,7 @@ class GeometryComparison(GenericValidation):
             referenceName  = self.referenceAlignment.name
             referenceTitle = self.referenceAlignment.title
 
-        assert len(self.__compares) == 1 #? not sure how it can be anything else, but just in case
+        assert len(self.__compares) == 1, self.__compares #? not sure how it can be anything else, but just in case
         common = self.__compares.keys()[0]
 
         repMap.update({
@@ -126,13 +126,8 @@ class GeometryComparison(GenericValidation):
         cfgSchedule = cfgs.keys()
         for common in self.__compares:
             repMap.update({
-                           "levels": self.__compares[common][0],
-                           "dbOutput": pythonboolstring(self.__compares[common][1], "dbOutput")
+                           "levels": ", ".join('"{}"'.format(_) for _ in self.__compares[common]),
                            })
-            if self.__compares[common][1].split()[0] == "true":
-                repMap["dbOutputService"] = configTemplates.dbOutputTemplate
-            else:
-                repMap["dbOutputService"] = ""
             cfgName = replaceByMap(("TkAlCompareCommon.oO[common]Oo.."
                                     ".oO[name]Oo._cfg.py"),repMap)
             cfgs[cfgName] = configTemplates.compareTemplate
@@ -154,7 +149,7 @@ class GeometryComparison(GenericValidation):
                         y_ranges += ","+repMap["%s_max"%diff]
 
         for name in self.__compares:
-            if  '"DetUnit"' in self.__compares[name][0].split(","):
+            if  'DetUnit' in self.__compares[name]:
                 repMap["outputFile"] = (".oO[name]Oo..Comparison_common"+name+".root")
                 repMap["nIndex"] = ("")
                 repMap["runComparisonScripts"] += \
@@ -290,9 +285,6 @@ class GeometryComparison(GenericValidation):
             raise AllInOneError(replaceByMap(".oO[moduleList]Oo. does not exist!", repMap))
 
         for cfg in self.configFiles:
-            # FIXME: produce this line only for enabled dbOutput
-            # postProcess = "rfcp .oO[workdir]Oo./*.db .oO[datadir]Oo.\n"
-            # postProcess = "rfcp *.db .oO[datadir]Oo.\n"
             postProcess = ""
             repMap["CommandLine"]+= \
                 repMap["CommandLineTemplate"]%{"cfgFile":cfg,
