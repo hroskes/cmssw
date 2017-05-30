@@ -21,7 +21,7 @@ from Alignment.OfflineValidation.TkAlAllInOneTool.alignment import Alignment
 from Alignment.OfflineValidation.TkAlAllInOneTool.genericValidation \
     import GenericValidation, ParallelValidation, ValidationWithComparison, ValidationWithPlots
 from Alignment.OfflineValidation.TkAlAllInOneTool.geometryComparison \
-    import GeometryComparison
+    import GeometryComparison, BarycenterComparison
 from Alignment.OfflineValidation.TkAlAllInOneTool.offlineValidation \
     import OfflineValidation, OfflineValidationDQM
 from Alignment.OfflineValidation.TkAlAllInOneTool.monteCarloValidation \
@@ -146,6 +146,17 @@ class ValidationJob:
         elif valType == "primaryvertex":
             validation = PrimaryVertexValidation( name, 
                 Alignment( alignments.strip(), self.__config ), self.__config )
+        elif valType == "barycenter":
+            alignmentslist = alignments.split()
+            alignmentname = alignmentslist[0]
+            if len(alignmentslist) == 1:
+                runnumber = "1"
+            elif len(alignmentslist) == 2:
+                runnumber = alignmentslist[1]
+            else:
+                raise AllInOneError("alignments '{}' should be an alignment name, or an alignment name and a run number.".format(alignments))
+            validation = BarycenterComparison( name, 
+                Alignment( alignmentname, self.__config, runnumber ), self.__config )
         else:
             raise AllInOneError("Unknown validation mode '%s'"%valType)
 
@@ -265,19 +276,18 @@ def createMergeScript( path, validations ):
 
     comparisonLists = {} # directory of lists containing the validations that are comparable
     for validation in validations:
-        for referenceName in validation.filesToCompare:
-            validationtype = type(validation)
-            if isinstance(validationtype, PreexistingValidation):
-                #find the actual validationtype
-                for parentclass in validationtype.mro():
-                    if not issubclass(parentclass, PreexistingValidation):
-                        validationtype = parentclass
-                        break
-            key = (validationtype, referenceName)
-            if key in comparisonLists:
-                comparisonLists[key].append(validation)
-            else:
-                comparisonLists[key] = [validation]
+        validationtype = type(validation)
+        if isinstance(validationtype, PreexistingValidation):
+            #find the actual validationtype
+            for parentclass in validationtype.mro():
+                if not issubclass(parentclass, PreexistingValidation):
+                    validationtype = parentclass
+                    break
+        key = validationtype
+        if key in comparisonLists:
+            comparisonLists[key].append(validation)
+        else:
+            comparisonLists[key] = [validation]
 
     # introduced to merge individual validation outputs separately
     #  -> avoids problems with merge script
@@ -289,7 +299,7 @@ def createMergeScript( path, validations ):
 
     anythingToMerge = []
     
-    for (validationType, referencename), validations in comparisonLists.iteritems():
+    for validationType, validations in comparisonLists.iteritems():
         for validation in validations:
             if (isinstance(validation, PreexistingValidation)
               or validation.NJobs == 1
@@ -316,12 +326,12 @@ def createMergeScript( path, validations ):
         repMap["DownloadData"] = ""
 
     repMap["RunValidationPlots"] = ""
-    for (validationType, referencename), validations in comparisonLists.iteritems():
+    for validationType, validations in comparisonLists.iteritems():
         if issubclass(validationType, ValidationWithPlots):
             repMap["RunValidationPlots"] += validationType.doRunPlots(validations)
 
     repMap["CompareAlignments"] = "#run comparisons"
-    for (validationType, referencename), validations in comparisonLists.iteritems():
+    for validationType, validations in comparisonLists.iteritems():
         if issubclass(validationType, ValidationWithComparison):
             repMap["CompareAlignments"] += validationType.doComparison(validations)
                 

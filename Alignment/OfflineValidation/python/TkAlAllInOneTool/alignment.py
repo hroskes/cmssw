@@ -50,7 +50,10 @@ class Alignment(object):
         if "|" in self.title or "," in self.title or '"' in self.title:
             msg = "The characters '|', '\"', and ',' cannot be used in the alignment title!"
             raise AllInOneError(msg)
-        self.runGeomComp = runGeomComp
+        try:
+            self.runGeomComp = str(int(runGeomComp))
+        except ValueError:
+            raise AllInOneError("Run number {} should be an integer".format(runGeomComp))
         self.globaltag = config.get( section, "globaltag" )
         self.conditions = self.__getConditions( config, section )
 

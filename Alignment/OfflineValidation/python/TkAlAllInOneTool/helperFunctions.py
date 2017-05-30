@@ -1,3 +1,4 @@
+import errno
 import os
 import ROOT
 from TkAlExceptions import AllInOneError
@@ -159,6 +160,16 @@ def cache(function):
             return newfunction(*args, **kwargs)
     newfunction.__name__ = function.__name__
     return newfunction
+
+def mkdir_p(path):
+    """http://stackoverflow.com/a/600612/5228524"""
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 def boolfromstring(string, name):
     """

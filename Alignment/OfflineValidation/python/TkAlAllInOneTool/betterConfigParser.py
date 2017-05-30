@@ -3,6 +3,8 @@ import os
 import re
 import copy
 import collections
+
+from helperFunctions import recursivesubclasses
 from TkAlExceptions import AllInOneError
 
 
@@ -128,15 +130,17 @@ class BetterConfigParser(ConfigParser.ConfigParser):
         return alignments
 
     def getCompares( self ):
-        from geometryComparison import GeometryComparison
+        from geometryComparison import GeometryComparisonBase
         compares = {}
         for section in self.sections():
-            if "compare:" in section:
-                self.checkInput(section,
-                                knownSimpleOptions = set(GeometryComparison.defaults.keys())|GeometryComparison.mandatories|GeometryComparison.optionals)
-                levels = self.get( section, "levels" )
-                levels = [_.strip() for _ in levels.replace('"', "").replace("'", "").split(",")]
-                compares[section.split(":")[1]] = levels
+            for cls in recursivesubclasses(GeometryComparisonBase):
+                if cls.__abstractmethods__: continue
+                if cls.valType+":" in section:
+                    self.checkInput(section,
+                                    knownSimpleOptions = set(cls.defaults.keys())|cls.mandatories|cls.optionals)
+                    levels = self.get( section, "levels" )
+                    levels = [_.strip() for _ in levels.replace('"', "").replace("'", "").split(",")]
+                    compares[section.split(":")[1]] = levels
         return compares
 
     def getGeneral( self ):

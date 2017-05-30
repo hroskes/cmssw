@@ -5,7 +5,8 @@ import globalDictionaries
 import configTemplates
 
 from genericValidation import ValidationMetaClass, ValidationWithComparison, ValidationWithPlots
-from helperFunctions import getCommandOutput2, replaceByMap, cppboolstring
+from geometryComparison import BarycenterComparison
+from helperFunctions import getCommandOutput2, replaceByMap, cppboolstring, pythonboolstring
 from offlineValidation import OfflineValidation
 from primaryVertexValidation import PrimaryVertexValidation
 from TkAlExceptions import AllInOneError
@@ -221,12 +222,24 @@ class PlottingOptionsPrimaryVertex(BasePlottingOptions):
         for name in "autoLimits", "doMaps", "stdResiduals":
             self.general[name] = cppboolstring(self.general[name], name)
 
+class PlottingOptionsBarycenter(BasePlottingOptions):
+    defaults = {
+                "xmin": "None",
+                "xmax": "None",
+                "subtractTOB": "True",
+               }
+    validationclass = BarycenterComparison
+    def __init__(self, config):
+        super(PlottingOptionsBarycenter, self).__init__(config, "barycenter")
+        self.general["subtractTOB"] = pythonboolstring(self.general["subtractTOB"], "subtractTOB")
+
 def PlottingOptions(config, valType):
     plottingOptionsClasses = {
                               "offline": PlottingOptionsOffline,
                               "split": PlottingOptionsTrackSplitting,
                               "zmumu": PlottingOptionsZMuMu,
                               "primaryvertex": PlottingOptionsPrimaryVertex,
+                              "barycenter": PlottingOptionsBarycenter,
                              }
     if isinstance(valType, type):
         valType = valType.valType

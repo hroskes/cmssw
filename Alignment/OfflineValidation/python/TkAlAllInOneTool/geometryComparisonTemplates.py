@@ -152,3 +152,14 @@ void TkAl3DVisualization_.oO[common]Oo._.oO[name]Oo.(){
                     lineycoord );
 }
 """
+
+
+######################################################################
+######################################################################
+barycenterPlotTemplate = """
+from Alignment.OfflineValidation.plotsubdetcenter import plotsubdetcenter, Barycenter
+
+plotsubdetcenter(.oO[xmin]Oo., .oO[xmax]Oo., ".oO[datadir]Oo./.oO[PlotsDirName]Oo.", .oO[subtractTOB]Oo.,
+.oO[PlottingInstantiation]Oo.
+)
+"""
