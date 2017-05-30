@@ -181,7 +181,7 @@ def boolfromstring(string, name):
     if string.lower() == "false": return False
     #try as a number
     try:
-        return str(bool(int(string)))
+        return bool(int(string))
     except ValueError:
         pass
     #out of options

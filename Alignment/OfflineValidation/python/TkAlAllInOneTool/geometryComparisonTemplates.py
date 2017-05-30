@@ -157,9 +157,14 @@ void TkAl3DVisualization_.oO[common]Oo._.oO[name]Oo.(){
 ######################################################################
 ######################################################################
 barycenterPlotTemplate = """
+import ROOT
+
 from Alignment.OfflineValidation.plotsubdetcenter import plotsubdetcenter, Barycenter
 
-plotsubdetcenter(.oO[xmin]Oo., .oO[xmax]Oo., ".oO[datadir]Oo./.oO[PlotsDirName]Oo.", .oO[subtractTOB]Oo.,
+ROOT.TkAlStyle.set(ROOT..oO[publicationstatus]Oo., ROOT..oO[era]Oo., ".oO[customtitle]Oo.", ".oO[customrighttitle]Oo.")
+
+plotsubdetcenter(
+    .oO[xmin]Oo., .oO[xmax]Oo., ".oO[datadir]Oo./.oO[PlotsDirName]Oo.", .oO[subtractTOB]Oo.,
 .oO[PlottingInstantiation]Oo.
 )
 """

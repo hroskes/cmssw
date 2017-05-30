@@ -8,6 +8,8 @@ import ROOT
 
 from Alignment.OfflineValidation.TkAlAllInOneTool.helperFunctions import cache, mkdir_p
 
+ROOT.gROOT.ProcessLine("#include <Alignment/OfflineValidation/plugins/TkAlStyle.cc>")
+
 class WrongSubdetError(Exception): pass
 
 @cache
@@ -72,6 +74,9 @@ class Barycenter(namedtuple("Barycenter", "filename title color style x leftorri
     legend.AddEntry(self.graph(*args), self.title, "p")
 
 def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
+  if ROOT.TkAlStyle.status() == ROOT.NO_STATUS:
+    ROOT.TkAlStyle.set(ROOT.INTERNAL)
+
   c = ROOT.TCanvas()
   mkdir_p(saveasdir)
   for axis in "xyz":
@@ -108,8 +113,6 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
         mg.GetYaxis().SetTitle(title)
         for alignment in alignments:
           alignment.text(axis, subdetid, side, yrange=ymax-ymin, subtractTOB=subtractTOB).Draw()
+        ROOT.TkAlStyle.drawStandardTitle()
         for ext in "png eps root pdf".split():
           c.SaveAs(os.path.join(saveasdir, subdet+sidename+axis+"."+ext))
-
-if __name__ == "__main__":
-  makeplots()

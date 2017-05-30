@@ -140,6 +140,8 @@ class BetterConfigParser(ConfigParser.ConfigParser):
                                     knownSimpleOptions = set(cls.defaults.keys())|cls.mandatories|cls.optionals)
                     levels = self.get( section, "levels" )
                     levels = [_.strip() for _ in levels.replace('"', "").replace("'", "").split(",")]
+                    if section.split(":")[1] in compares:
+                        raise AllInOneError("Multiple types of compare with the same name {}!".format(section.split(":")[1]))
                     compares[section.split(":")[1]] = levels
         return compares
 

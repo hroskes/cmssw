@@ -3,7 +3,7 @@ import os
 import re
 
 import configTemplates
-from helperFunctions import replaceByMap, parsecolor, parsestyle
+from helperFunctions import replaceByMap, parsecolor, parsestyle, boolfromstring
 from TkAlExceptions import AllInOneError
 
 class Alignment(object):
@@ -37,16 +37,22 @@ class Alignment(object):
             raise AllInOneError("section %s not found. Please define the "
                                   "alignment!"%section)
         config.checkInput(section,
-                          knownSimpleOptions = ['globaltag', 'style', 'color', 'title', 'mp', 'mp_alignments', 'mp_deformations', 'hp', 'sm'],
+                          knownSimpleOptions = ['globaltag', 'style', 'color', 'title', 'runnumberintitle', 'mp', 'mp_alignments', 'mp_deformations', 'hp', 'sm'],
                           knownKeywords = ['condition'])
         self.name = name
         if config.exists(section,"title"):
             self.title = config.get(section,"title")
         else:
             self.title = self.name
+
+        runnumberintitle = True
+        if config.exists(section, 'runnumberintitle'):
+            runnumberintitle = boolfromstring(config.get(section, 'runnumberintitle'), 'runnumberintitle')
+
         if (int(runGeomComp) != 1):
             self.name += "_run" + runGeomComp
-            self.title += " run " + runGeomComp
+            if runnumberintitle:
+                self.title += " run " + runGeomComp
         if "|" in self.title or "," in self.title or '"' in self.title:
             msg = "The characters '|', '\"', and ',' cannot be used in the alignment title!"
             raise AllInOneError(msg)
