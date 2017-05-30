@@ -1,7 +1,7 @@
 from abc import abstractproperty
 import os
 import configTemplates
-from genericValidation import GenericValidation, ValidationWithPlotsSummary
+from genericValidation import GenericValidation, ValidationWithPlotsSummary, ValidationForPresentation
 from helperFunctions import replaceByMap, getCommandOutput2, boolfromstring, cppboolstring, pythonboolstring
 from TkAlExceptions import AllInOneError
 
@@ -337,7 +337,7 @@ class GeometryComparison(GeometryComparisonBase):
         self.createFiles(files, path)
         return replaceByMap(".oO[runComparisonScripts]Oo.", repMap)
 
-class BarycenterComparison(GeometryComparisonBase, ValidationWithPlotsSummary):
+class BarycenterComparison(GeometryComparisonBase, ValidationWithPlotsSummary, ValidationForPresentation):
     valType = "barycenter"
     mandatories = {"xpos", "textside"}
     def __init__( self, valName, alignment, config):
@@ -386,3 +386,10 @@ class BarycenterComparison(GeometryComparisonBase, ValidationWithPlotsSummary):
             raise AllInOneError("invalid textside {textside}, has to be left or right!".format(**repmap))
         return replaceByMap("    Barycenter(.oO[resultFile]Oo., .oO[title]Oo., .oO[color]Oo., .oO[style]Oo., .oO[xpos]Oo., .oO[textside]Oo.),\n",
                             repmap)
+
+    @classmethod
+    def presentationsubsections(cls):
+        from offlineValidation import SubsectionSubdetectors
+        return [
+          SubsectionSubdetectors(".*.eps$", "Barycenter")
+        ]
