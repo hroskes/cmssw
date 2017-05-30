@@ -1,7 +1,7 @@
 from abc import abstractproperty
 import os
 import configTemplates
-from genericValidation import GenericValidation, ValidationWithPlots
+from genericValidation import GenericValidation, ValidationWithPlotsSummary
 from helperFunctions import replaceByMap, getCommandOutput2, boolfromstring, cppboolstring, pythonboolstring
 from TkAlExceptions import AllInOneError
 
@@ -337,7 +337,7 @@ class GeometryComparison(GeometryComparisonBase):
         self.createFiles(files, path)
         return replaceByMap(".oO[runComparisonScripts]Oo.", repMap)
 
-class BarycenterComparison(GeometryComparisonBase, ValidationWithPlots):
+class BarycenterComparison(GeometryComparisonBase, ValidationWithPlotsSummary):
     valType = "barycenter"
     mandatories = {"xpos", "textside"}
     def __init__( self, valName, alignment, config):

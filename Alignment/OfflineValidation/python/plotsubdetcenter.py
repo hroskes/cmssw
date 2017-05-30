@@ -75,12 +75,17 @@ class Barycenter(namedtuple("Barycenter", "filename title color style x leftorri
     legend.AddEntry(self.graph(*args), self.title, "p")
 
 def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
-  if ROOT.TkAlStyle.status() == ROOT.NO_STATUS:
-    ROOT.TkAlStyle.set(ROOT.INTERNAL)
-
   c = ROOT.TCanvas()
   mkdir_p(saveasdir)
-  for axis in "xyz":
+  with open(os.path.join(saveasdir, "BarycenterComparisonSummary.txt"), "w") as summaryfile:
+    summaryfile.write("(mm)")
+    for alignment in alignments:
+      summaryfile.write("\t"+alignment.title.replace("#", "\\"))
+    summaryfile.write("\tformat={}\tlatexformat={}\n")
+
+    if ROOT.TkAlStyle.status() == ROOT.NO_STATUS:
+      ROOT.TkAlStyle.set(ROOT.INTERNAL)
+
     for subdetid, subdet in enumerate(("BPIX", "FPIX", "TIB", "TID", "TOB", "TEC"), start=1):
       if subdet == "TOB" and subtractTOB: continue
       if subdet in ("BPIX", "TIB", "TOB"):
@@ -92,34 +97,43 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
         if side ==    1: sidename = "+"
         if side ==   -1: sidename = "-"
         if side is None: sidename = ""
-        print "{}{}".format(subdet, sidename), axis
-        mg = ROOT.TMultiGraph()
-        try:
+        for axis in "xyz":
+          print "{}{}".format(subdet, sidename), axis
+
+          summaryfile.write("{:>4}{:<1} {}\t".format(subdet, sidename, axis))
+          summaryfile.write("latexname={:>4}${:<1}$ ${}$\t".format(subdet, sidename, axis))
+          summaryfile.write("format={:>5.2f}\tlatexformat=${:.2f}$")
           for alignment in alignments:
-            mg.Add(alignment.graph(axis, subdetid, side, subtractTOB))
-        except WrongSubdetError:
-          continue #subdetector was not included in the validation
-        if xmin is None: xmin = min(alignment.x for x in alignments)
-        if xmax is None: xmax = max(alignment.x for x in alignments)
-        ymin = min([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
-        ymax = max([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
-        if ymin == ymax: ymax += .1
-        x = array("d", [xmin, xmax, xmax])
-        y = array("d", [0, ymin - .1*(ymax-ymin), ymax + .1*(ymax-ymin)])
-        assert len(x) == len(y) == 3, (x, y)
-        g = ROOT.TGraph(3, x, y)
-        mg.Add(g)
-        mg.Draw("AP")
-        mg.GetHistogram().GetXaxis().SetTickLength(0)
-        mg.GetHistogram().GetXaxis().SetLabelOffset(999)
-        ymin = mg.GetHistogram().GetMinimum()
-        ymax = mg.GetHistogram().GetMaximum()
-        title = "{axis}({subdet}{side}{ideal})"
-        if subtractTOB: title += " - {axis}(TOB) [mm]"
-        title = title.format(axis=axis, subdet=subdet, side=sidename, ideal=(" - ideal" if subdet in ("FPIX", "TID", "TEC") and axis == "z" else ""))
-        mg.GetYaxis().SetTitle(title)
-        for alignment in alignments:
-          alignment.text(axis, subdetid, side, xrange=xmax-xmin, yrange=ymax-ymin, subtractTOB=subtractTOB).Draw()
-        ROOT.TkAlStyle.drawStandardTitle()
-        for ext in "png eps root pdf".split():
-          c.SaveAs(os.path.join(saveasdir, subdet+sidename+axis+"."+ext))
+            summaryfile.write("\t"+str(alignment.y(axis, subdetid, side, subtractTOB)))
+          summaryfile.write("\n")
+
+          mg = ROOT.TMultiGraph()
+          try:
+            for alignment in alignments:
+              mg.Add(alignment.graph(axis, subdetid, side, subtractTOB))
+          except WrongSubdetError:
+            continue #subdetector was not included in the validation
+          if xmin is None: xmin = min(alignment.x for x in alignments)
+          if xmax is None: xmax = max(alignment.x for x in alignments)
+          ymin = min([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
+          ymax = max([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
+          if ymin == ymax: ymax += .1
+          x = array("d", [xmin, xmax, xmax])
+          y = array("d", [0, ymin - .1*(ymax-ymin), ymax + .1*(ymax-ymin)])
+          assert len(x) == len(y) == 3, (x, y)
+          g = ROOT.TGraph(3, x, y)
+          mg.Add(g)
+          mg.Draw("AP")
+          mg.GetHistogram().GetXaxis().SetTickLength(0)
+          mg.GetHistogram().GetXaxis().SetLabelOffset(999)
+          ymin = mg.GetHistogram().GetMinimum()
+          ymax = mg.GetHistogram().GetMaximum()
+          title = "{axis}({subdet}{side}{ideal})"
+          if subtractTOB: title += " - {axis}(TOB) [mm]"
+          title = title.format(axis=axis, subdet=subdet, side=sidename, ideal=(" - ideal" if subdet in ("FPIX", "TID", "TEC") and axis == "z" else ""))
+          mg.GetYaxis().SetTitle(title)
+          for alignment in alignments:
+            alignment.text(axis, subdetid, side, xrange=xmax-xmin, yrange=ymax-ymin, subtractTOB=subtractTOB).Draw()
+          ROOT.TkAlStyle.drawStandardTitle()
+          for ext in "png eps root pdf".split():
+            c.SaveAs(os.path.join(saveasdir, subdet+sidename+axis+"."+ext))
