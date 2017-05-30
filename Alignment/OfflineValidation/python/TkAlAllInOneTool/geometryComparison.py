@@ -115,7 +115,6 @@ class GeometryComparisonBase(GenericValidation):
 
     def createScript(self, path):
         repMap = self.getRepMap()
-        repMap["runComparisonScripts"] = ""
         scriptName = replaceByMap(("TkAlGeomCompare.%s..oO[name]Oo..sh"
                                    %self.name), repMap)
 
@@ -218,6 +217,7 @@ class GeometryComparison(GeometryComparisonBase):
 
         for name in self.compares:
             if  'DetUnit' in self.compares[name]:
+                repMap["runComparisonScripts"] = ""
                 repMap["runComparisonScripts"] += \
                     ("rfcp .oO[Alignment/OfflineValidation]Oo."
                      "/scripts/comparisonScript.C .\n"
@@ -228,7 +228,7 @@ class GeometryComparison(GeometryComparisonBase):
                      "root -b -q 'comparisonScript.C+(\""
                      ".oO[name]Oo..Comparison_common"+name+".root\",\""
                      "./\",\".oO[modulesToPlot]Oo.\",\".oO[alignmentName]Oo.\",\".oO[reference]Oo.\",.oO[useDefaultRange]Oo.,.oO[plotOnlyGlobal]Oo.,.oO[plotPng]Oo.,.oO[makeProfilePlots]Oo."+y_ranges+")'\n"
-                     "rfcp "+path+"/TkAl3DVisualization_.oO[common]Oo._.oO[name]Oo..C .\n"
+                     "rfcp .oO[scriptsdir]Oo./TkAl3DVisualization_.oO[common]Oo._.oO[name]Oo..C .\n"
                      "root -l -b -q TkAl3DVisualization_.oO[common]Oo._.oO[name]Oo..C+\n")
                 if  self.copyImages:
                    repMap["runComparisonScripts"] += \
@@ -327,14 +327,14 @@ class GeometryComparison(GeometryComparisonBase):
                 resultingFile = os.path.expandvars( resultingFile )
                 resultingFile = os.path.abspath( resultingFile )
                 resultingFile = "root://eoscms//eos/cms" + resultingFile   #needs to be AFTER abspath so that it doesn't eat the //
-                self.__filesToCompare[ name ] = resultingFile
+                self.filesToCompare[ name ] = resultingFile
 
             else:
                 raise AllInOneError("Need to have DetUnit in levels!")
 
         #~ print configTemplates.scriptTemplate
         files = {replaceByMap("TkAl3DVisualization_.oO[common]Oo._.oO[name]Oo..C", repMap ): replaceByMap(configTemplates.visualizationTrackerTemplate, repMap )}
-        self.createFiles(files, path)
+        self.createFiles(files, replaceByMap(".oO[scriptsdir]Oo.", repMap))
         return replaceByMap(".oO[runComparisonScripts]Oo.", repMap)
 
 class BarycenterComparison(GeometryComparisonBase, ValidationWithPlotsSummary, ValidationForPresentation):
