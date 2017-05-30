@@ -18,7 +18,6 @@ def position(filename, subdetid, side=None):
   t = f.alignTree
   entries = set()
   for i, entry in enumerate(t):
-    print t.sublevel == subdetid and (side is None or side*t.z > 0), t.sublevel, subdetid, t.z, side
     if t.sublevel == subdetid and (side is None or side*t.z > 0):
       entries.add(i)
   if len(entries) == 0: raise WrongSubdetError  #this subdetector was not included in the validation
@@ -48,13 +47,15 @@ class Barycenter(namedtuple("Barycenter", "filename title color style x leftorri
     return g
 
   @cache
-  def text(self, axis, subdetid, side, yrange, subtractTOB):
+  def text(self, axis, subdetid, side, xrange, yrange, subtractTOB):
     args = axis, subdetid, side, subtractTOB
-    if self.leftorright == "left":
-      x1, x2 = self.x+.1, self.x+.5
+    xoffset = .3 * xrange / 2.5
+    xsize = .4 * xrange / 2.5
+    if self.leftorright == "right":
+      x1, x2 = self.x+xoffset, self.x+xoffset+xsize
       align = 12
-    elif self.leftorright == "right":
-      x1, x2 = self.x-.5, self.x-.1
+    elif self.leftorright == "left":
+      x1, x2 = self.x-xoffset-xsize, self.x-xoffset
       align = 32
     yoffset = .4 * yrange / 8
     y1, y2 = self.y(*args)+yoffset, self.y(*args)-yoffset
@@ -91,18 +92,24 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
         if side ==    1: sidename = "+"
         if side ==   -1: sidename = "-"
         if side is None: sidename = ""
+        print "{}{}".format(subdet, sidename), axis
         mg = ROOT.TMultiGraph()
         try:
           for alignment in alignments:
             mg.Add(alignment.graph(axis, subdetid, side, subtractTOB))
         except WrongSubdetError:
           continue #subdetector was not included in the validation
+        if xmin is None: xmin = min(alignment.x for x in alignments)
+        if xmax is None: xmax = max(alignment.x for x in alignments)
+        ymin = min([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
+        ymax = max([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
+        if ymin == ymax: ymax += .1
+        x = array("d", [xmin, xmax, xmax])
+        y = array("d", [0, ymin - .1*(ymax-ymin), ymax + .1*(ymax-ymin)])
+        assert len(x) == len(y) == 3, (x, y)
+        g = ROOT.TGraph(3, x, y)
+        mg.Add(g)
         mg.Draw("AP")
-        if xmin is None: xmin = mg.GetXaxis().GetXmin()
-        if xmax is None: xmax = mg.GetXaxis().GetXmax()
-        mg.GetXaxis().SetRangeUser(xmin, xmax)
-        mg.Draw("AP")
-        c.Update()
         mg.GetHistogram().GetXaxis().SetTickLength(0)
         mg.GetHistogram().GetXaxis().SetLabelOffset(999)
         ymin = mg.GetHistogram().GetMinimum()
@@ -112,7 +119,7 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
         title = title.format(axis=axis, subdet=subdet, side=sidename, ideal=(" - ideal" if subdet in ("FPIX", "TID", "TEC") and axis == "z" else ""))
         mg.GetYaxis().SetTitle(title)
         for alignment in alignments:
-          alignment.text(axis, subdetid, side, yrange=ymax-ymin, subtractTOB=subtractTOB).Draw()
+          alignment.text(axis, subdetid, side, xrange=xmax-xmin, yrange=ymax-ymin, subtractTOB=subtractTOB).Draw()
         ROOT.TkAlStyle.drawStandardTitle()
         for ext in "png eps root pdf".split():
           c.SaveAs(os.path.join(saveasdir, subdet+sidename+axis+"."+ext))
