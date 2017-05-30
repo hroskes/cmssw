@@ -24,7 +24,7 @@ def position(filename, subdetid, side=None):
   assert len(entries) == 1, entries
 
   t.GetEntry(entries.pop())
-  result = ROOT.TVector3(t.x+t.dx, t.y+t.dy, t.z+t.dz)
+  result = ROOT.TVector3(t.x-t.dx, t.y-t.dy, t.z-t.dz)
   if subdetid in (2, 4, 6): #FPIX, TID, TEC - subtract ideal z position
     result -= ROOT.TVector3(0, 0, t.z)
 
