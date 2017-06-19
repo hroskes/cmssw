@@ -49,7 +49,7 @@ class Barycenter(namedtuple("Barycenter", "filename title color style x leftorri
   @cache
   def text(self, axis, subdetid, side, xrange, yrange, subtractTOB):
     args = axis, subdetid, side, subtractTOB
-    xoffset = .3 * xrange / 2.5
+    xoffset = .07 * xrange / 2.5
     xsize = .4 * xrange / 2.5
     if self.leftorright == "right":
       x1, x2 = self.x+xoffset, self.x+xoffset+xsize
@@ -113,8 +113,8 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
               mg.Add(alignment.graph(axis, subdetid, side, subtractTOB))
           except WrongSubdetError:
             continue #subdetector was not included in the validation
-          if xmin is None: xmin = min(alignment.x for x in alignments)
-          if xmax is None: xmax = max(alignment.x for x in alignments)
+          if xmin is None: xmin = min(alignment.x for alignment in alignments)
+          if xmax is None: xmax = max(alignment.x for alignment in alignments)
           ymin = min([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
           ymax = max([alignment.y(axis, subdetid, side, subtractTOB) for alignment in alignments]+[0])
           if ymin == ymax: ymax += .1
@@ -128,6 +128,8 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
           mg.GetHistogram().GetXaxis().SetLabelOffset(999)
           ymin = mg.GetHistogram().GetMinimum()
           ymax = mg.GetHistogram().GetMaximum()
+          #xmin = mg.GetXaxis().GetXmin()
+          #xmax = mg.GetXaxis().GetXmax()
           title = "{axis}({subdet}{side}{ideal})"
           if subtractTOB: title += " - {axis}(TOB) [mm]"
           title = title.format(axis=axis, subdet=subdet, side=sidename, ideal=(" - ideal" if subdet in ("FPIX", "TID", "TEC") and axis == "z" else ""))
