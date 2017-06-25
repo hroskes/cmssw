@@ -57,7 +57,7 @@ class Barycenter(namedtuple("Barycenter", "filename title color style x leftorri
     elif self.leftorright == "left":
       x1, x2 = self.x-xoffset-xsize, self.x-xoffset
       align = 32
-    yoffset = .4 * yrange / 8
+    yoffset = .6 * yrange / 8
     y1, y2 = self.y(*args)+yoffset, self.y(*args)-yoffset
     pt = ROOT.TPaveText(x1, y1, x2, y2, "br")
     pt.SetTextAlign(align)
