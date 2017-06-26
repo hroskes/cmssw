@@ -122,6 +122,8 @@ def plotsubdetcenter(xmin, xmax, saveasdir, subtractTOB, *alignments):
           y = array("d", [0, ymin - .1*(ymax-ymin), ymax + .1*(ymax-ymin)])
           assert len(x) == len(y) == 3, (x, y)
           g = ROOT.TGraph(3, x, y)
+          g.SetMarkerSize(0)
+          g.SetMarkerStyle(20)  #default marker style is not resizable, even to 0
           mg.Add(g)
           mg.Draw("AP")
           mg.GetHistogram().GetXaxis().SetTickLength(0)
