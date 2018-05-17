@@ -596,6 +596,15 @@ TrackerOfflineValidation::bookGlobalHists(DirectoryWrapper& tfd )
   vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_normchi2_vs_kappa",
 					   "#kappa vs. #chi^{2}/ndof;#chi^{2}/ndof;#kappa",
 					   100,0.,10, 100,-.03,.03));
+  vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_trackNumberOfValidHits_vs_eta",
+					   "Track # of valid hits vs. #eta;#eta_{Track};# of valid hits _{Track}",
+					   100,-3.15,3.15, 40, 0., 40.));
+  vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_trackNumberOfValidHits_vs_phi",
+					   "Track # of valid hits vs. #phi;#phi_{Track};# of valid hits _{Track}",
+					   100,-3.15,3.15, 40, 0., 40.));
+  vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_trackNumberOfValidHits_vs_kappa",
+					   "Track # of valid hits vs. #kappa;#kappa;# of valid hits _{Track}",
+					   100,   .0, .05, 40, 0., 40.));
 
   /****************** Definition of 2-D Histos of ResX vs momenta ****************************/
   vTrack2DHistos_.push_back(tfd.make<TH2F>("p_vs_resXprime_pixB",
@@ -1109,6 +1118,12 @@ TrackerOfflineValidation::analyze(const edm::Event& iEvent, const edm::EventSetu
     vTrack2DHistos_[kappaetaindex_2d]->Fill(itT->eta,itT->kappa);
     static const int normchi2kappa_2d = this->GetIndex(vTrack2DHistos_,"h2_normchi2_vs_kappa");
     vTrack2DHistos_[normchi2kappa_2d]->Fill(itT->normchi2,itT->kappa);
+    static const int nhitsetaindex_2d = this->GetIndex(vTrack2DHistos_,"h2_trackNumberOfValidHits_vs_eta");
+    vTrack2DHistos_[nhitsetaindex_2d]->Fill(itT->numberOfValidHits,itT->eta);
+    static const int nhitsphiindex_2d = this->GetIndex(vTrack2DHistos_,"h2_trackNumberOfValidHits_vs_phi");
+    vTrack2DHistos_[nhitsphiindex_2d]->Fill(itT->numberOfValidHits,itT->phi);
+    static const int nhitskappaindex_2d = this->GetIndex(vTrack2DHistos_,"h2_trackNumberOfValidHits_vs_kappa");
+    vTrack2DHistos_[nhitskappaindex_2d]->Fill(itT->numberOfValidHits,itT->kappa);
 
     // hit quantities: residuals, normalized residuals
     for (std::vector<TrackerValidationVariables::AVHitStruct>::const_iterator itH = itT->hits.begin();
