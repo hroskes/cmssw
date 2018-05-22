@@ -598,13 +598,13 @@ TrackerOfflineValidation::bookGlobalHists(DirectoryWrapper& tfd )
 					   100,0.,10, 100,-.03,.03));
   vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_trackNumberOfValidHits_vs_eta",
 					   "Track # of valid hits vs. #eta;#eta_{Track};# of valid hits _{Track}",
-					   100,-3.15,3.15, 40, 0., 40.));
+					   40, 0., 40., 10000,-3.15,3.15));
   vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_trackNumberOfValidHits_vs_phi",
 					   "Track # of valid hits vs. #phi;#phi_{Track};# of valid hits _{Track}",
-					   100,-3.15,3.15, 40, 0., 40.));
+					   40, 0., 40., 10000,-3.15,3.15));
   vTrack2DHistos_.push_back(tfd.make<TH2F>("h2_trackNumberOfValidHits_vs_kappa",
 					   "Track # of valid hits vs. #kappa;#kappa;# of valid hits _{Track}",
-					   100,   .0, .05, 40, 0., 40.));
+					   40, 0., 40., 10000,   .0, .05));
 
   /****************** Definition of 2-D Histos of ResX vs momenta ****************************/
   vTrack2DHistos_.push_back(tfd.make<TH2F>("p_vs_resXprime_pixB",
