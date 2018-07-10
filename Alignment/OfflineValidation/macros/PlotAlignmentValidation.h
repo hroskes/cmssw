@@ -103,6 +103,9 @@ public:
   int numberOfLayers(int phase, int subdetector);
   int maxNumberOfLayers(int subdetector);
   
+
+  vector <Int_t> return_ids (TString filename, int n);
+
   THStack* addHists(const TString& selection, const TString &residType = "xPrime", TLegend **myLegend = 0, bool printModuleIds = false, bool validforphase0 = false);//add hists fulfilling 'selection' on TTree; residType: xPrime,yPrime,xPrimeNorm,yPrimeNorm,x,y,xNorm; if (printModuleIds): cout DetIds
 
   float twotailedStudentTTestEqualMean(float t, float v);

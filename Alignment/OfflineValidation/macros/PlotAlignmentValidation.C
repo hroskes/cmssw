@@ -1926,6 +1926,64 @@ const TString PlotAlignmentValidation::summaryfilename = "OfflineValidationSumma
 
 
 
+
+
+vector <Int_t> return_ids (TString filename, int n){
+
+        TFile* f = TFile::Open(filename, "READ");
+        TTree* t= (TTree*)f->Get("alignTree");
+        vector <Int_t> module_ids;
+        vector <float> module_residuals;
+        Int_t id;
+        float dx;
+        float dy;
+        float dz;
+        float min_residual = 1000;
+        Int_t min_index = 0;
+        t->SetBranchAddress("id", &id);
+        t->SetBranchAddress("dx", &dx);
+        t->SetBranchAddress("dy", &dy);
+        t->SetBranchAddress("dz", &dz);
+        for (int i=0; i<t->GetEntries(); i++){
+                t->GetEntry(i);
+                float temp = sqrt(dx*dx+dy*dy+dz*dz);
+                if (i<n){
+                        module_ids.push_back(id);
+                        module_residuals.push_back(temp);
+                        if (temp<min_residual){
+                                min_residual=temp;
+                                min_index=i;
+                        }
+                }
+                else {
+                        if(temp>min_residual){
+                                module_ids[min_index] = id;
+                                module_residuals[min_index]=temp;
+                                auto min = min_element(begin(module_residuals), end(module_residuals));
+                                min_residual =  *min;
+                                min_index = distance(begin(module_residuals), min);
+                        }
+
+
+                }
+
+
+        }
+        return module_ids;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 vector <TH1*>  PlotAlignmentValidation::findmodule (TFile* f, unsigned int moduleid){
 		
 		
