@@ -116,7 +116,6 @@ void TkAlExtendedOfflineValidation()
 
 
 
- # vector<int> moduleids = {.oO[moduleid]Oo.};
   for (auto moduleid : moduleids) {
   	p.residual_by_moduleID(moduleid);
   }
