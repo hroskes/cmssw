@@ -184,7 +184,7 @@ class PlottingOptionsOffline(BasePlottingOptions):
                 "SurfaceShapes":"coarse",
                 "bigtext":"false",
                 "mergeOfflineParJobsScriptPath": ".oO[scriptsdir]Oo./TkAlOfflineJobsMerge.C",
-                "usefit": "false","moduleid": "" , "GC_file": "" , "number_of_modules": ""
+                "usefit": "false","moduleid": "" , "GC_files": "" , "number_of_modules": ""
                }
     validationclass = OfflineValidation
     def __init__(self, config):

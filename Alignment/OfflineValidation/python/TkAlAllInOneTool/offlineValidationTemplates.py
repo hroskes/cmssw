@@ -109,15 +109,45 @@ void TkAlExtendedOfflineValidation()
   p.plotDMR(".oO[DMRMethod]Oo.",.oO[DMRMinimum]Oo.,".oO[DMROptions]Oo.");
   p.plotSurfaceShapes(".oO[SurfaceShapes]Oo.");
   p.plotChi2("root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./.oO[validationId]Oo._result.root");
-  TString GC_file = .oO[GC_file]Oo.;
+ 
+  vector <int> moduleids1 = {.oO[moduleid]Oo.};
+  vector <Int_t> moduleids2;
+  vector <Int_t> moduleids3;
   int n = .oO[number_of_modules]Oo.;
-  vector <Int_t> moduleids = p.return_ids(GC_file, n);
-
-
-
-
-  for (auto moduleid : moduleids) {
-  	p.residual_by_moduleID(moduleid);
+  vector <TString> GC_files ={ .oO[GC_file]Oo.};
+ 
+  for (auto moduleid : moduleids1) {
+       	p.residual_by_moduleID(moduleid);
   }
+  
+
+  
+  for (auto file : GC_files){
+	moduleids2 = p.return_ids(file, n);
+	for (auto moduleid : moduleids2) {
+       		p.residual_by_moduleID(moduleid);
+	}
+  }  	
+  
+  vector <string> = vector<string> GC_files2 = glob(string("/eos/cms/store/caf/user/") + std::getenv("USER") + "/.oO[eosdir]Oo./*_sorted.root");
+  for (auto file: GC_files2){
+	moduleids3 = p.return_ids(file.data(), n);
+        for (auto moduleid : moduleids3) {
+                p.residual_by_moduleID(moduleid);
+        }
+
+
+
+  } 
+  
+
+
+
+
+  
+
 }
+
+
+
 """
