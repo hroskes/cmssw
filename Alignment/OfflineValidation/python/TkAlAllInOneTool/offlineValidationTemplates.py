@@ -114,7 +114,7 @@ void TkAlExtendedOfflineValidation()
   vector <Int_t> moduleids2;
   vector <Int_t> moduleids3;
   int n = .oO[number_of_modules]Oo.;
-  vector <TString> GC_files ={ .oO[GC_file]Oo.};
+  vector <TString> GC_files ={ .oO[GC_files]Oo.};
  
   for (auto moduleid : moduleids1) {
        	p.residual_by_moduleID(moduleid);
@@ -129,12 +129,23 @@ void TkAlExtendedOfflineValidation()
 	}
   }  	
   
-  vector <string> = vector<string> GC_files2 = glob(string("/eos/cms/store/caf/user/") + std::getenv("USER") + "/.oO[eosdir]Oo./*_sorted.root");
+  glob_t path;
+  string a = string("/eos/cms/store/caf/user/") + std::getenv("USER") + ("/AlignmentValidation/2018/July/07.16/*_sorted.root");
+  glob(a.data(), 0, NULL, &path);
+  vector<string> GC_files2;
+
+  for (int i=0; i<path.gl_pathc; i++){GC_files2.push_back(path.gl_pathv[i]);}
+
+
   for (auto file: GC_files2){
-	moduleids3 = p.return_ids(file.data(), n);
+        moduleids3 = p.return_ids(file.data(), n);
         for (auto moduleid : moduleids3) {
                 p.residual_by_moduleID(moduleid);
         }
+
+
+
+  }
 
 
 
