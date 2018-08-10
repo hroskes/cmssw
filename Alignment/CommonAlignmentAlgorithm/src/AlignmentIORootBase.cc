@@ -6,10 +6,7 @@
 #include "TFile.h"
 #include "TTree.h"
 
-AlignmentIORootBase::~AlignmentIORootBase()
-{
-  delete myFile; // tree is deleted automatically with file
-}
+AlignmentIORootBase::~AlignmentIORootBase() {}
 
 // ----------------------------------------------------------------------------
 // open file/trees for write
@@ -27,7 +24,7 @@ int AlignmentIORootBase::openRoot(const char* filename, int iteration, bool writ
     if (iterfile == -1) {
       iter=iteration;
 	  edm::LogInfo("AlignmentIORootBase") << "Write to new file; first iteration: " << iter ;
-	  myFile = TFile::Open(filename,"recreate");
+	  myFile.reset(TFile::Open(filename,"recreate"));
     } else {
       if (iteration == -1) {
         iter=iterfile+1;
@@ -43,14 +40,14 @@ int AlignmentIORootBase::openRoot(const char* filename, int iteration, bool writ
         iter = iteration;
         edm::LogInfo("AlignmentIORootBase")  << "Write to new iteration: " << iter;
       }
-      myFile = TFile::Open(filename,"update");
+      myFile.reset(TFile::Open(filename,"update"));
 	  
     }
 
     // create tree
     myFile->cd();
     edm::LogInfo("AlignmentIORootBase") << "Tree: " << treeName(iter,treename);
-    tree = new TTree(treeName(iter,treename),treetxt);
+    tree = new TTree(treeName(iter,treename),treetxt);  //this is automatically deleted when the file is closed
     createBranches();
 
   } else { // reading
@@ -76,7 +73,7 @@ int AlignmentIORootBase::openRoot(const char* filename, int iteration, bool writ
         iter = iteration;
         edm::LogInfo("AlignmentIORootBase")  << "Read from specified iteration: " << iter;
       }
-      myFile = TFile::Open(filename, "read");
+      myFile.reset(TFile::Open(filename, "read"));
     }
 
     myFile->cd();
@@ -102,9 +99,8 @@ int AlignmentIORootBase::closeRoot(void)
     tree->Write();
   }
 
-  delete myFile;
-  myFile = nullptr;
-  tree = nullptr; // deleted with file
+  myFile.reset();
+  tree = nullptr;
 
   return 0;
 }
@@ -122,12 +118,11 @@ int AlignmentIORootBase::testFile(const char* filename, const TString &tname)
   } else {
     fclose(testFILE);
     int ihighest=-2;
-    TFile *aFile = TFile::Open(filename,"read");
+    std::unique_ptr<TFile> aFile(TFile::Open(filename,"read"));
     for (int iter=0; iter<itermax; iter++) {
       if ((nullptr != (TTree*)aFile->Get(treeName(iter,tname))) 
 	  && (iter>ihighest)) ihighest=iter; 
     }
-    delete aFile;
     return ihighest;
   }
 }

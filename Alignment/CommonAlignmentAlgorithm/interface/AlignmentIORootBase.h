@@ -1,9 +1,11 @@
 #ifndef Alignment_CommonAlignmentAlgorithm_AlignmentIORootBase_h
 #define Alignment_CommonAlignmentAlgorithm_AlignmentIORootBase_h
 
-#include "TString.h"
+#include <memory>
 
-class TFile;
+#include "TString.h"
+#include "TFile.h"
+
 class TTree;
 
 /// Base class for ROOT-based I/O of Alignment parameters etc. 
@@ -46,7 +48,7 @@ class AlignmentIORootBase
   const static int itermax = 1000; // max iteration to test for
 
  private:
-  TFile* myFile; // root file
+  std::unique_ptr<TFile> myFile; // root file
 };
 
 #endif
