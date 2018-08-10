@@ -104,7 +104,7 @@ int HIPUserVariablesIORoot::writeOne(Alignable* ali){
     return -1;
   }
 
-  HIPUserVariables* uvar = dynamic_cast<HIPUserVariables*>(ap->userVariables());
+  auto uvar = std::dynamic_pointer_cast<HIPUserVariables>(ap->userVariables());
 
   AlgebraicSymMatrix jtvj = uvar->jtvj;
   AlgebraicVector jtve = uvar->jtve;
@@ -140,9 +140,9 @@ int HIPUserVariablesIORoot::writeOne(Alignable* ali){
 
 // ----------------------------------------------------------------------------
 
-AlignmentUserVariables* HIPUserVariablesIORoot::readOne(Alignable* ali, int& ierr){
+std::shared_ptr<AlignmentUserVariables> HIPUserVariablesIORoot::readOne(Alignable* ali, int& ierr){
   ierr=0;
-  HIPUserVariables* uvar;
+  std::shared_ptr<HIPUserVariables> uvar;
 
   int entry = findEntry(ali->id(), ali->alignableObjectId());
   if (entry!=-1){
@@ -164,7 +164,7 @@ AlignmentUserVariables* HIPUserVariablesIORoot::readOne(Alignable* ali, int& ier
       }
     }
 
-    uvar = new HIPUserVariables(np);
+    uvar = std::make_shared<HIPUserVariables>(np);
     uvar->jtvj=jtvj;
     uvar->jtve=jtve;
     uvar->nhit=Nhit;
@@ -179,7 +179,7 @@ AlignmentUserVariables* HIPUserVariablesIORoot::readOne(Alignable* ali, int& ier
   }
 
   //  ierr=-1;
-  return nullptr;
+  return uvar; //which points to nullptr
 }
 
 //-----------------------------------------------------------------------------
@@ -200,11 +200,11 @@ void HIPUserVariablesIORoot::writeHIPUserVariables(
 
 //-----------------------------------------------------------------------------
 
-std::vector<AlignmentUserVariables*> HIPUserVariablesIORoot::readHIPUserVariables(
+std::vector<std::shared_ptr<AlignmentUserVariables>> HIPUserVariablesIORoot::readHIPUserVariables(
   const Alignables& alivec,
   const char* filename, int iter, int& ierr
   ){
-  std::vector<AlignmentUserVariables*> result;
+  std::vector<std::shared_ptr<AlignmentUserVariables>> result;
   ierr=0;
   int iret;
   iret = open(filename, iter, false);

@@ -18,15 +18,13 @@
 #include <string>
 #include <vector>
 
-class MillePedeVariables : public AlignmentUserVariables {
+class MillePedeVariables : public CloneInherit<MillePedeVariables, AlignmentUserVariables> {
  public:
   
   /** constructor */
   MillePedeVariables(unsigned int nParams, unsigned int label, const std::string& name);
   /** destructor */
   ~MillePedeVariables() override = default;
-  /** clone method (using copy constructor) */
-  MillePedeVariables* clone() const override { return new MillePedeVariables(*this);}
 
   /// set default values for all data concerning nParam (false if nParam out of range)
   bool setAllDefault(unsigned int nParam);

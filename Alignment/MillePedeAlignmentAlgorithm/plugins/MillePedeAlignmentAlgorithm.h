@@ -266,7 +266,7 @@ class MillePedeAlignmentAlgorithm : public AlignmentAlgorithmBase
   bool addHitStatistics(int fromLoop, const std::string &outFile,
                         const std::vector<std::string> &inFiles) const;
   bool addHits(const align::Alignables& alis,
-               const std::vector<AlignmentUserVariables*> &mpVars) const;
+               const std::vector<std::shared_ptr<AlignmentUserVariables>> &mpVars) const;
 
   edm::ParameterSet         theConfig;
   unsigned int              theMode;

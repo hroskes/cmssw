@@ -56,8 +56,7 @@ AlignmentParameters::AlignmentParameters(Alignable* object,
 
 //__________________________________________________________________________________________________
 AlignmentParameters::~AlignmentParameters()
-{ 
-  if ( theUserVariables ) delete theUserVariables;
+{
 }
 
 
@@ -128,15 +127,14 @@ AlignmentParameters::selectedDerivatives(const TrajectoryStateOnSurface& tsos,
 }
 
 //__________________________________________________________________________________________________
-void  AlignmentParameters::setUserVariables(AlignmentUserVariables* auv)
+void  AlignmentParameters::setUserVariables(std::shared_ptr<AlignmentUserVariables> auv)
 { 
-  if ( theUserVariables ) delete theUserVariables;
   theUserVariables = auv;
 }
 
 
 //__________________________________________________________________________________________________
-AlignmentUserVariables*  AlignmentParameters::userVariables(void) const
+std::shared_ptr<AlignmentUserVariables> AlignmentParameters::userVariables(void) const
 { 
   return theUserVariables;
 }

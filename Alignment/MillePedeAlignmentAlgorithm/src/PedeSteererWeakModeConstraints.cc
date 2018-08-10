@@ -422,7 +422,7 @@ PedeSteererWeakModeConstraints::checkSelectionShiftParameter(const Alignable *al
       isselected = false;
     } else {
       auto params = ali->alignmentParameters();
-      auto selVar = dynamic_cast<SelectionUserVariables*>(params->userVariables());
+      auto selVar = std::dynamic_pointer_cast<SelectionUserVariables>(params->userVariables());
       if (selVar) {
         if(selVar->fullSelection().size() <= (iParameter+1)) {
           throw cms::Exception("Alignment")

@@ -59,10 +59,10 @@ void MillePedeVariablesIORoot::writeMillePedeVariables
 }
 
 // -------------------------------------------------------------------------------------------------
-std::vector<AlignmentUserVariables*> MillePedeVariablesIORoot::readMillePedeVariables
+std::vector<std::shared_ptr<AlignmentUserVariables>> MillePedeVariablesIORoot::readMillePedeVariables
 (const align::Alignables& alivec, const char *filename, int iter, int &ierr)
 {
-  std::vector<AlignmentUserVariables*> result;
+  std::vector<std::shared_ptr<AlignmentUserVariables>> result;
   ierr = 0;
   int iret = this->open(filename, iter, false);
   if (iret != 0) {
@@ -86,14 +86,14 @@ std::vector<AlignmentUserVariables*> MillePedeVariablesIORoot::readMillePedeVari
 int MillePedeVariablesIORoot::writeOne(Alignable* ali)
 {
   if (!ali || !ali->alignmentParameters() 
-      || !dynamic_cast<MillePedeVariables*>(ali->alignmentParameters()->userVariables())) {
+      || !std::dynamic_pointer_cast<MillePedeVariables>(ali->alignmentParameters()->userVariables())) {
     edm::LogError("Alignment") << "@SUB=MillePedeVariablesIORoot::writeOne"
                                << "No MillePedeVariables found!"; 
     return -1;
   }
 
-  const MillePedeVariables *mpVar = 
-    static_cast<MillePedeVariables*>(ali->alignmentParameters()->userVariables());
+  const auto mpVar = 
+    std::static_pointer_cast<MillePedeVariables>(ali->alignmentParameters()->userVariables());
   myNumPar = mpVar->size();
   if (myNumPar >= kMaxNumPar) {
     edm::LogError("Alignment") << "@SUB=MillePedeVariablesIORoot::writeOne"
@@ -123,7 +123,7 @@ int MillePedeVariablesIORoot::writeOne(Alignable* ali)
 }
 
 // -------------------------------------------------------------------------------------------------
-AlignmentUserVariables* MillePedeVariablesIORoot::readOne(Alignable *ali, int &ierr)
+std::shared_ptr<AlignmentUserVariables> MillePedeVariablesIORoot::readOne(Alignable *ali, int &ierr)
 {
   ierr = 0;
 
@@ -135,7 +135,7 @@ AlignmentUserVariables* MillePedeVariablesIORoot::readOne(Alignable *ali, int &i
     return nullptr;
   }
 
-  MillePedeVariables *mpVar = new MillePedeVariables(myNumPar, myLabel, myName);
+  auto mpVar = std::make_shared<MillePedeVariables>(myNumPar, myLabel, myName);
   for (unsigned int iPar = 0; iPar < myNumPar; ++iPar) {
     mpVar->isValid()[iPar]    = myIsValid[iPar];
     mpVar->diffBefore()[iPar] = myDiffBefore[iPar];

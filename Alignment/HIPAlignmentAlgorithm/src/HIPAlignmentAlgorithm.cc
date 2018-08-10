@@ -293,7 +293,7 @@ void HIPAlignmentAlgorithm::startNewLoop(void){
   for (const auto& it: theAlignables){
     AlignmentParameters* ap = it->alignmentParameters();
     int npar=ap->numSelected();
-    HIPUserVariables* userpar = new HIPUserVariables(npar);
+    auto userpar = std::make_shared<HIPUserVariables>(npar);
     ap->setUserVariables(userpar);
   }
 
@@ -355,7 +355,8 @@ void HIPAlignmentAlgorithm::terminate(const edm::EventSetup& iSetup){
     for (unsigned int i = 0; i < nAlignable; ++i){
       const Alignable* ali = theAlignables[i];
       AlignmentParameters* ap = ali->alignmentParameters();
-      HIPUserVariables* uservar = dynamic_cast<HIPUserVariables*>(ap->userVariables());
+      auto uservar = std::dynamic_pointer_cast<HIPUserVariables>(ap->userVariables());
+      if (!uservar) throw cms::Exception("UserVariablesError") << "Wrong type of user variables in the AlignmentParameters";
       int nhit = uservar->nhit;
 
       // get position
@@ -518,7 +519,8 @@ bool HIPAlignmentAlgorithm::processHit1D(
 
   // get Alignment Parameters
   AlignmentParameters* params = ali->alignmentParameters();
-  HIPUserVariables* uservar = dynamic_cast<HIPUserVariables*>(params->userVariables());
+  auto uservar = std::dynamic_pointer_cast<HIPUserVariables>(params->userVariables());
+  if (!uservar) throw cms::Exception("UserVariablesError") << "Wrong type of user variables in the AlignmentParameters";
   uservar->datatype = theDataGroup;
   // get derivatives
   AlgebraicMatrix derivs2D = params->selectedDerivatives(tsos, alidet);
@@ -626,7 +628,8 @@ bool HIPAlignmentAlgorithm::processHit2D(
 
   // get Alignment Parameters
   AlignmentParameters* params = ali->alignmentParameters();
-  HIPUserVariables* uservar = dynamic_cast<HIPUserVariables*>(params->userVariables());
+  auto uservar = std::dynamic_pointer_cast<HIPUserVariables>(params->userVariables());
+  if (!uservar) throw cms::Exception("UserVariablesError") << "Wrong type of user variables in the AlignmentParameters";
   uservar->datatype = theDataGroup;
   // get derivatives
   AlgebraicMatrix derivs2D = params->selectedDerivatives(tsos, alidet);
@@ -1120,7 +1123,8 @@ void HIPAlignmentAlgorithm::fillAlignablesMonitor(const edm::EventSetup& iSetup)
     // consider only those parameters classified as 'valid'
     if (dap->isValid()){
       // get number of hits from user variable
-      HIPUserVariables* uservar = dynamic_cast<HIPUserVariables*>(dap->userVariables());
+      auto uservar = std::dynamic_pointer_cast<HIPUserVariables>(dap->userVariables());
+      if (!uservar) throw cms::Exception("UserVariablesError") << "Wrong type of user variables in the AlignmentParameters";
       m2_Nhit = uservar->nhit;
       m2_datatype = uservar->datatype;
 
@@ -1199,7 +1203,8 @@ bool HIPAlignmentAlgorithm::calcParameters(Alignable* ali, int setDet, double st
   AlignmentParameters* par = ali->alignmentParameters();
   const HIPAlignableSpecificParameters* alispecifics = findAlignableSpecs(ali);
   // access user variables
-  HIPUserVariables* uservar = dynamic_cast<HIPUserVariables*>(par->userVariables());
+  auto uservar = std::dynamic_pointer_cast<HIPUserVariables>(par->userVariables());
+  if (!uservar) throw cms::Exception("UserVariablesError") << "Wrong type of user variables in the AlignmentParameters";
   int nhit = uservar->nhit;
   // The following variable is needed for the extended 1D/2D hit fix using
   // matrix shrinkage and expansion
@@ -1293,7 +1298,7 @@ void HIPAlignmentAlgorithm::collector(void){
       std::string str = std::to_string(ijob);
       std::string uvfile = theCollectorPath+"/job"+str+"/"+suvarfilecore;
 
-      std::vector<AlignmentUserVariables*> uvarvec = HIPIO.readHIPUserVariables(theAlignables, uvfile.c_str(), theIteration, ioerr);
+      std::vector<std::shared_ptr<AlignmentUserVariables>> uvarvec = HIPIO.readHIPUserVariables(theAlignables, uvfile.c_str(), theIteration, ioerr);
       if (uvarvec.size()!=theAlignables.size()) edm::LogWarning("Alignment")
         << "@SUB=HIPAlignmentAlgorithm::collector"
         << "Number of alignables = " << theAlignables.size() << " is not the same as number of user variables = " << uvarvec.size()
@@ -1302,11 +1307,11 @@ void HIPAlignmentAlgorithm::collector(void){
         edm::LogError("Alignment") << "@SUB=HIPAlignmentAlgorithm::collector" << "Could not read user variable files for job " << ijob << " in iteration " << theIteration;
         continue;
       }
-      std::vector<AlignmentUserVariables*>::const_iterator iuvar=uvarvec.begin(); // This vector should have 1-to-1 correspondence with the alignables vector
+      std::vector<std::shared_ptr<AlignmentUserVariables>>::const_iterator iuvar=uvarvec.begin(); // This vector should have 1-to-1 correspondence with the alignables vector
       for (const auto& ali: theAlignables){
         // No need for the user variables already attached to the alignables
         // Just count from what you read.
-        HIPUserVariables* uvar = dynamic_cast<HIPUserVariables*>(*iuvar);
+        std::shared_ptr<HIPUserVariables> uvar = std::dynamic_pointer_cast<HIPUserVariables>(*iuvar);
         if (uvar!=nullptr){
           int alijobdtype = uvar->datatype;
           pawt_t alijobnhits = uvar->nhit;
@@ -1320,7 +1325,8 @@ void HIPAlignmentAlgorithm::collector(void){
             if (theMap.find(alijobdtype)==theMap.end()) theMap[alijobdtype]=alijobnhits;
             else theMap[alijobdtype] += alijobnhits;
           }
-          delete uvar; // Delete new user variables as they are added
+        } else {
+          throw cms::Exception("UserVariablesError") << "Wrong type of user variables in the file";
         }
         iuvar++;
       } // End loop over alignables
@@ -1333,7 +1339,7 @@ void HIPAlignmentAlgorithm::collector(void){
     std::string str = std::to_string(ijob);
     std::string uvfile = theCollectorPath+"/job"+str+"/"+suvarfilecore;
 
-    std::vector<AlignmentUserVariables*> uvarvec = HIPIO.readHIPUserVariables(theAlignables, uvfile.c_str(), theIteration, ioerr);
+    std::vector<std::shared_ptr<AlignmentUserVariables>> uvarvec = HIPIO.readHIPUserVariables(theAlignables, uvfile.c_str(), theIteration, ioerr);
     if (uvarvec.size()!=theAlignables.size()) edm::LogWarning("Alignment")
       << "@SUB=HIPAlignmentAlgorithm::collector"
       << "Number of alignables = " << theAlignables.size() << " is not the same as number of user variables = " << uvarvec.size()
@@ -1345,15 +1351,15 @@ void HIPAlignmentAlgorithm::collector(void){
     }
 
     // add
-    std::vector<AlignmentUserVariables*> uvarvecadd;
-    std::vector<AlignmentUserVariables*>::const_iterator iuvarnew=uvarvec.begin();
+    std::vector<std::shared_ptr<AlignmentUserVariables>> uvarvecadd;
+    std::vector<std::shared_ptr<AlignmentUserVariables>>::const_iterator iuvarnew=uvarvec.begin();
     for (const auto& ali: theAlignables){
       AlignmentParameters* ap = ali->alignmentParameters();
 
-      HIPUserVariables* uvarold = dynamic_cast<HIPUserVariables*>(ap->userVariables());
-      HIPUserVariables* uvarnew = dynamic_cast<HIPUserVariables*>(*iuvarnew);
+      std::shared_ptr<HIPUserVariables> uvarold = std::dynamic_pointer_cast<HIPUserVariables>(ap->userVariables());
+      std::shared_ptr<HIPUserVariables> uvarnew = std::dynamic_pointer_cast<HIPUserVariables>(*iuvarnew);
 
-      HIPUserVariables* uvar = uvarold->clone();
+      std::shared_ptr<HIPUserVariables> uvar = uvarold->clone();
       uvar->datatype=theDataGroup; // Set the data type of alignable to that specified for the collector job (-2 by default)
 
       if (uvarnew!=nullptr){
@@ -1391,8 +1397,6 @@ void HIPAlignmentAlgorithm::collector(void){
         uvar->jtve = (uvarold->jtve) + peraliwgt*(uvarnew->jtve);
         uvar->alichi2 = (uvarold->alichi2) + peraliwgt*(uvarnew->alichi2);
         uvar->alindof = (uvarold->alindof) + (uvarnew->alindof);
-
-        delete uvarnew; // Delete new user variables as they are added
       }
 
       uvarvecadd.push_back(uvar);

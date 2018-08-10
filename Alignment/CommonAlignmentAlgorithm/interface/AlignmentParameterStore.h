@@ -121,7 +121,7 @@ public:
 
   /// Attach User Variables to given alignables 
   void attachUserVariables( const align::Alignables& alivec,
-                            const std::vector<AlignmentUserVariables*>& uvarvec, int& ierr);
+                            const std::vector<std::shared_ptr<AlignmentUserVariables>>& uvarvec, int& ierr);
 
   /// Set Alignment position error 
   void setAlignmentPositionError( const align::Alignables& alivec, double valshift, double valrot );

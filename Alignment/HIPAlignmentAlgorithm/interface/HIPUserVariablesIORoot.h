@@ -18,7 +18,7 @@ public:
   void writeHIPUserVariables(const Alignables& alivec, const char* filename, int iter, bool validCheck, int& ierr);
 
   /** read user variables */
-  std::vector<AlignmentUserVariables*> readHIPUserVariables(const Alignables& alivec, const char* filename, int iter, int& ierr);
+  std::vector<std::shared_ptr<AlignmentUserVariables>> readHIPUserVariables(const Alignables& alivec, const char* filename, int iter, int& ierr);
 
 
 
@@ -27,7 +27,7 @@ private:
   int writeOne(Alignable* ali) override;
 
   /** read AlignmentParameters of one Alignable */
-  AlignmentUserVariables* readOne(Alignable* ali, int& ierr) override;
+  std::shared_ptr<AlignmentUserVariables> readOne(Alignable* ali, int& ierr) override;
 
   /** open IO */
   int open(const char* filename, int iteration, bool writemode) override{ newopen=true; return openRoot(filename, iteration, writemode); }

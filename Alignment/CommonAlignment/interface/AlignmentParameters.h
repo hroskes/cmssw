@@ -1,6 +1,7 @@
 #ifndef Alignment_CommonAlignment_AlignmentParameters_H
 #define Alignment_CommonAlignment_AlignmentParameters_H
 
+#include <memory>
 #include <vector>
 
 #include "Alignment/CommonAlignment/interface/AlignmentParametersData.h"
@@ -92,9 +93,9 @@ public:
 					       const AlignableDetOrUnitPtr &alidet) const;
 
   /// Set pointer to user variables
-  void setUserVariables(AlignmentUserVariables* auv);
+  void setUserVariables(std::shared_ptr<AlignmentUserVariables> auv);
   /// Get pointer to user variables
-  AlignmentUserVariables* userVariables( void ) const;
+  std::shared_ptr<AlignmentUserVariables> userVariables( void ) const;
 
   /// Get pointer to corresponding alignable
   Alignable* alignable( void ) const;
@@ -131,7 +132,7 @@ protected:
 
   DataContainer theData;
 
-  AlignmentUserVariables* theUserVariables;
+  std::shared_ptr<AlignmentUserVariables> theUserVariables;
 
   bool bValid; ///< True if parameters are valid
 

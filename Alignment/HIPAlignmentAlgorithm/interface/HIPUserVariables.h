@@ -1,7 +1,7 @@
 #include "Alignment/CommonAlignment/interface/AlignmentUserVariables.h"
 #include "DataFormats/CLHEP/interface/AlgebraicObjects.h"
 
-class HIPUserVariables : public AlignmentUserVariables{
+class HIPUserVariables : public CloneInherit<HIPUserVariables, AlignmentUserVariables>{
 public:
   /** data members */
   AlgebraicSymMatrix jtvj;
@@ -38,8 +38,4 @@ public:
 
   /** destructor */
   ~HIPUserVariables() override{};
-
-  /** clone method (copy constructor) */
-  HIPUserVariables* clone(void) const override{ return new HIPUserVariables(*this); }
-
 };

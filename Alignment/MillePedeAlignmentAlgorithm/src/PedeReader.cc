@@ -165,8 +165,8 @@ Alignable* PedeReader::setParameter(unsigned int paramLabel,
   const double cmsToPede = mySteerer.cmsToPedeFactor(paramNum);
   if (alignable) {
     AlignmentParameters *params = this->checkAliParams(alignable, setUserVars);
-    MillePedeVariables *userParams = // static cast ensured by previous checkAliParams
-      (setUserVars ? static_cast<MillePedeVariables*>(params->userVariables()) : nullptr);
+    auto userParams = // static pointer cast ensured by previous checkAliParams
+      (setUserVars ? std::static_pointer_cast<MillePedeVariables>(params->userVariables()) : nullptr);
     // if (userParams && userParams->label() != myLabels.alignableLabelFromLabel(paramLabel)) {
     if (userParams && userParams->label() != myLabels.alignableLabel(alignable)) {
       edm::LogError("Alignment") << "@SUB=PedeReader::setParameter" 
@@ -271,13 +271,13 @@ AlignmentParameters* PedeReader::checkAliParams(Alignable *alignable, bool creat
   }
   
   // now check that we have user parameters of correct type if requested:
-  if (createUserVars && !dynamic_cast<MillePedeVariables*>(params->userVariables())) {
+  if (createUserVars && !std::dynamic_pointer_cast<MillePedeVariables>(params->userVariables())) {
     edm::LogInfo("Alignment") << "@SUB=PedeReader::checkAliParams"
                               << "Add user variables for alignable with label " 
                               << myLabels.alignableLabel(alignable);
-    params->setUserVariables(new MillePedeVariables(params->size(),
-                                                    myLabels.alignableLabel(alignable),
-                                                    myLabels.alignableTracker()->objectIdProvider().typeToName(alignable->alignableObjectId())));
+    params->setUserVariables(std::make_shared<MillePedeVariables>(params->size(),
+                                                                  myLabels.alignableLabel(alignable),
+                                                                  myLabels.alignableTracker()->objectIdProvider().typeToName(alignable->alignableObjectId())));
   }
   
   return params;

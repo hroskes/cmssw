@@ -161,7 +161,7 @@ unsigned int PedeSteerer::buildNoHierarchyCollection(const align::Alignables& al
 
   for (const auto& iAli: alis) {
     AlignmentParameters *params = iAli->alignmentParameters();
-    SelectionUserVariables *selVar = dynamic_cast<SelectionUserVariables*>(params->userVariables());
+    auto selVar = std::dynamic_pointer_cast<SelectionUserVariables>(params->userVariables());
     if (!selVar) continue;
     // Now check whether taking out of hierarchy is selected - must be consistent!
     unsigned int numNoHieraPar = 0;
@@ -201,7 +201,7 @@ bool PedeSteerer::checkParameterChoices(const align::Alignables& alis) const
 {
   for (const auto& iAli: alis) {
     AlignmentParameters *paras = iAli->alignmentParameters();
-    SelectionUserVariables *selVar = dynamic_cast<SelectionUserVariables*>(paras->userVariables());
+    auto selVar = std::dynamic_pointer_cast<SelectionUserVariables>(paras->userVariables());
     if (!selVar) continue;
     for (unsigned int iParam = 0; static_cast<int>(iParam) < paras->size(); ++iParam) {
       const char sel = selVar->fullSelection()[iParam];
@@ -235,7 +235,7 @@ PedeSteerer::fixParameters(const align::Alignables& alis, const std::string &fil
   for (const auto& iAli: alis) {
 
     AlignmentParameters *params = iAli->alignmentParameters();
-    SelectionUserVariables *selVar = dynamic_cast<SelectionUserVariables*>(params->userVariables());
+    auto selVar = std::dynamic_pointer_cast<SelectionUserVariables>(params->userVariables());
     if (!selVar) continue;
     
     for (unsigned int iParam = 0; static_cast<int>(iParam) < params->size(); ++iParam) {
@@ -304,7 +304,7 @@ align::Alignables PedeSteerer::selectCoordinateAlis(const align::Alignables& ali
 
   for (const auto& iAli: alis) {
     AlignmentParameters *params = iAli->alignmentParameters();
-    SelectionUserVariables *selVar = dynamic_cast<SelectionUserVariables*>(params->userVariables());
+    auto selVar = std::dynamic_pointer_cast<SelectionUserVariables>(params->userVariables());
     if (!selVar) continue;
     unsigned int refParam = 0;
     unsigned int nonRefParam = 0;
@@ -368,9 +368,9 @@ bool PedeSteerer::isCorrectToRefSystem(const align::Alignables& coordDefiners) c
   bool doCorrect = false;
   bool doNotCorrect = false;
   for (const auto& it: coordDefiners) {
-    SelectionUserVariables *selVar = 
+    auto selVar = 
       (it->alignmentParameters() ? 
-       dynamic_cast<SelectionUserVariables*>(it->alignmentParameters()->userVariables()) : nullptr);
+       std::dynamic_pointer_cast<SelectionUserVariables>(it->alignmentParameters()->userVariables()) : nullptr);
     if (!selVar) continue;  // is an error!?
 
     for (unsigned int i = 0; i < selVar->fullSelection().size(); ++i) {
@@ -606,8 +606,8 @@ unsigned int PedeSteerer::presigmasFile(const std::string &fileName,
       if (presigmas[iParam] <= 0.) continue; // must be positive, '<' checked above
       // Do not apply presigma to inactive or fixed values.
       if (!(iAli->alignmentParameters()->selector()[iParam])) continue;
-      SelectionUserVariables *selVar 
-        = dynamic_cast<SelectionUserVariables*>(iAli->alignmentParameters()->userVariables());
+      auto selVar 
+        = std::dynamic_pointer_cast<SelectionUserVariables>(iAli->alignmentParameters()->userVariables());
       const char selChar = (selVar ? selVar->fullSelection()[iParam] : '1');
       if (selChar == 'f' || selChar == 'F' || selChar == 'c' || selChar == 'C') continue;
       // Finally create and write steering file:

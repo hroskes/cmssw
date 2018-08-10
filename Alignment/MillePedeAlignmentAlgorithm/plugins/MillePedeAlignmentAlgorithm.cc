@@ -630,7 +630,7 @@ MillePedeAlignmentAlgorithm::addHitCount(const std::vector<AlignmentParameters*>
       AlignmentParameters *pars = ali->alignmentParameters();
       if (pars) { // otherwise hierarchy level not selected
         // cast ensured by previous checks:
-        MillePedeVariables *mpVar = static_cast<MillePedeVariables*>(pars->userVariables());
+        auto mpVar = std::static_pointer_cast<MillePedeVariables>(pars->userVariables());
         // every hit has an x-measurement, cf. addReferenceTrajectory(..):
         mpVar->increaseHitsX();
         if (validHitVecY[iHit]) {
@@ -1184,7 +1184,7 @@ void MillePedeAlignmentAlgorithm::buildUserVariables(const align::Alignables& al
       throw cms::Exception("Alignment") << "@SUB=MillePedeAlignmentAlgorithm::buildUserVariables"
                                         << "No parameters for alignable";
     }
-    MillePedeVariables *userVars = dynamic_cast<MillePedeVariables*>(params->userVariables());
+    auto userVars = std::dynamic_pointer_cast<MillePedeVariables>(params->userVariables());
     if (userVars) { // Just re-use existing, keeping label and numHits:
       for (unsigned int iPar = 0; iPar < userVars->size(); ++iPar) {
         //      if (params->hierarchyLevel() > 0) {
@@ -1194,8 +1194,8 @@ void MillePedeAlignmentAlgorithm::buildUserVariables(const align::Alignables& al
         //std::cout << "\nAfter: " << userVars->parameter()[iPar] << std::endl;
       }
     } else { // Nothing yet or erase wrong type:
-      userVars = new MillePedeVariables(params->size(), thePedeLabels->alignableLabel(iAli),
-                                        thePedeLabels->alignableTracker()->objectIdProvider().typeToName(iAli->alignableObjectId()));
+      userVars = std::make_shared<MillePedeVariables>(params->size(), thePedeLabels->alignableLabel(iAli),
+                                                      thePedeLabels->alignableTracker()->objectIdProvider().typeToName(iAli->alignableObjectId()));
       params->setUserVariables(userVars);
     }
   }
@@ -1235,17 +1235,13 @@ bool MillePedeAlignmentAlgorithm::addHitStatistics(int fromIov, const std::strin
   for (std::vector<std::string>::const_iterator iFile = inFiles.begin();
        iFile != inFiles.end(); ++iFile) {
     const std::string inFile(theDir + *iFile);
-    const std::vector<AlignmentUserVariables*> mpVars =
+    const auto mpVars =
       millePedeIO.readMillePedeVariables(theAlignables, inFile.c_str(), fromIov, ierr);
     if (ierr || !this->addHits(theAlignables, mpVars)) {
       edm::LogError("Alignment") << "@SUB=MillePedeAlignmentAlgorithm::addHitStatistics"
                                  << "Error " << ierr << " reading from " << inFile
                                  << ", tree " << fromIov << ", or problems in addHits";
       allOk = false;
-    }
-    for (std::vector<AlignmentUserVariables*>::const_iterator i = mpVars.begin();
-         i != mpVars.end(); ++i) {
-      delete *i; // clean created objects
     }
   }
 
@@ -1254,14 +1250,14 @@ bool MillePedeAlignmentAlgorithm::addHitStatistics(int fromIov, const std::strin
 
 //__________________________________________________________________________________________________
 bool MillePedeAlignmentAlgorithm::addHits(const align::Alignables& alis,
-                                          const std::vector<AlignmentUserVariables*> &mpVars) const
+                                          const std::vector<std::shared_ptr<AlignmentUserVariables>> &mpVars) const
 {
   bool allOk = (mpVars.size() == alis.size());
-  std::vector<AlignmentUserVariables*>::const_iterator iUser = mpVars.begin();
+  std::vector<std::shared_ptr<AlignmentUserVariables>>::const_iterator iUser = mpVars.begin();
   for (auto iAli = alis.cbegin(); iAli != alis.cend() && iUser != mpVars.end(); ++iAli, ++iUser) {
-    MillePedeVariables *mpVarNew = dynamic_cast<MillePedeVariables*>(*iUser);
+    auto mpVarNew = std::dynamic_pointer_cast<MillePedeVariables>(*iUser);
     AlignmentParameters *ps = (*iAli)->alignmentParameters();
-    MillePedeVariables *mpVarOld = (ps ? dynamic_cast<MillePedeVariables*>(ps->userVariables()) : nullptr);
+    auto mpVarOld = (ps ? std::dynamic_pointer_cast<MillePedeVariables>(ps->userVariables()) : nullptr);
     if (!mpVarNew || !mpVarOld || mpVarOld->size() != mpVarNew->size()) {
       allOk = false;
       continue; // FIXME error etc.?

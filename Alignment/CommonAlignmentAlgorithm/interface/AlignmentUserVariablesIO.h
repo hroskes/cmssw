@@ -6,7 +6,6 @@
 /// \class AlignmentUserVariablesIO
 ///
 /// Abstract base class for I/O of AlignmentUserVariables.
-/// Note that it is the caller's responsibility to delete objects created during reading.
 ///
 ///  $Date: 2007/01/23 16:07:08 $
 ///  $Revision: 1.4 $
@@ -30,15 +29,14 @@ class AlignmentUserVariablesIO
   /** write AlignmentUserVariables of one Alignable */
   virtual int writeOne(Alignable* ali) =0;
 
-  /** read AlignmentUserVariables of one Alignable,
-      object should be created and has to be deleted */
-  virtual AlignmentUserVariables* readOne(Alignable* ali, int& ierr) =0;
+  /** read AlignmentUserVariables of one Alignable*/
+  virtual std::shared_ptr<AlignmentUserVariables> readOne(Alignable* ali, int& ierr) =0;
 
   /** write AlignmentUserVariables of many Alignables */
   int write(const align::Alignables& alivec, bool validCheck);
 
   /** read AlignmentUserVariables of many Alignables (using readOne, so take care of memory!) */
-  std::vector<AlignmentUserVariables*> read(const align::Alignables& alivec, int& ierr);
+  std::vector<std::shared_ptr<AlignmentUserVariables>> read(const align::Alignables& alivec, int& ierr);
 
 };
 

@@ -701,20 +701,19 @@ void AlignmentParameterStore::attachCorrelations( const align::Alignables& alive
 //__________________________________________________________________________________________________
 void AlignmentParameterStore::
 attachUserVariables( const align::Alignables& alivec,
-                     const std::vector<AlignmentUserVariables*>& uvarvec, int& ierr )
+                     const std::vector<std::shared_ptr<AlignmentUserVariables>>& uvarvec, int& ierr )
 {
   ierr=0;
 
   LogDebug("DumpArguments") << "size of alivec:   "  << alivec.size()
                             << "\nsize of uvarvec: " << uvarvec.size();
 
-  std::vector<AlignmentUserVariables*>::const_iterator iuvar=uvarvec.begin();
+  std::vector<std::shared_ptr<AlignmentUserVariables>>::const_iterator iuvar=uvarvec.begin();
 
   for ( align::Alignables::const_iterator iali=alivec.begin(); iali!=alivec.end(); ++iali, ++iuvar ) 
   {
     AlignmentParameters* ap = (*iali)->alignmentParameters();
-    AlignmentUserVariables* uvarnew = (*iuvar);
-    ap->setUserVariables(uvarnew);
+    ap->setUserVariables(*iuvar);
   }
 }
 

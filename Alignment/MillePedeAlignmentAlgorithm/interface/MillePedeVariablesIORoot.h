@@ -39,7 +39,7 @@ class MillePedeVariablesIORoot : public AlignmentIORootBase, public AlignmentUse
 			       int iter, bool validCheck, int &ierr);
 
   /** read user variables (not that their memory is owned by this class!) */
-  std::vector<AlignmentUserVariables*> readMillePedeVariables
+  std::vector<std::shared_ptr<AlignmentUserVariables>> readMillePedeVariables
     (const align::Alignables &alivec, const char *filename, int iter, int &ierr);
 
  protected:
@@ -48,7 +48,7 @@ class MillePedeVariablesIORoot : public AlignmentIORootBase, public AlignmentUse
   int writeOne(Alignable *ali) override; // inherited from AlignmentUserVariablesIO
 
   /** read MillePedeVariables belonging to one Alignable */
-  AlignmentUserVariables* readOne(Alignable *ali, int &ierr) override;
+  std::shared_ptr<AlignmentUserVariables> readOne(Alignable *ali, int &ierr) override;
   // previous inherited from AlignmentUserVariablesIO
 
   /** open IO */  // inherited from AlignmentUserVariablesIO

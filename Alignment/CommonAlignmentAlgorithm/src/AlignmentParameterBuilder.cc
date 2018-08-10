@@ -229,7 +229,7 @@ bool AlignmentParameterBuilder::addFullParamSel(AlignmentParameters *aliParams,
 {
   if (!aliParams) return false;
 
-  aliParams->setUserVariables(new SelectionUserVariables(fullSel));
+  aliParams->setUserVariables(std::make_shared<SelectionUserVariables>(fullSel));
 
   return true;
 }
