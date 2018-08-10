@@ -9,7 +9,6 @@
 #include "Alignment/CommonAlignment/interface/AlignableNavigator.h"  
 #include "Alignment/CommonAlignmentAlgorithm/interface/AlignmentIORoot.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "Riostream.h"
 
 #include "DataFormats/Alignment/interface/AlignmentClusterFlag.h" 	 
 #include "DataFormats/Alignment/interface/AliClusterValueMap.h" 	 
@@ -23,11 +22,12 @@
 
 #include "Alignment/HIPAlignmentAlgorithm/interface/HIPMonitorConfig.h"
 #include "Alignment/HIPAlignmentAlgorithm/interface/HIPAlignableSpecificParameters.h"
+
+#include "Riostream.h"
+#include "TFile.h"
 #include "TFormula.h"
+#include "TTree.h"
 
-
-class TFile;
-class TTree;
 
 class HIPAlignmentAlgorithm : public AlignmentAlgorithmBase{
 public:
@@ -142,13 +142,13 @@ private:
   std::vector<align::StructureType> theLevels; // for survey residuals
 
   // root tree variables
-  TFile* theTrackHitMonitorIORootFile;
-  TTree* theTrackMonitorTree; // event-wise tree
-  TTree* theHitMonitorTree; // hit-wise tree
-  TFile* theAlignablesMonitorIORootFile;
-  TTree* theAlignablesMonitorTree; // alignable-wise tree
-  TFile* theSurveyIORootFile;
-  TTree* theSurveyTree; // survey tree
+  std::unique_ptr<TFile> theTrackHitMonitorIORootFile;
+  std::shared_ptr<TTree> theTrackMonitorTree; // event-wise tree
+  std::shared_ptr<TTree> theHitMonitorTree; // hit-wise tree
+  std::unique_ptr<TFile> theAlignablesMonitorIORootFile;
+  std::unique_ptr<TTree> theAlignablesMonitorTree; // alignable-wise tree
+  std::unique_ptr<TFile> theSurveyIORootFile;
+  std::unique_ptr<TTree> theSurveyTree; // survey tree
 
   // common variables for monitor trees
   int m_datatype;

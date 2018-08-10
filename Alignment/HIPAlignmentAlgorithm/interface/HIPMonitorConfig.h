@@ -11,14 +11,14 @@
 class HIPMonitorVariables{
 protected:
 
-  TTree* tree;
+  std::shared_ptr<TTree> tree;
 
 public:
 
   HIPMonitorVariables() : tree(nullptr){}
   virtual ~HIPMonitorVariables(){}
 
-  void setTree(TTree* tree_){ tree=tree_; }
+  void setTree(std::shared_ptr<TTree> tree_){ tree=tree_; }
   virtual void bookBranches()=0;
   virtual void fill()=0;
 
