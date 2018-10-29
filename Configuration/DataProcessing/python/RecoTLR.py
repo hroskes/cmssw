@@ -1,3 +1,4 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 
 ##############################################################################
@@ -60,6 +61,30 @@ def customisePostEra_Run2_2017_harvesting_trackingOnly(process):
     _customise_HPbeamspot(process)
     return process
 
+def customisePostEra_Run2_2017_pp_on_XeXe(process):
+    customisePostEra_Run2_2017(process)
+    return process
+
+def customisePostEra_Run2_2017_ppRef(process):
+    customisePostEra_Run2_2017(process)
+    return process
+
+# 2018 equivalents
+def customisePostEra_Run2_2018(process):
+    #start with a repeat of 2017
+    customisePostEra_Run2_2017(process)
+    return process
+
+def customisePostEra_Run2_2018_express_trackingOnly(process):
+    #start with a repeat of 2017
+    customisePostEra_Run2_2017_express_trackingOnly(process)
+    return process
+
+def customisePostEra_Run2_2018_harvesting_trackingOnly(process):
+    #start with a repeat of 2017
+    customisePostEra_Run2_2017_harvesting_trackingOnly(process)
+    return process
+
 
 ##############################################################################
 def customisePPData(process):
@@ -86,8 +111,8 @@ def customiseCosmicMC(process):
         
 ##############################################################################
 def customiseVALSKIM(process):
-    print "WARNING"
-    print "this method is outdated, please use RecoTLR.customisePPData"
+    print("WARNING")
+    print("this method is outdated, please use RecoTLR.customisePPData")
     process= customisePPData(process)
     return process
 

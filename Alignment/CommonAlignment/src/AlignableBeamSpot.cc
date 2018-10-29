@@ -20,7 +20,7 @@
 //__________________________________________________________________________________________________
 AlignableBeamSpot::AlignableBeamSpot() : 
   Alignable( AlignableBeamSpot::detId().rawId(), AlignableSurface() ), 
-  theAlignmentPositionError(0),
+  theAlignmentPositionError(nullptr),
   theInitializedFlag(false)
 {
 
@@ -184,3 +184,6 @@ void AlignableBeamSpot::reset()
   theAlignmentPositionError = nullptr;
   theInitializedFlag = false;
 }
+
+//______________________________________________________________________________
+const align::Alignables AlignableBeamSpot::emptyComponents_{};

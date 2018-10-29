@@ -59,10 +59,10 @@ class HcalRecHitsAnalyzer : public DQMEDAnalyzer {
  public:
   HcalRecHitsAnalyzer(edm::ParameterSet const& conf);
 
-  virtual void analyze(edm::Event const& ev, edm::EventSetup const& c) override;
-  virtual void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
+  void analyze(edm::Event const& ev, edm::EventSetup const& c) override;
+  void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
   //virtual void beginRun(edm::Run const& run, edm::EventSetup const& c) override;
-  virtual void dqmBeginRun(const edm::Run& run, const edm::EventSetup& c) override;
+  void dqmBeginRun(const edm::Run& run, const edm::EventSetup& c) override;
  private:
   
   virtual void fillRecHitsTmp(int subdet_, edm::Event const& ev);
@@ -137,6 +137,7 @@ class HcalRecHitsAnalyzer : public DQMEDAnalyzer {
   MonitorElement* map_ecal;
 
   std::vector<MonitorElement*> emap;
+  MonitorElement              *emap_HO;
 
   std::vector<MonitorElement*> emean_vs_ieta_HB;
   std::vector<MonitorElement*> emean_vs_ieta_HBM0;
@@ -154,6 +155,11 @@ class HcalRecHitsAnalyzer : public DQMEDAnalyzer {
   std::vector<MonitorElement*> occupancy_map_HE;
   std::vector<MonitorElement*> occupancy_map_HF;
   MonitorElement              *occupancy_map_HO;
+
+  std::vector<MonitorElement*> occupancy_vs_ieta_HB;
+  std::vector<MonitorElement*> occupancy_vs_ieta_HE;
+  std::vector<MonitorElement*> occupancy_vs_ieta_HF;
+  MonitorElement              *occupancy_vs_ieta_HO;
 
   std::vector<MonitorElement*> nrechits_vs_iphi_HBP, nrechits_vs_iphi_HBM;
   std::vector<MonitorElement*> nrechits_vs_iphi_HEP, nrechits_vs_iphi_HEM;

@@ -10,7 +10,7 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-ME0SegmentBuilder::ME0SegmentBuilder(const edm::ParameterSet& ps) : geom_(0) {
+ME0SegmentBuilder::ME0SegmentBuilder(const edm::ParameterSet& ps) : geom_(nullptr) {
 
   // Algo type (indexed)
   int chosenAlgo = ps.getParameter<int>("algo_type") - 1;
@@ -50,14 +50,14 @@ void ME0SegmentBuilder::build(const ME0RecHitCollection* recHits, ME0SegmentColl
           hitAndPositions.emplace_back(&(*it2),nLoc,glb,hitAndPositions.size());
 	  }
 
-      LogDebug("ME0Segment|ME0") << "found " << hitAndPositions.size() << " rechits in chamber " << *chIt;
+      LogDebug("ME0Segment|ME0") << "found " << hitAndPositions.size() << " rechits in chamber " << chId;
       //sort by layer
         auto getLayer =[&](int iL) ->const ME0Layer* { //function is broken in the geo currently
       	  for (auto layer : chamber->layers()){
       		  if (layer->id().layer()==iL)
       			  return layer;
       	  }
-      	  return 0;
+      	  return nullptr;
         };
         float z1 = getLayer(1)->position().z();
         float z6 = getLayer(6)->position().z();
@@ -69,10 +69,10 @@ void ME0SegmentBuilder::build(const ME0RecHitCollection* recHits, ME0SegmentColl
       // given the chamber select the appropriate algo... and run it
       std::vector<ME0Segment> segv = algo->run(chamber, hitAndPositions);
 
-      LogDebug("ME0Segment|ME0") << "found " << segv.size() << " segments in chamber " << *chIt;
+      LogDebug("ME0Segment|ME0") << "found " << segv.size() << " segments in chamber " << chId;
 
       // Add the segments to master collection
-      if(segv.size())
+      if(!segv.empty())
       oc.put(chId, segv.begin(), segv.end());
 
   }

@@ -28,10 +28,15 @@ namespace edm {
     typedef T wrapped_type; // used with the dictionary to identify Wrappers
     Wrapper() : WrapperBase(), present(false), obj() {}
     explicit Wrapper(std::unique_ptr<T> ptr);
+    
+    template<typename... Args>
+    explicit Wrapper( Emplace, Args&&... );
     ~Wrapper() override {}
-    T const* product() const {return (present ? &obj : 0);}
+    T const* product() const {return (present ? &obj : nullptr);}
     T const* operator->() const {return product();}
 
+    T& bareProduct() { return obj;}
+    
     //these are used by FWLite
     static std::type_info const& productTypeInfo() {return typeid(T);}
     static std::type_info const& typeInfo() {return typeid(Wrapper<T>);}
@@ -64,6 +69,8 @@ private:
                                   std::vector<unsigned long> const& iIndices,
                                   std::vector<void const*>& oPtr) const override;
 
+    std::shared_ptr<soa::TableExaminerBase> tableExaminer_() const override;
+
   private:
     // We wish to disallow copy construction and assignment.
     // We make the copy constructor and assignment operator private.
@@ -75,21 +82,21 @@ private:
   };
 
   template<typename T>
-  inline
-  void swap_or_assign(T& a, T& b) {
-    detail::doSwapOrAssign<T>()(a, b);
-  } 
-
-  template<typename T>
   Wrapper<T>::Wrapper(std::unique_ptr<T> ptr) :
     WrapperBase(),
-    present(ptr.get() != 0),
+    present(ptr.get() != nullptr),
     obj() {
     if (present) {
-      // The following will call swap if T has such a function,
-      // and use assignment if T has no such function.
-      swap_or_assign(obj, *ptr);
+      obj = std::move(*ptr);
     }
+  }
+
+  template<typename T>
+  template<typename... Args>
+  Wrapper<T>::Wrapper(Emplace, Args&&... args) :
+  WrapperBase(),
+  present(true),
+  obj(std::forward<Args>(args)...) {
   }
 
   template<typename T>
@@ -99,9 +106,7 @@ private:
   obj() {
      std::unique_ptr<T> temp(ptr);
      if (present) {
-        // The following will call swap if T has such a function,
-        // and use assignment if T has no such function.
-        swap_or_assign(obj, *ptr);
+       obj = std::move(*ptr);
      }
   }
 
@@ -144,6 +149,21 @@ private:
     assert(wrappedNewProduct != nullptr);
     return detail::doIsProductEqual<T>()(obj, wrappedNewProduct->obj);
   }
+  
+  namespace soa {
+    template<class T>
+    struct MakeTableExaminer {
+      static std::shared_ptr<edm::soa::TableExaminerBase> make(void const*) {
+        return std::shared_ptr<edm::soa::TableExaminerBase>{};
+      }
+    };
+  }
+  template <typename T>
+  inline
+  std::shared_ptr<edm::soa::TableExaminerBase> Wrapper<T>::tableExaminer_() const {
+    return soa::MakeTableExaminer<T>::make(&obj);
+  }
+
 }
 
 #include "DataFormats/Common/interface/WrapperView.icc"

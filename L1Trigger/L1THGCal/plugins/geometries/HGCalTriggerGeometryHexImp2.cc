@@ -15,27 +15,28 @@ class HGCalTriggerGeometryHexImp2 : public HGCalTriggerGeometryBase
     public:
         HGCalTriggerGeometryHexImp2(const edm::ParameterSet& conf);
 
-        virtual void initialize(const edm::ESHandle<CaloGeometry>& ) override final;
-        virtual void reset() override final;
+        void initialize(const edm::ESHandle<CaloGeometry>& ) final;
+        void reset() final;
 
-        virtual unsigned getTriggerCellFromCell( const unsigned ) const override final;
-        virtual unsigned getModuleFromCell( const unsigned ) const override final;
-        virtual unsigned getModuleFromTriggerCell( const unsigned ) const override final;
+        unsigned getTriggerCellFromCell( const unsigned ) const final;
+        unsigned getModuleFromCell( const unsigned ) const final;
+        unsigned getModuleFromTriggerCell( const unsigned ) const final;
 
-        virtual geom_set getCellsFromTriggerCell( const unsigned ) const override final;
-        virtual geom_set getCellsFromModule( const unsigned ) const override final;
-        virtual geom_set getTriggerCellsFromModule( const unsigned ) const override final;
+        geom_set getCellsFromTriggerCell( const unsigned ) const final;
+        geom_set getCellsFromModule( const unsigned ) const final;
+        geom_set getTriggerCellsFromModule( const unsigned ) const final;
 
-        virtual geom_ordered_set getOrderedCellsFromModule( const unsigned ) const override final;
-        virtual geom_ordered_set getOrderedTriggerCellsFromModule( const unsigned ) const override final;
+        geom_ordered_set getOrderedCellsFromModule( const unsigned ) const final;
+        geom_ordered_set getOrderedTriggerCellsFromModule( const unsigned ) const final;
 
-        virtual geom_set getNeighborsFromTriggerCell( const unsigned ) const override final;
+        geom_set getNeighborsFromTriggerCell( const unsigned ) const final;
 
-        virtual GlobalPoint getTriggerCellPosition(const unsigned ) const override final;
-        virtual GlobalPoint getModulePosition(const unsigned ) const override final;
+        GlobalPoint getTriggerCellPosition(const unsigned ) const final;
+        GlobalPoint getModulePosition(const unsigned ) const final;
 
-        virtual bool validTriggerCell( const unsigned ) const override final;
-        virtual bool disconnectedModule(const unsigned) const override final;
+        bool validTriggerCell( const unsigned ) const final;
+        bool disconnectedModule(const unsigned) const final;
+        unsigned triggerLayer(const unsigned) const final;
 
     private:
         edm::FileInPath l1tCellsMapping_;
@@ -467,11 +468,11 @@ getTriggerCellPosition(const unsigned trigger_cell_det_id) const
     // Position: barycenter of the trigger cell.
     Basic3DVector<float> triggerCellVector(0.,0.,0.);
     const auto cell_ids = getCellsFromTriggerCell(trigger_cell_det_id);
-    if(cell_ids.size()==0) return GlobalPoint(0,0,0);
+    if(cell_ids.empty()) return GlobalPoint(0,0,0);
     for(const auto& cell : cell_ids)
     {
         HGCalDetId cellDetId(cell);
-        triggerCellVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry().getPosition(cellDetId) :  fhGeometry().getPosition(cellDetId)).basicVector();
+        triggerCellVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry()->getPosition(cellDetId) :  fhGeometry()->getPosition(cellDetId)).basicVector();
     }
     return GlobalPoint( triggerCellVector/cell_ids.size() );
 
@@ -484,11 +485,11 @@ getModulePosition(const unsigned module_det_id) const
     // Position: barycenter of the module.
     Basic3DVector<float> moduleVector(0.,0.,0.);
     const auto cell_ids = getCellsFromModule(module_det_id);
-    if(cell_ids.size()==0) return GlobalPoint(0,0,0);
+    if(cell_ids.empty()) return GlobalPoint(0,0,0);
     for(const auto& cell : cell_ids)
     {
         HGCalDetId cellDetId(cell);
-        moduleVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry().getPosition(cellDetId) :  fhGeometry().getPosition(cellDetId)).basicVector();
+        moduleVector += (cellDetId.subdetId()==ForwardSubdetector::HGCEE ? eeGeometry()->getPosition(cellDetId) :  fhGeometry()->getPosition(cellDetId)).basicVector();
     }
     return GlobalPoint( moduleVector/cell_ids.size() );
 }
@@ -611,7 +612,7 @@ fillNeighborMaps()
         std::vector<std::string> neighbors_tokens {
             std::sregex_token_iterator(line.begin(), line.end(), neighbors_regex), {}
         };
-        if(neighbors_tokens.size()==0)
+        if(neighbors_tokens.empty())
         {
             throw cms::Exception("BadGeometry")
                 << "Syntax error in the L1TCellNeighborsMapping:\n"
@@ -771,6 +772,14 @@ HGCalTriggerGeometryHexImp2::
 disconnectedModule(const unsigned module_id) const
 {
     return false;
+}
+
+
+unsigned 
+HGCalTriggerGeometryHexImp2::
+triggerLayer(const unsigned id) const
+{
+    return HGCalDetId(id).layer();
 }
 
 bool 

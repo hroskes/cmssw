@@ -57,36 +57,36 @@ class MillePedeAlignmentAlgorithm : public AlignmentAlgorithmBase
   MillePedeAlignmentAlgorithm(const edm::ParameterSet &cfg);
 
   /// Destructor
-  virtual ~MillePedeAlignmentAlgorithm();
+  ~MillePedeAlignmentAlgorithm() override;
 
   /// Called at beginning of job
-  virtual void initialize(const edm::EventSetup &setup,
+  void initialize(const edm::EventSetup &setup,
                           AlignableTracker *tracker, AlignableMuon *muon, AlignableExtras *extras,
                           AlignmentParameterStore *store) override;
 
   /// Returns whether MP supports calibrations
-  virtual bool supportsCalibrations() override;
+  bool supportsCalibrations() override;
   /// Pass integrated calibrations to Millepede (they are not owned by Millepede!)
-  virtual bool addCalibrations(const std::vector<IntegratedCalibrationBase*> &iCals) override;
+  bool addCalibrations(const std::vector<IntegratedCalibrationBase*> &iCals) override;
 
   virtual bool storeThresholds(const int & nRecords,const AlignPCLThresholds::threshold_map & thresholdMap);
 
   /// Called at end of job
-  virtual void terminate(const edm::EventSetup& iSetup) override;
+  void terminate(const edm::EventSetup& iSetup) override;
   /// Called at end of job
-  virtual void terminate() override;
+  void terminate() override;
 
   /// Returns whether MP should process events in the current configuration
-  virtual bool processesEvents() override;
+  bool processesEvents() override;
 
   /// Returns whether MP produced results to be stored
-  virtual bool storeAlignments() override;
+  bool storeAlignments() override;
 
   /// Run the algorithm on trajectories and tracks
-  virtual void run(const edm::EventSetup &setup, const EventInfo &eventInfo) override;
+  void run(const edm::EventSetup &setup, const EventInfo &eventInfo) override;
 
   /// called at begin of run
-  virtual void beginRun(const edm::Run& run,
+  void beginRun(const edm::Run& run,
                         const edm::EventSetup& setup,
                         bool changed) override;
 
@@ -97,13 +97,13 @@ class MillePedeAlignmentAlgorithm : public AlignmentAlgorithmBase
                       const edm::EventSetup&); //override;
 
   // This one will be called since it matches the interface of the base class
-  virtual void endRun(const EndRunInfo &runInfo, const edm::EventSetup &setup) override;
+  void endRun(const EndRunInfo &runInfo, const edm::EventSetup &setup) override;
 
   /// called at begin of luminosity block (resets Mille binary in mille mode)
-  virtual void beginLuminosityBlock(const edm::EventSetup&) override;
+  void beginLuminosityBlock(const edm::EventSetup&) override;
 
   /// called at end of luminosity block
-  virtual void endLuminosityBlock(const edm::EventSetup&) override;
+  void endLuminosityBlock(const edm::EventSetup&) override;
 
 
 /*   virtual void beginLuminosityBlock(const edm::EventSetup &setup) {} */
@@ -111,7 +111,7 @@ class MillePedeAlignmentAlgorithm : public AlignmentAlgorithmBase
 
   /// Called in order to pass parameters to alignables for a specific run
   /// range in case the algorithm supports run range dependent alignment.
-  virtual bool setParametersForRunRange(const RunRange &runrange) override;
+  bool setParametersForRunRange(const RunRange &runrange) override;
 
  private:
   enum MeasurementDirection {kLocalX = 0, kLocalY};
@@ -234,10 +234,10 @@ class MillePedeAlignmentAlgorithm : public AlignmentAlgorithmBase
   /// read pede input defined by 'psetName', flag to create/not create MillePedeVariables
   bool readFromPede(const edm::ParameterSet &mprespset, bool setUserVars,
                     const RunRange &runrange);
-  bool areEmptyParams(const std::vector<Alignable*> &alignables) const;
+  bool areEmptyParams(const align::Alignables& alignables) const;
   unsigned int doIO(int loop) const;
   /// add MillePedeVariables for each AlignmentParameters (exception if no parameters...)
-  void buildUserVariables(const std::vector<Alignable*> &alignables) const;
+  void buildUserVariables(const align::Alignables& alignables) const;
 
   /// Generates list of files to read, given the list and dir from the configuration.
   /// This will automatically expand formatting directives, if they appear.
@@ -265,14 +265,14 @@ class MillePedeAlignmentAlgorithm : public AlignmentAlgorithmBase
   bool isMode(unsigned int testMode) const {return (theMode & testMode);}
   bool addHitStatistics(int fromLoop, const std::string &outFile,
                         const std::vector<std::string> &inFiles) const;
-  bool addHits(const std::vector<Alignable*> &alis,
+  bool addHits(const align::Alignables& alis,
                const std::vector<AlignmentUserVariables*> &mpVars) const;
 
   edm::ParameterSet         theConfig;
   unsigned int              theMode;
   std::string               theDir; /// directory for all kind of files
   AlignmentParameterStore  *theAlignmentParameterStore;
-  std::vector<Alignable*>   theAlignables;
+  align::Alignables         theAlignables;
   std::unique_ptr<AlignableNavigator>    theAlignableNavigator;
   std::unique_ptr<MillePedeMonitor>      theMonitor;
   std::unique_ptr<Mille>                 theMille;

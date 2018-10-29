@@ -67,6 +67,11 @@ namespace edm {
       // Warning: the returned moduleDescription will be invalid during construction
       ModuleDescription const& moduleDescription() const { return moduleDescription_; }
       
+      virtual bool wantsGlobalRuns() const =0;
+      virtual bool wantsGlobalLuminosityBlocks() const =0;
+      virtual bool wantsStreamRuns() const =0;
+      virtual bool wantsStreamLuminosityBlocks() const =0;
+
       unsigned int concurrencyLimit() const { return queue_.concurrencyLimit(); }
 
       LimitedTaskQueue& queue() {
@@ -128,6 +133,8 @@ namespace edm {
       virtual void endJob(){}
 
       virtual void preallocStreams(unsigned int);
+      virtual void preallocLumis(unsigned int);
+      virtual void preallocate(PreallocationConfiguration const&);
       virtual void doBeginStream_(StreamID id);
       virtual void doEndStream_(StreamID id);
       virtual void doStreamBeginRun_(StreamID id, Run const& rp, EventSetup const& c);
@@ -150,8 +157,11 @@ namespace edm {
       virtual void doEndRunProduce_(Run& rp, EventSetup const& c);
       virtual void doBeginLuminosityBlockProduce_(LuminosityBlock& lbp, EventSetup const& c);
       virtual void doEndLuminosityBlockProduce_(LuminosityBlock& lbp, EventSetup const& c);
-      
-      
+
+      virtual bool hasAccumulator() const { return false; }
+
+      bool hasAcquire() const { return false; }
+
       void setModuleDescription(ModuleDescription const& md) {
         moduleDescription_ = md;
       }

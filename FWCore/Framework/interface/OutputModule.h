@@ -56,7 +56,7 @@ namespace edm {
     typedef OutputModule ModuleType;
 
     explicit OutputModule(ParameterSet const& pset);
-    virtual ~OutputModule();
+    ~OutputModule() override;
 
     OutputModule(OutputModule const&) = delete; // Disallow copying and moving
     OutputModule& operator=(OutputModule const&) = delete; // Disallow copying and moving
@@ -80,6 +80,17 @@ namespace edm {
     static void fillDescriptions(ConfigurationDescriptions& descriptions);
     static const std::string& baseType();
     static void prevalidate(ConfigurationDescriptions& );
+
+    static bool wantsGlobalRuns() {return true;}
+    static bool wantsGlobalLuminosityBlocks() {return true;}
+    static bool wantsStreamRuns() {return false;}
+    static bool wantsStreamLuminosityBlocks() {return false;};
+
+    SerialTaskQueue* globalRunsQueue() { return &runQueue_;}
+    SerialTaskQueue* globalLuminosityBlocksQueue() { return &luminosityBlockQueue_;}
+    SharedResourcesAcquirer& sharedResourcesAcquirer() {
+      return resourceAcquirer_;
+    }
 
     bool wantAllEvents() const {return wantAllEvents_;}
 
@@ -174,6 +185,8 @@ namespace edm {
     std::map<BranchID, bool> keepAssociation_;
 
     SharedResourcesAcquirer resourceAcquirer_;
+    SerialTaskQueue runQueue_;
+    SerialTaskQueue luminosityBlockQueue_;
 
     //------------------------------------------------------------------
     // private member functions
@@ -188,10 +201,6 @@ namespace edm {
 
     std::string workerType() const {return "WorkerT<OutputModule>";}
     
-    SharedResourcesAcquirer& sharedResourcesAcquirer() {
-      return resourceAcquirer_;
-    }
-
     /// Tell the OutputModule that is must end the current file.
     void doCloseFile();
 
@@ -201,6 +210,8 @@ namespace edm {
 
     void registerProductsAndCallbacks(OutputModule const*, ProductRegistry const*) {}
     
+    bool needToRunSelection() const;
+    std::vector<ProductResolverIndexAndSkipBit> productsUsedBySelection() const;
     bool prePrefetchSelection(StreamID id, EventPrincipal const&, ModuleCallingContext const*);
 
     /// Ask the OutputModule if we should end the current file.
@@ -218,6 +229,9 @@ namespace edm {
     virtual void openFile(FileBlock const&) {}
     virtual void respondToOpenInputFile(FileBlock const&) {}
     virtual void respondToCloseInputFile(FileBlock const&) {}
+
+    bool hasAcquire() const { return false; }
+    bool hasAccumulator() const { return false; }
 
     virtual bool isFileOpen() const { return true; }
 

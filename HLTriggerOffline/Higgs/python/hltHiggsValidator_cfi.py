@@ -1,10 +1,11 @@
 import FWCore.ParameterSet.Config as cms
 
 
-hltHiggsValidator = cms.EDAnalyzer("HLTHiggsValidator",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+hltHiggsValidator = DQMEDAnalyzer('HLTHiggsValidator',
         
     hltProcessName = cms.string("HLT"),
-    analysis       = cms.vstring("HWW", "HZZ", "HZZControlPaths", "MuonJet", "Hgg", "Htaunu", "H2tau", "VBFHbb_0btag", "VBFHbb_1btag", "VBFHbb_2btag",  "ZnnHbb","DoubleHinTaus","HiggsDalitz","X4b","TTHbbej","AHttH","WHToENuBB","MSSMHbb","MSSMHbbmu","VBFHToInv"),
+    analyses       = cms.vstring("HWW", "HZZ", "HZZControlPaths", "MuonJet", "Hgg", "Htaunu", "H2tau", "VBFHbb_0btag", "VBFHbb_1btag", "VBFHbb_2btag",  "ZnnHbb","DoubleHinTaus","HiggsDalitz","X4b","TTHbbej","AHttH","WHToENuBB","MSSMHbb","MSSMHbbmu","VBFHToInv"),
     histDirectory  = cms.string("HLT/Higgs"),
     
     # -- The instance name of the reco::GenParticles collection 
@@ -201,6 +202,8 @@ hltHiggsValidator = cms.EDAnalyzer("HLTHiggsValidator",
             "HLT_Diphoton30PV_18PV_R9Id_AND_IsoCaloId_AND_HE_R9Id_NoPixelVeto_Mass55_v",
             "HLT_Diphoton30EB_18EB_R9Id_OR_IsoCaloId_AND_HE_R9Id_NoPixelVeto_Mass55_v",
             "HLT_Diphoton30EB_18EB_R9Id_OR_IsoCaloId_AND_HE_R9Id_PixelVeto_Mass55_v",
+            "HLT_Diphoton30_18_PVrealAND_R9Id_AND_IsoCaloId_AND_HE_R9Id_PixelVeto_Mass55_v",
+            "HLT_Diphoton30_18_PVrealAND_R9Id_AND_IsoCaloId_AND_HE_R9Id_NoPixelVeto_Mass55_v",
             ),
         recPhotonLabel  = cms.string("photons"),
         # -- Analysis specific cuts

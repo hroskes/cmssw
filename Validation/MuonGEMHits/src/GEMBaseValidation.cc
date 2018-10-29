@@ -78,15 +78,8 @@ string GEMBaseValidation::getSuffixTitle(int region){
 }
 
 string GEMBaseValidation::getStationLabel(int i) {
-  vector<string> stationLabel;
-  if ( nstationForLabel == 2) { 
-    string stationLabel[] = {"1","2"};
-    return stationLabel[i-1];
-  }
-  else {
-    std::cout<<"Something is wrong"<<std::endl;
-    return "";
-  }
+  string stationLabel[] = {"1","2"};
+  return stationLabel[i-1];
 }
 
 
@@ -112,7 +105,7 @@ MonitorElement* GEMBaseValidation::getSimpleZR(DQMStore::IBooker& ibooker, TStri
 }
 
 MonitorElement* GEMBaseValidation::getDCEta(DQMStore::IBooker& ibooker, const GEMStation* station, TString title, TString histname ) {
-  if( station->rings().front()->superChambers().size() == 0 ) {
+  if( station->rings().front()->superChambers().empty() ) {
     LogDebug("MuonBaseValidation")<<"+++ Error! can not get superChambers. Skip "<<getSuffixTitle(station->region(), station->station())<<" on "<<histname<<"\n";
     return nullptr;
   }

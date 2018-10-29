@@ -115,7 +115,7 @@ namespace spr{
   void energyHCALCell(HcalDetId detId, std::vector<PCaloHit>& hits, 
 		      std::vector<std::pair<double,int> >& energyCell, 
 		      int maxDepth, double hbThr, double heThr, double hfThr, 
-		      double hoThr, double tMin, double tMax, bool 
+		      double hoThr, double tMin, double tMax, int depthHE, bool
 #ifdef EDM_ML_DEBUG
 		      debug
 #endif
@@ -125,7 +125,6 @@ namespace spr{
     int    subdet  = detId.subdet();	
     double eThr    = spr::eHCALThreshold(subdet, hbThr, heThr, hfThr, hoThr);
     bool   hbhe    = (detId.ietaAbs() == 16);
-    int    depthHE = (maxDepth <= 6) ? 3 : 4;
 #ifdef EDM_ML_DEBUG
     if (debug)
       std::cout << "energyHCALCell: input ID " << detId << " MaxDepth " << maxDepth << " Threshold (E) " << eThr << " (T) " << tMin << ":" << tMax << std::endl;
@@ -148,7 +147,7 @@ namespace spr{
       if (debug)
 	std::cout << "energyHCALCell:: Cell " << hcid << " E " << energy << " from " << hit.size() << " threshold " << eThr << std::endl;
 #endif
-      if (energy>eThr && hit.size() > 0) {
+      if (energy>eThr && !hit.empty()) {
         energyCell.push_back(std::pair<double,int>(energy,i+1));
       }
     }
@@ -165,7 +164,7 @@ namespace spr{
 #endif
   }
 
-  HcalDetId getHotCell(std::vector<HBHERecHitCollection::const_iterator>& hit, bool includeHO, bool useRaw, bool) {
+  HcalDetId getHotCell(std::vector<HBHERecHitCollection::const_iterator>& hit, bool includeHO, int useRaw, bool) {
 
     std::vector<HcalDetId> dets;
     std::vector<double> energies;
@@ -199,7 +198,7 @@ namespace spr{
     return hotCell;
   }
 
-  HcalDetId getHotCell(std::vector<std::vector<PCaloHit>::const_iterator>& hit, bool includeHO, bool useRaw, bool) {
+  HcalDetId getHotCell(std::vector<std::vector<PCaloHit>::const_iterator>& hit, bool includeHO, int useRaw, bool) {
 
     std::vector<HcalDetId> dets;
     std::vector<double> energies;

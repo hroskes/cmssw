@@ -2,6 +2,9 @@
 #define L1TCaloLayer1FetchLUTs_hh
 
 #include "UCTGeometry.hh"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include <vector>
+#include <array>
 
 // External function declaration
 
@@ -18,6 +21,7 @@ bool L1TCaloLayer1FetchLUTs(const edm::EventSetup& iSetup,
 			    bool useCalib = true,
 			    bool useECALLUT = true,
 			    bool useHCALLUT = true,
-                            bool useHFLUT = true);
+                            bool useHFLUT = true,
+                            int fwVersion = 0);
 
 #endif

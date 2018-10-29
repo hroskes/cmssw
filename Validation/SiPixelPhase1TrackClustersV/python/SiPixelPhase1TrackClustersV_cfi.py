@@ -5,8 +5,8 @@ from DQM.SiPixelPhase1Common.HistogramManager_cfi import *
 SiPixelPhase1TrackClustersCharge = DefaultHisto.clone(
   name = "charge",
   title = "Corrected Cluster Charge",
-  range_min = 0, range_max = 100, range_nbins = 200,
-  xlabel = "Charge size (in ke)",
+  range_min = 0, range_max = 200e3, range_nbins = 200,
+  xlabel = "Charge size",
   topFolderName = "PixelPhase1V/Clusters",
   specs = VPSet(
     Specification().groupBy("PXBarrel/PXLayer").save(),
@@ -48,7 +48,8 @@ SiPixelPhase1TrackClustersConf = cms.VPSet(
 )
 
 
-SiPixelPhase1TrackClustersAnalyzerV = cms.EDAnalyzer("SiPixelPhase1TrackClustersV",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+SiPixelPhase1TrackClustersAnalyzerV = DQMEDAnalyzer('SiPixelPhase1TrackClustersV',
         clusters = cms.InputTag("siPixelClusters"),
         tracks = cms.InputTag("generalTracks"),
         histograms = SiPixelPhase1TrackClustersConf,

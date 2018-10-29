@@ -203,12 +203,12 @@ EDConsumerBase::updateLookup(BranchType iBranchType,
 ProductResolverIndexAndSkipBit
 EDConsumerBase::indexFrom(EDGetToken iToken, BranchType iBranch, TypeID const& iType) const
 {
-  if(unlikely(iToken.index()>=m_tokenInfo.size())) {
+  if(UNLIKELY(iToken.index()>=m_tokenInfo.size())) {
     throwBadToken(iType,iToken);
   }
   const auto& info = m_tokenInfo.get<kLookupInfo>(iToken.index());
-  if (likely(iBranch == info.m_branchType)) {
-    if (likely(iType == info.m_type)) {
+  if (LIKELY(iBranch == info.m_branchType)) {
+    if (LIKELY(iType == info.m_type)) {
       return info.m_index;
     } else {
       throwTypeMismatch(iType, iToken);
@@ -218,6 +218,12 @@ EDConsumerBase::indexFrom(EDGetToken iToken, BranchType iBranch, TypeID const& i
   }
   return ProductResolverIndexAndSkipBit(edm::ProductResolverIndexInvalid, false);
 }
+
+ProductResolverIndexAndSkipBit
+EDConsumerBase::uncheckedIndexFrom(EDGetToken iToken) const {
+  return m_tokenInfo.get<kLookupInfo>(iToken.index()).m_index;
+}
+
 
 void
 EDConsumerBase::itemsToGet(BranchType iBranch, std::vector<ProductResolverIndexAndSkipBit>& oIndices) const
@@ -314,14 +320,6 @@ EDConsumerBase::registeredToConsume(ProductResolverIndex iIndex, bool skipCurren
       return true;
     }
   }
-  //TEMPORARY: Remember so we do not have to do this again
-  //non thread-safe
-  EDConsumerBase* nonConstThis = const_cast<EDConsumerBase*>(this);
-  nonConstThis->m_tokenInfo.emplace_back(TokenLookupInfo{TypeID{}, iIndex, skipCurrentProcess, iBranch},
-                                         true,
-                                         LabelPlacement{0,0,0},
-                                         PRODUCT_TYPE);
-
   return false;
 }
 
@@ -338,13 +336,6 @@ EDConsumerBase::registeredToConsumeMany(TypeID const& iType, BranchType iBranch)
       return true;
     }
   }
-  //TEMPORARY: Remember so we do not have to do this again
-  //non thread-safe
-  EDConsumerBase* nonConstThis = const_cast<EDConsumerBase*>(this);
-  nonConstThis->m_tokenInfo.emplace_back(TokenLookupInfo{iType,ProductResolverIndexInvalid, false, iBranch},
-                           true,
-                           LabelPlacement{0,0,0},
-                           PRODUCT_TYPE);
   return false;
   
 }

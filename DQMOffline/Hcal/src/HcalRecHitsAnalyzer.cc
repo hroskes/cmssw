@@ -71,10 +71,10 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
     es.get<CaloGeometryRecord > ().get(geometry);
 
     const CaloGeometry* geo = geometry.product();
-    const HcalGeometry* gHB = (HcalGeometry*)(geo->getSubdetectorGeometry(DetId::Hcal,HcalBarrel));
-    const HcalGeometry* gHE = (HcalGeometry*)(geo->getSubdetectorGeometry(DetId::Hcal,HcalEndcap));
-    const HcalGeometry* gHO = (HcalGeometry*)(geo->getSubdetectorGeometry(DetId::Hcal,HcalOuter));
-    const HcalGeometry* gHF = (HcalGeometry*)(geo->getSubdetectorGeometry(DetId::Hcal,HcalForward));
+    const HcalGeometry* gHB = static_cast<const HcalGeometry*>(geo->getSubdetectorGeometry(DetId::Hcal,HcalBarrel));
+    const HcalGeometry* gHE = static_cast<const HcalGeometry*>(geo->getSubdetectorGeometry(DetId::Hcal,HcalEndcap));
+    const HcalGeometry* gHO = static_cast<const HcalGeometry*>(geo->getSubdetectorGeometry(DetId::Hcal,HcalOuter));
+    const HcalGeometry* gHF = static_cast<const HcalGeometry*>(geo->getSubdetectorGeometry(DetId::Hcal,HcalForward));
 
     nChannels_[1] = gHB->getHxSize(1); 
     nChannels_[2] = gHE->getHxSize(2); 
@@ -165,7 +165,9 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       for(int depth = 1; depth <= maxDepthAll_; depth++){
         sprintf  (histo, "emap_depth%d",depth );
         emap.push_back( ibooker.book2D(histo, histo, ieta_bins_, ieta_min_, ieta_max_, iphi_bins_, iphi_min_, iphi_max_) );
-      } 
+      }
+      sprintf(histo, "emap_HO");
+      emap_HO = ibooker.book2D(histo, histo, ieta_bins_, ieta_min_, ieta_max_, iphi_bins_, iphi_min_, iphi_max_); 
 
       //The mean energy histos are drawn, but not the RMS or emean seq
       
@@ -233,7 +235,9 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       
       // nrechits vs iphi
       for (int depth = 1; depth <= maxDepthHB_; depth++) {
-
+	
+	 sprintf  (histo, "occupancy_vs_ieta_HB%d",depth );
+	 occupancy_vs_ieta_HB.push_back( ibooker.book1D(histo, histo, ieta_bins_, ieta_min_, ieta_max_) );
          sprintf  (histo, "nrechits_vs_iphi_HBP_d%d",depth );
          nrechits_vs_iphi_HBP.push_back( ibooker.book1D(histo, histo, iphi_bins_, iphi_min_, iphi_max_) );
          sprintf  (histo, "nrechits_vs_iphi_HBM_d%d",depth );
@@ -241,18 +245,24 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       }
 
       for (int depth = 1; depth <= maxDepthHE_; depth++) {
+         sprintf  (histo, "occupancy_vs_ieta_HE%d",depth );
+         occupancy_vs_ieta_HE.push_back( ibooker.book1D(histo, histo, ieta_bins_, ieta_min_, ieta_max_) );
          sprintf  (histo, "nrechits_vs_iphi_HEP_d%d",depth );
          nrechits_vs_iphi_HEP.push_back( ibooker.book1D(histo, histo, iphi_bins_, iphi_min_, iphi_max_) );
          sprintf  (histo, "nrechits_vs_iphi_HEM_d%d",depth );
          nrechits_vs_iphi_HEM.push_back( ibooker.book1D(histo, histo, iphi_bins_, iphi_min_, iphi_max_) );
       }
 
+      sprintf  (histo, "occupancy_vs_ieta_HO" );
+      occupancy_vs_ieta_HO = ibooker.book1D(histo, histo, ieta_bins_, ieta_min_, ieta_max_);
       sprintf  (histo, "nrechits_vs_iphi_HOP" );
       nrechits_vs_iphi_HOP = ibooker.book1D(histo, histo, iphi_bins_, iphi_min_, iphi_max_);
       sprintf  (histo, "nrechits_vs_iphi_HOM" );
       nrechits_vs_iphi_HOM = ibooker.book1D(histo, histo, iphi_bins_, iphi_min_, iphi_max_);
 
       for (int depth = 1; depth <= maxDepthHF_; depth++) {
+         sprintf  (histo, "occupancy_vs_ieta_HF%d",depth );
+         occupancy_vs_ieta_HF.push_back( ibooker.book1D(histo, histo, ieta_bins_, ieta_min_, ieta_max_) );
          sprintf  (histo, "nrechits_vs_iphi_HFP_d%d",depth );
          nrechits_vs_iphi_HFP.push_back( ibooker.book1D(histo, histo, iphi_bins_, iphi_min_, iphi_max_) );
          sprintf  (histo, "nrechits_vs_iphi_HFM_d%d",depth );
@@ -649,8 +659,8 @@ void HcalRecHitsAnalyzer::analyze(edm::Event const& ev, edm::EventSetup const& c
 	if (ieta2 < 0) ieta2--;
         else ieta2++;
       }
-      if(sub == 3) depth2 = maxDepthAll_ - maxDepthHO_ + depth; //This will use the last depths for HO	
-      emap[depth2-1]->Fill(double(ieta2),double(iphi),en);
+      if(sub == 3) emap_HO->Fill(double(ieta2),double(iphi),en); //HO	
+      else emap[depth2-1]->Fill(double(ieta2),double(iphi),en); // HB+HE+HF
 
       // to distinguish HE and HF
       if( depth == 1 || depth == 2 ) {
@@ -929,7 +939,7 @@ void HcalRecHitsAnalyzer::fillRecHitsTmp(int subdet_, edm::Event const& ev){
       for (HBHERecHitCollection::const_iterator j=hbhecoll->begin(); j != hbhecoll->end(); j++) {
 	HcalDetId cell(j->id());
 	const HcalGeometry* cellGeometry = 
-	  (HcalGeometry*)(geometry->getSubdetectorGeometry(cell));
+	  dynamic_cast<const HcalGeometry*>(geometry->getSubdetectorGeometry(cell));
 	double eta  = cellGeometry->getPosition(cell).eta () ;
 	double phi  = cellGeometry->getPosition(cell).phi () ;
 	double zc   = cellGeometry->getPosition(cell).z ();
@@ -982,11 +992,10 @@ void HcalRecHitsAnalyzer::fillRecHitsTmp(int subdet_, edm::Event const& ev){
       
       for (HFRecHitCollection::const_iterator j = hfcoll->begin(); j != hfcoll->end(); j++) {
 	HcalDetId cell(j->id());
-	const CaloCellGeometry* cellGeometry =
-	  geometry->getSubdetectorGeometry (cell)->getGeometry (cell) ;
+	auto cellGeometry = (geometry->getSubdetectorGeometry(cell))->getGeometry (cell) ;
 	double eta   = cellGeometry->getPosition().eta () ;
 	double phi   = cellGeometry->getPosition().phi () ;
-	double zc     = cellGeometry->getPosition().z ();
+	double zc    = cellGeometry->getPosition().z ();
 	int sub      = cell.subdet();
 	int depth    = cell.depth();
 	int inteta   = cell.ieta();
@@ -1033,8 +1042,7 @@ void HcalRecHitsAnalyzer::fillRecHitsTmp(int subdet_, edm::Event const& ev){
       
       for (HORecHitCollection::const_iterator j = hocoll->begin(); j != hocoll->end(); j++) {
 	HcalDetId cell(j->id());
-	const CaloCellGeometry* cellGeometry =
-	  geometry->getSubdetectorGeometry (cell)->getGeometry (cell) ;
+	auto cellGeometry = (geometry->getSubdetectorGeometry(cell))->getGeometry (cell) ;
 	double eta   = cellGeometry->getPosition().eta () ;
 	double phi   = cellGeometry->getPosition().phi () ;
 	double zc    = cellGeometry->getPosition().z ();
@@ -1120,7 +1128,7 @@ double HcalRecHitsAnalyzer::dPhiWsign(double phi1, double phi2) {
 int HcalRecHitsAnalyzer::hcalSevLvl(const CaloRecHit* hit){
 
    HcalDetId id = hit->detid();
-   if (theHcalTopology->withSpecialRBXHBHE() && id.subdet() == HcalEndcap) {
+   if (theHcalTopology->getMergePositionFlag() && id.subdet() == HcalEndcap) {
      id = theHcalTopology->idFront(id);
    }
 

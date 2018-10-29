@@ -14,7 +14,7 @@ process.load("L1Trigger.L1TMuonEndCap.fakeEmtfParams_cff")
 process.getter = cms.EDAnalyzer("EventSetupRecordDataGetter",
    toGet = cms.VPSet(
        cms.PSet(
-           record = cms.string('L1TMuonEndcapParamsRcd'),
+           record = cms.string('L1TMuonEndCapParamsRcd'),
            data   = cms.vstring('L1TMuonEndCapParams')
        )
    ),
@@ -23,13 +23,12 @@ process.getter = cms.EDAnalyzer("EventSetupRecordDataGetter",
 
 from CondCore.CondDB.CondDB_cfi import CondDB
 CondDB.connect = cms.string('sqlite:l1config.db')
-#CondDB.connect = cms.string('oracle://cms_orcoff_prep/CMS_CONDITIONS')
 
 outputDB = cms.Service("PoolDBOutputService",
                        CondDB,
                        toPut   = cms.VPSet(
                            cms.PSet(
-                               record = cms.string('L1TMuonEndcapParamsRcd'),
+                               record = cms.string('L1TMuonEndCapParamsRcd'),
                                tag = cms.string('L1TMuonEndCapParamsPrototype_Stage2v0_hlt')
                            )
                        )
@@ -37,7 +36,7 @@ outputDB = cms.Service("PoolDBOutputService",
 outputDB.DBParameters.authenticationPath = '.'
 process.add_(outputDB)
 
-process.l1bpw = cms.EDAnalyzer("L1TMuonEndcapWriter", isO2Opayload = cms.untracked.bool(False))
+process.l1bpw = cms.EDAnalyzer("L1TMuonEndCapParamsWriter", isO2Opayload = cms.untracked.bool(False))
 
 process.p = cms.Path(process.getter + process.l1bpw)
 

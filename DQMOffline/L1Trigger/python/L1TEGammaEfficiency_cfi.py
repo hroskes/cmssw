@@ -1,5 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 from DQMOffline.L1Trigger import L1TEGammaOffline_cfi
+import six
 
 variables = {
     'electron': L1TEGammaOffline_cfi.electronEfficiencyThresholds,
@@ -30,37 +31,44 @@ deepInspectionPlots = {
     'photon': [],
 }
 
-allEfficiencyPlots = []
-add_plot = allEfficiencyPlots.append
-for variable, thresholds in variables.iteritems():
-    for plot in plots[variable]:
-        for threshold in thresholds:
-            plotName = '{0}_threshold_{1}'.format(plot, threshold)
-            add_plot(plotName)
+variables_HI = {
+    'electron': L1TEGammaOffline_cfi.electronEfficiencyThresholds_HI,
+    'photon': L1TEGammaOffline_cfi.photonEfficiencyThresholds_HI,
+}
 
-for variable, thresholds in deepInspectionThresholds.iteritems():
-    for plot in deepInspectionPlots[variable]:
-        for threshold in thresholds:
-            plotName = '{0}_threshold_{1}'.format(plot, threshold)
-            add_plot(plotName)
+deepInspectionThresholds_HI = {
+    'electron': L1TEGammaOffline_cfi.deepInspectionElectronThresholds_HI,
+    'photon': [],
+}
 
-from DQMOffline.L1Trigger.L1TEfficiencyHarvesting_cfi import l1tEfficiencyHarvesting
-l1tEGammaEfficiency = l1tEfficiencyHarvesting.clone(
-    plotCfgs=cms.untracked.VPSet(
-        cms.untracked.PSet(
-            numeratorDir=cms.untracked.string("L1T/L1TEGamma/efficiency_raw"),
-            outputDir=cms.untracked.string("L1T/L1TEGamma"),
-            numeratorSuffix=cms.untracked.string("_Num"),
-            denominatorSuffix=cms.untracked.string("_Den"),
-            plots=cms.untracked.vstring(allEfficiencyPlots)
-        ),
-        cms.untracked.PSet(
-            numeratorDir=cms.untracked.string(
-                "L1TEMU/L1TEGamma/efficiency_raw"),
-            outputDir=cms.untracked.string("L1TEMU/L1TEGamma"),
-            numeratorSuffix=cms.untracked.string("_Num"),
-            denominatorSuffix=cms.untracked.string("_Den"),
-            plots=cms.untracked.vstring(allEfficiencyPlots)
-        ),
-    )
+
+# remove photon variables (code to produce them is currently commented out)
+variables['photon'] = []
+variables_HI['photon'] = []
+
+from DQMOffline.L1Trigger.L1TCommon import generateEfficiencyStrings as ges
+efficiencyStrings = list(ges(variables, plots))
+efficiencyStrings += list(ges(deepInspectionThresholds, deepInspectionPlots))
+
+efficiencyStrings_HI = list(ges(variables_HI, plots))
+efficiencyStrings_HI += list(ges(deepInspectionThresholds_HI,
+                                 deepInspectionPlots))
+
+from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
+l1tEGammaEfficiency = DQMEDHarvester(
+    "DQMGenericClient",
+    commands=cms.vstring(),
+    resolution=cms.vstring(),
+    subDirs=cms.untracked.vstring('L1T/L1TObjects/L1TEGamma/L1TriggerVsReco'),
+    efficiency=cms.vstring(),
+    efficiencyProfile=cms.untracked.vstring(efficiencyStrings),
 )
+
+l1tEGammaEmuEfficiency = l1tEGammaEfficiency.clone(
+    subDirs=cms.untracked.vstring(
+        'L1TEMU/L1TObjects/L1TEGamma/L1TriggerVsReco'),
+)
+
+from Configuration.Eras.Modifier_ppRef_2017_cff import ppRef_2017
+ppRef_2017.toModify(l1tEGammaEfficiency, efficiencyProfile=efficiencyStrings_HI)
+ppRef_2017.toModify(l1tEGammaEmuEfficiency, efficiencyProfile=efficiencyStrings_HI)

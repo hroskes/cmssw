@@ -14,9 +14,9 @@
 class BadGlobalMuonTagger : public edm::global::EDFilter<> {
     public:
         explicit BadGlobalMuonTagger(const edm::ParameterSet & iConfig);
-        virtual ~BadGlobalMuonTagger() {}
+        ~BadGlobalMuonTagger() override {}
 
-        virtual bool filter(edm::StreamID iID, edm::Event & iEvent, const edm::EventSetup & iSetup) const override;
+        bool filter(edm::StreamID iID, edm::Event & iEvent, const edm::EventSetup & iSetup) const override;
 
     private:
         edm::EDGetTokenT<edm::View<reco::Muon>> muons_;            
@@ -55,6 +55,7 @@ BadGlobalMuonTagger::BadGlobalMuonTagger(const edm::ParameterSet & iConfig) :
     verbose_(iConfig.getUntrackedParameter<bool> ("verbose",false))
 {
     produces<edm::PtrVector<reco::Muon>>("bad");
+    produces<bool>("notBadEvent");
 }
 
 
@@ -68,7 +69,7 @@ BadGlobalMuonTagger::filter(edm::StreamID iID, edm::Event & iEvent, const edm::E
     std::vector<int> goodMuon;
 
     iEvent.getByToken(vtx_,  vtx);
-    assert(vtx->size() >= 1);
+    assert(!vtx->empty());
     const auto &PV = vtx->front().position();
  
     std::unique_ptr<edm::PtrVector<reco::Muon>> out(new edm::PtrVector<reco::Muon>());
@@ -121,6 +122,7 @@ BadGlobalMuonTagger::filter(edm::StreamID iID, edm::Event & iEvent, const edm::E
     }
 
     iEvent.put(std::move(out), "bad");
+    iEvent.put(std::unique_ptr<bool>(new bool(!found)), "notBadEvent");
     return taggingMode_ || found;
 }
 

@@ -1,5 +1,5 @@
 #include "DQM/HcalTasks/interface/RecHitTask.h"
-#include <math.h>
+#include <cmath>
 
 using namespace hcaldqm;
 using namespace hcaldqm::constants;
@@ -57,6 +57,7 @@ RecHitTask::RecHitTask(edm::ParameterSet const& ps):
 		vuTCA);
 	std::vector<uint32_t> vhashHF; 
 	vhashHF.push_back(hcaldqm::hashfunctions::hash_did[hcaldqm::hashfunctions::fSubdet](HcalDetId(HcalForward, 29,1,1)));
+
 	_filter_HF.initialize(filter::fPreserver, hcaldqm::hashfunctions::fSubdet, vhashHF);
 
 	//	INITIALIZE FIRST

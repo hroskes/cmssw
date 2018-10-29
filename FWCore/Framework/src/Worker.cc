@@ -6,6 +6,7 @@
 #include "FWCore/Framework/src/EarlyDeleteHelper.h"
 #include "FWCore/ServiceRegistry/interface/StreamContext.h"
 #include "FWCore/Concurrency/interface/WaitingTask.h"
+#include "FWCore/Concurrency/interface/WaitingTaskHolder.h"
 
 namespace edm {
   namespace {
@@ -84,7 +85,8 @@ private:
     cached_exception_(),
     actReg_(),
     earlyDeleteHelper_(nullptr),
-    workStarted_(false)
+    workStarted_(false),
+    ranAcquireWithoutException_(false)
   {
   }
 
@@ -202,7 +204,7 @@ private:
   }
 
   
-  void Worker::prefetchAsync(WaitingTask* iTask, ParentContext const& parentContext, Principal const& iPrincipal) {
+  void Worker::prefetchAsync(WaitingTask* iTask, ServiceToken const& token, ParentContext const& parentContext, Principal const& iPrincipal) {
     // Prefetch products the module declares it consumes (not including the products it maybe consumes)
     std::vector<ProductResolverIndexAndSkipBit> const& items = itemsToGetFrom(iPrincipal.branchType());
 
@@ -218,7 +220,7 @@ private:
       ProductResolverIndex productResolverIndex = item.productResolverIndex();
       bool skipCurrentProcess = item.skipCurrentProcess();
       if(productResolverIndex != ProductResolverIndexAmbiguous) {
-        iPrincipal.prefetchAsync(iTask,productResolverIndex, skipCurrentProcess, &moduleCallingContext_);
+        iPrincipal.prefetchAsync(iTask,productResolverIndex, skipCurrentProcess, token, &moduleCallingContext_);
       }
     }
     
@@ -231,6 +233,48 @@ private:
       tbb::task::spawn(*iTask);
     }
   }
+  
+  void Worker::prePrefetchSelectionAsync(WaitingTask* successTask,
+                                         ServiceToken const& token,
+                                 StreamID id,
+                                 EventPrincipal const* iPrincipal) {
+    successTask->increment_ref_count();
+
+    auto choiceTask = edm::make_waiting_task(tbb::task::allocate_root(),
+     [id,successTask,iPrincipal,this,token](std::exception_ptr const*) {
+       ServiceRegistry::Operate guard(token);
+       try {
+         if( not implDoPrePrefetchSelection(id,*iPrincipal,&moduleCallingContext_) ) {
+           timesRun_.fetch_add(1,std::memory_order_relaxed);
+           setPassed<true>();
+           waitingTasks_.doneWaiting(nullptr);
+           //TBB requires that destroyed tasks have count 0
+           if ( 0 == successTask->decrement_ref_count() ) {
+             tbb::task::destroy(*successTask);
+           }
+           return;
+         }
+       } catch(...) {}
+       if(0 == successTask->decrement_ref_count()) {
+         tbb::task::spawn(*successTask);
+       }
+     });
+    
+    WaitingTaskHolder choiceHolder{choiceTask};
+
+    std::vector<ProductResolverIndexAndSkipBit> items;
+    itemsToGetForSelection(items);
+    
+    for(auto const& item : items) {
+      ProductResolverIndex productResolverIndex = item.productResolverIndex();
+      bool skipCurrentProcess = item.skipCurrentProcess();
+      if(productResolverIndex != ProductResolverIndexAmbiguous) {
+        iPrincipal->prefetchAsync(choiceTask,productResolverIndex, skipCurrentProcess, token, &moduleCallingContext_);
+      }
+    }
+    choiceHolder.doneWaiting(std::exception_ptr{});
+  }
+
   
   void Worker::setEarlyDeleteHelper(EarlyDeleteHelper* iHelper) {
     earlyDeleteHelper_=iHelper;
@@ -332,5 +376,93 @@ private:
     if(earlyDeleteHelper_) {
       earlyDeleteHelper_->moduleRan(iEvent);
     }
+  }
+
+  void Worker::runAcquire(EventPrincipal const& ep,
+                          EventSetup const& es,
+                          ParentContext const& parentContext,
+                          WaitingTaskWithArenaHolder& holder) {
+
+    ModuleContextSentry moduleContextSentry(&moduleCallingContext_, parentContext);
+    try {
+      convertException::wrap([&]()
+      {
+        this->implDoAcquire(ep, es, &moduleCallingContext_, holder);
+      });
+    } catch(cms::Exception& ex) {
+      exceptionContext(ex, &moduleCallingContext_);
+      TransitionIDValue<EventPrincipal> idValue(ep);
+      if(shouldRethrowException(std::current_exception(), parentContext, true, idValue)) {
+        timesRun_.fetch_add(1,std::memory_order_relaxed);
+        throw;
+      }
+    }
+  }
+
+  void Worker::runAcquireAfterAsyncPrefetch(std::exception_ptr const* iEPtr,
+                                            EventPrincipal const& ep,
+                                            EventSetup const& es,
+                                            ParentContext const& parentContext,
+                                            WaitingTaskWithArenaHolder holder) {
+    ranAcquireWithoutException_ = false;
+    std::exception_ptr exceptionPtr;
+    if(iEPtr) {
+      assert(*iEPtr);
+      TransitionIDValue<EventPrincipal> idValue(ep);
+      if(shouldRethrowException(*iEPtr, parentContext, true, idValue)) {
+        exceptionPtr = *iEPtr;
+      }
+      moduleCallingContext_.setContext(ModuleCallingContext::State::kInvalid,ParentContext(),nullptr);
+    } else {
+      try {
+        runAcquire(ep, es, parentContext, holder);
+        ranAcquireWithoutException_ = true;
+      } catch(...) {
+        exceptionPtr = std::current_exception();
+      }
+    }
+    // It is important this is after runAcquire completely finishes
+    holder.doneWaiting(exceptionPtr);
+  }
+
+  std::exception_ptr Worker::handleExternalWorkException(std::exception_ptr const* iEPtr,
+                                                         ParentContext const& parentContext) {
+    if (ranAcquireWithoutException_) {
+      try {
+        convertException::wrap([iEPtr]() {
+          std::rethrow_exception(*iEPtr);
+        });
+      } catch(cms::Exception &ex) {
+        ModuleContextSentry moduleContextSentry(&moduleCallingContext_, parentContext);
+        exceptionContext(ex, &moduleCallingContext_);
+        return std::current_exception();
+      }
+    }
+    return *iEPtr;
+  }
+
+  Worker::HandleExternalWorkExceptionTask::
+  HandleExternalWorkExceptionTask(Worker* worker,
+                                  WaitingTask* runModuleTask,
+                                  ParentContext const& parentContext) :
+    m_worker(worker),
+    m_runModuleTask(runModuleTask),
+    m_parentContext(parentContext) {
+  }
+
+  tbb::task*
+  Worker::HandleExternalWorkExceptionTask::execute() {
+
+    auto excptr = exceptionPtr();
+    if (excptr) {
+      // increment the ref count so the holder will not spawn it
+      m_runModuleTask->set_ref_count(1);
+      WaitingTaskHolder holder(m_runModuleTask);
+      holder.doneWaiting(m_worker->handleExternalWorkException(excptr,
+                                                               m_parentContext));
+    }
+    m_runModuleTask->set_ref_count(0);
+    // Depend on TBB Scheduler Bypass to run the next task
+    return m_runModuleTask;
   }
 }

@@ -23,7 +23,8 @@ updateJetCollection(
    process,
    jetSource = cms.InputTag('slimmedJets'),
    jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
-   btagDiscriminators = ['pfCombinedSecondaryVertexV2BJetTags'] ## to add discriminators
+   btagDiscriminators = ['pfCombinedSecondaryVertexV2BJetTags', 'pfDeepCSVDiscriminatorsJetTags:BvsAll', 'pfDeepCSVDiscriminatorsJetTags:CvsB', 'pfDeepCSVDiscriminatorsJetTags:CvsL'], ## to add discriminators,
+   btagPrefix = 'TEST',
 )
 process.updatedPatJets.userData.userFloats.src += ['oldJetMass']
 
@@ -45,6 +46,24 @@ updateJetCollection(
 )
 process.updatedPatJetsReappliedJEC.userData.userFloats.src = []
 
+## An example where the pileup jet id is recomputed
+from RecoJets.JetProducers.PileupJetID_cfi import pileupJetId
+process.pileupJetIdUpdated = pileupJetId.clone(
+  jets=cms.InputTag("slimmedJets"),
+  inputIsCorrected=True,
+  applyJec=True,
+  vertexes=cms.InputTag("offlineSlimmedPrimaryVertices")
+  )
+patAlgosToolsTask.add(process.pileupJetIdUpdated)
+
+updateJetCollection(
+   process,
+   labelName = 'PileupJetID',
+   jetSource = cms.InputTag('slimmedJets'),
+)
+process.updatedPatJetsPileupJetID.userData.userInts.src = ['pileupJetIdUpdated:fullId']
+process.updatedPatJetsPileupJetID.userData.userFloats.src = ['pileupJetIdUpdated:fullDiscriminant']
+
 ## An example where the jet energy corrections are updated to the current GlobalTag
 ## and specified b-tag discriminators are rerun and added to SoftDrop subjets
 updateJetCollection(
@@ -60,6 +79,20 @@ updateJetCollection(
    algo = 'ak'                  # has to be defined but is not used with svClustering=False
 )
 process.updatedPatJetsSoftDropSubjets.userData.userFloats.src = []
+
+## An example where puppi jet specifics are computed
+from PhysicsTools.PatAlgos.patPuppiJetSpecificProducer_cfi import patPuppiJetSpecificProducer
+process.patPuppiJetSpecificProducer = patPuppiJetSpecificProducer.clone(
+  src=cms.InputTag("slimmedJetsPuppi"),
+  )
+patAlgosToolsTask.add(process.patPuppiJetSpecificProducer)
+
+updateJetCollection(
+   process,
+   labelName = 'PuppiJetSpecific',
+   jetSource = cms.InputTag('slimmedJetsPuppi'),
+)
+process.updatedPatJetsPuppiJetSpecific.userData.userFloats.src = ['patPuppiJetSpecificProducer:puppiMultiplicity', 'patPuppiJetSpecificProducer:neutralPuppiMultiplicity', 'patPuppiJetSpecificProducer:neutralHadronPuppiMultiplicity', 'patPuppiJetSpecificProducer:photonPuppiMultiplicity', 'patPuppiJetSpecificProducer:HFHadronPuppiMultiplicity', 'patPuppiJetSpecificProducer:HFEMPuppiMultiplicity' ]
 
 ## ------------------------------------------------------
 #  In addition you usually want to change the following

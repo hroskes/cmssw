@@ -21,7 +21,7 @@
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
 // template object
-#include "RecoLocalTracker/SiPixelRecHits/interface/SiPixelTemplate.h"
+#include "CondFormats/SiPixelTransient/interface/SiPixelTemplate.h"
 
 // Vectors
 #include "DataFormats/GeometryVector/interface/Point3DBase.h"
@@ -87,8 +87,8 @@ class PixelTemplateSmearerBase:
 			              const edm::ParameterSet& config,
 			              edm::ConsumesCollector& consumesCollector );
 
-        virtual ~PixelTemplateSmearerBase();
-        virtual TrackingRecHitProductPtr process(TrackingRecHitProductPtr product) const;
+        ~PixelTemplateSmearerBase() override;
+        TrackingRecHitProductPtr process(TrackingRecHitProductPtr product) const override;
 
         //--- Process all unmerged hits. Calls smearHit() for each.
         TrackingRecHitProductPtr processUnmergedHits( 

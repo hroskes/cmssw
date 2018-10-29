@@ -1,8 +1,10 @@
+from __future__ import print_function
 from array import array
 from copy import copy
 from copy import deepcopy
 import FWCore.ParameterSet.Config as cms
 import FWCore.PythonUtilities.LumiList as LumiList
+import six
 
 # Helper functions
 def getPSetDict(thePSet):
@@ -12,7 +14,7 @@ def insertValToPSet(name,val,thePSet):
    setattr(thePSet,name,val)
 
 def insertPSetToPSet(inPSet, outPSet):
-   for key,val in getPSetDict(inPSet).iteritems():
+   for key,val in getPSetDict(six.iteritems(inPSet)):
       insertValToPSet(key,val,outPSet)
 
 def insertPSetToVPSet(inPSet, outVPSet):
@@ -110,7 +112,7 @@ class HipPyOptionParser:
 
    def interpretOptions(self):
       gttogetpsets=[]
-      for key,val in self.optdict.iteritems():
+      for key,val in six.iteritems(self.optdict):
          # Get GT name
          if key=="gt":
             autofind=val.find("auto")
@@ -173,7 +175,7 @@ class HipPyOptionParser:
                dtype=int(val)
                self.datatype=dtype
             except ValueError:
-               print "Data type is not an integer"
+               print("Data type is not an integer")
          # Get lumi json file
          elif key=="lumilist":
             self.LumiJSON = LumiList.LumiList(filename = val).getVLuminosityBlockRange()
@@ -190,7 +192,7 @@ class HipPyOptionParser:
                fval=float(val)
                self.overallweight=fval
             except ValueError:
-               print "Overall weight is not a float"
+               print("Overall weight is not a float")
          # Get uniform eta formula. Turns reweighting on
          elif key=="uniformetaformula":
             self.uniformetaformula=val

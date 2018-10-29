@@ -1,16 +1,5 @@
 PrimaryVertexValidationTemplate="""
 
-process.HighPurityTrackSelector.trackQualities = cms.vstring()
-process.HighPurityTrackSelector.pMin     = cms.double(0.)
-process.AlignmentTrackSelector.pMin      = cms.double(0.)
-process.AlignmentTrackSelector.ptMin     = cms.double(0.)
-process.AlignmentTrackSelector.nHitMin2D = cms.uint32(0)
-process.AlignmentTrackSelector.nHitMin   = cms.double(0.)
-process.AlignmentTrackSelector.d0Min     = cms.double(-999999.0)
-process.AlignmentTrackSelector.d0Max     = cms.double(+999999.0)
-process.AlignmentTrackSelector.dzMin     = cms.double(-999999.0)
-process.AlignmentTrackSelector.dzMax     = cms.double(+999999.0)
-
 isDA = .oO[isda]Oo.
 isMC = .oO[ismc]Oo.
 
@@ -91,6 +80,7 @@ if isDA:
                                            useTracksFromRecoVtx = cms.bool(False),
                                            isLightNtuple = cms.bool(True),
                                            askFirstLayerHit = cms.bool(False),
+                                           forceBeamSpot = cms.untracked.bool(.oO[forceBeamSpot]Oo.),
                                            probePt  = cms.untracked.double(.oO[ptCut]Oo.),
                                            probeEta = cms.untracked.double(.oO[etaCut]Oo.),
                                            doBPix   = cms.untracked.bool(.oO[doBPix]Oo.),
@@ -137,6 +127,7 @@ else:
                                            storeNtuple = cms.bool(False),
                                            useTracksFromRecoVtx = cms.bool(False),
                                            askFirstLayerHit = cms.bool(False),
+                                           forceBeamSpot = cms.untracked.bool(.oO[forceBeamSpot]Oo.),
                                            probePt = cms.untracked.double(.oO[ptCut]Oo.),
                                            probeEta = cms.untracked.double(.oO[etaCut]Oo.),
                                            doBPix   = cms.untracked.bool(.oO[doBPix]Oo.),
@@ -176,6 +167,7 @@ process.p = cms.Path(process.goodvertexSkim*
 PVValidationScriptTemplate="""
 #!/bin/bash
 source /afs/cern.ch/cms/caf/setup.sh
+export X509_USER_PROXY=.oO[scriptsdir]Oo./.user_proxy
 
 echo  -----------------------
 echo  Job started at `date`
@@ -213,7 +205,7 @@ ls -lh .
 eos mkdir -p /store/caf/user/$USER/.oO[eosdir]Oo./plots/
 for RootOutputFile in $(ls *root )
 do
-    xrdcp -f ${RootOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./
+    xrdcp -f ${RootOutputFile} root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./${RootOutputFile}
     rfcp ${RootOutputFile}  .oO[workingdir]Oo.
 done
 
@@ -227,12 +219,12 @@ root -b -q "FitPVResiduals.C(\\"${PWD}/${RootOutputFile}=${theLabel},${PWD}/PVVa
 
 mkdir -p .oO[plotsdir]Oo.
 for PngOutputFile in $(ls *png ); do
-    xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
+    xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/${PngOutputFile}
     rfcp ${PngOutputFile}  .oO[plotsdir]Oo.
 done
 
 for PdfOutputFile in $(ls *pdf ); do
-    xrdcp -f ${PdfOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
+    xrdcp -f ${PdfOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/${PdfOutputFile}
     rfcp ${PdfOutputFile}  .oO[plotsdir]Oo.
 done
 
@@ -300,12 +292,12 @@ rfcp .oO[plottingscriptpath]Oo. .
 root -x -b -q .oO[plottingscriptname]Oo.++
 
 for PdfOutputFile in $(ls *pdf ); do
-    xrdcp -f ${PdfOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
+    xrdcp -f ${PdfOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/${PdfOutputFile}
     rfcp ${PdfOutputFile}  .oO[datadir]Oo./.oO[PlotsDirName]Oo.
 done
 
 for PngOutputFile in $(ls *png ); do
-    xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
+    xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/${PngOutputFile}
     rfcp ${PngOutputFile}  .oO[datadir]Oo./.oO[PlotsDirName]Oo.
 done
 

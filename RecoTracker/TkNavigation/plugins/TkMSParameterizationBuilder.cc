@@ -66,11 +66,10 @@ public:
      descriptions.add("TkMSParameterizationBuilder",desc);
   }
   
-  using ReturnType = std::shared_ptr<TkMSParameterization>;
+  using ReturnType = std::unique_ptr<TkMSParameterization>;
   ReturnType produce(TkMSParameterizationRecord const&);
 
   std::string theNavigationSchoolName;
-  ReturnType product;
 };
 
 TkMSParameterizationBuilder::TkMSParameterizationBuilder(edm::ParameterSet const& pset): 
@@ -83,7 +82,7 @@ TkMSParameterizationBuilder::produce(TkMSParameterizationRecord const& iRecord) 
 
   using namespace tkMSParameterization;
 
-  product = std::make_shared<TkMSParameterization>();  
+  ReturnType product = std::make_unique<TkMSParameterization>();  
 
   auto & msParam = *product;
 
@@ -158,7 +157,7 @@ TkMSParameterizationBuilder::produce(TkMSParameterizationRecord const& iRecord) 
 	      }
 	      if (debug) std::cout << il << (it->isBarrel() ? " Barrel" : " Forward") << " layer " << it->seqNum() << " SubDet " << it->subDetector()<< std::endl;
 	      auto const & detWithState = it->compatibleDets(tsos,ANprop,estimator);
-	      if(!detWithState.size()) { 
+	      if(detWithState.empty()) { 
 		if(debug) std::cout << "no det on this layer" << it->seqNum() << std::endl; 
 		continue;
 	      }
@@ -235,7 +234,7 @@ TkMSParameterizationBuilder::produce(TkMSParameterizationRecord const& iRecord) 
 	    }
 	    
 	    auto const & detWithState = layer0->compatibleDets(tsos0,ANprop,estimator);
-	    if(!detWithState.size()) {
+	    if(detWithState.empty()) {
 	      if(debug) std::cout << "no det on first layer" << layer0->seqNum() << std::endl;
 	      continue;
 	    }

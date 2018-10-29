@@ -23,6 +23,11 @@ recoTauAK4PFJets08Region = RecoTauJetRegionProducer.clone(
     src = PFRecoTauPFJetInputs.inputJetCollection
 )
 
+from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
+from Configuration.Eras.Modifier_pp_on_AA_2018_cff import pp_on_AA_2018
+for e in [pp_on_XeXe_2017, pp_on_AA_2018]:
+    e.toModify(recoTauAK4PFJets08Region, minJetPt = 999999.0)
+
 # Reconstruct the pi zeros in our pre-selected jets.
 from RecoTauTag.RecoTau.RecoTauPiZeroProducer_cfi import ak4PFJetsLegacyHPSPiZeros
 ak4PFJetsLegacyHPSPiZeros = ak4PFJetsLegacyHPSPiZeros.clone()
@@ -44,6 +49,9 @@ combinatoricRecoTaus = combinatoricRecoTaus.clone()
 combinatoricRecoTaus.modifiers = cms.VPSet(combinatoricModifierConfigs)
 combinatoricRecoTaus.jetRegionSrc = cms.InputTag("recoTauAK4PFJets08Region")
 combinatoricRecoTaus.jetSrc = PFRecoTauPFJetInputs.inputJetCollection
+
+for e in [pp_on_XeXe_2017, pp_on_AA_2018]:
+    e.toModify(combinatoricRecoTaus, minJetPt = recoTauAK4PFJets08Region.minJetPt)
 
 #--------------------------------------------------------------------------------
 # CV: set mass of tau candidates reconstructed in 1Prong0pi0 decay mode to charged pion mass
@@ -115,3 +123,4 @@ PFTauTask = cms.Task(
 PFTau = cms.Sequence(
     PFTauTask
 )
+

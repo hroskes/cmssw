@@ -25,6 +25,7 @@
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
 
+#include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
 #include <vector>
 
@@ -40,8 +41,8 @@ class OniaPhotonConversionProducer : public edm::stream::EDProducer<> {
  
  private:
 
-  virtual void produce(edm::Event& event, const edm::EventSetup& esetup);
-  virtual void endStream();
+  void produce(edm::Event& event, const edm::EventSetup& esetup) override;
+  void endStream() override;
   void removeDuplicates(reco::ConversionCollection&);
   bool checkTkVtxCompatibility(const reco::Conversion&, const reco::VertexCollection&);
   bool foundCompatibleInnerHits(const reco::HitPattern& hitPatA, const reco::HitPattern& hitPatB); 
@@ -74,7 +75,7 @@ class OniaPhotonConversionProducer : public edm::stream::EDProducer<> {
   std::vector<int>   convQuality_;
   
   std::string convSelectionCuts_;
-
+  std::unique_ptr<StringCutObjectSelector<reco::Conversion>> convSelection_;
 };
 
 #endif

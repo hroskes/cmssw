@@ -35,7 +35,7 @@ MillePedeVariablesIORoot::MillePedeVariablesIORoot() :
 
 // -------------------------------------------------------------------------------------------------
 void MillePedeVariablesIORoot::writeMillePedeVariables
-(const std::vector<Alignable*> &alivec, const char *filename, int iter, bool validCheck, int &ierr)
+(const align::Alignables& alivec, const char *filename, int iter, bool validCheck, int &ierr)
 {
   ierr = 0;
 
@@ -60,7 +60,7 @@ void MillePedeVariablesIORoot::writeMillePedeVariables
 
 // -------------------------------------------------------------------------------------------------
 std::vector<AlignmentUserVariables*> MillePedeVariablesIORoot::readMillePedeVariables
-(const std::vector<Alignable*> &alivec, const char *filename, int iter, int &ierr)
+(const align::Alignables& alivec, const char *filename, int iter, int &ierr)
 {
   std::vector<AlignmentUserVariables*> result;
   ierr = 0;
@@ -132,7 +132,7 @@ AlignmentUserVariables* MillePedeVariablesIORoot::readOne(Alignable *ali, int &i
                                << "No index for id/type = (" << ali->id() << "/"
                                << ali->alignableObjectId() << ") found!";
     ierr = 1;
-    return 0;
+    return nullptr;
   }
 
   MillePedeVariables *mpVar = new MillePedeVariables(myNumPar, myLabel, myName);

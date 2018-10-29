@@ -58,7 +58,7 @@ class DTLocalTriggerSynchTask: public DQMEDAnalyzer{
   DTLocalTriggerSynchTask(const edm::ParameterSet& ps );
 
   /// Destructor
-  virtual ~DTLocalTriggerSynchTask();
+  ~DTLocalTriggerSynchTask() override;
 
  protected:
 
@@ -90,6 +90,7 @@ class DTLocalTriggerSynchTask: public DQMEDAnalyzer{
 
   float bxTime;
   bool rangeInBX;
+  bool processDDU;
   int nBXLow;
   int nBXHigh;
   float angleRange;

@@ -35,11 +35,11 @@
 class BasicHepMCValidation : public DQMEDAnalyzer{
     public:
 	explicit BasicHepMCValidation(const edm::ParameterSet&);
-	virtual ~BasicHepMCValidation();
+	~BasicHepMCValidation() override;
 
-        virtual void bookHistograms(DQMStore::IBooker &i, edm::Run const &, edm::EventSetup const &) override;
-        virtual void dqmBeginRun(const edm::Run& r, const edm::EventSetup& c) override;
-        virtual void analyze(edm::Event const&, edm::EventSetup const&) override;
+        void bookHistograms(DQMStore::IBooker &i, edm::Run const &, edm::EventSetup const &) override;
+        void dqmBeginRun(const edm::Run& r, const edm::EventSetup& c) override;
+        void analyze(edm::Event const&, edm::EventSetup const&) override;
 
     private:
 	WeightManager wmanager_;
@@ -183,6 +183,17 @@ class BasicHepMCValidation : public DQMEDAnalyzer{
     MonitorElement *vrtxRadius;
     //
     MonitorElement *Bjorken_x;
+    MonitorElement *pdf_u;
+    MonitorElement *pdf_ubar;
+    MonitorElement *pdf_d;
+    MonitorElement *pdf_dbar;
+    MonitorElement *pdf_ssbar;
+    MonitorElement *pdf_ccbar;
+    MonitorElement *pdf_bbbar;
+    MonitorElement *pdf_g;
+    MonitorElement *scalePDF;
+    MonitorElement *parton1Id;
+    MonitorElement *parton2Id;
     
     MonitorElement *status1ShortLived;
     

@@ -79,7 +79,7 @@ SiPixelFedCablingMap::SiPixelFedCablingMap(const SiPixelFedCablingTree *cab)
     unsigned int numLink = (**ifed).numberOfLinks();
     for (unsigned int link=1; link <= numLink; link++) {
       const PixelFEDLink * pLink = (**ifed).link(link); 
-      if (pLink==0) continue;
+      if (pLink==nullptr) continue;
       //unsigned int linkId = pLink->id();
       //if (linkId != 0 && linkId!= link) 
       //  std::cout << "PROBLEM WITH LINK NUMBER!!!!" << std::endl;
@@ -87,7 +87,7 @@ SiPixelFedCablingMap::SiPixelFedCablingMap(const SiPixelFedCablingTree *cab)
 
       for (unsigned int roc=1; roc <= numberROC; roc++) {
         const PixelROC * pROC = pLink->roc(roc);
-        if (pROC==0) continue;
+        if (pROC==nullptr) continue;
         //if (pROC->idInLink() != roc) 
 	//  std::cout << "PROBLEM WITH ROC NUMBER!!!!" << std::endl;
         Key key = {fed, link, roc}; 
@@ -121,7 +121,7 @@ std::vector<unsigned int> SiPixelFedCablingMap::fedIds() const {
 
 const sipixelobjects::PixelROC* SiPixelFedCablingMap::findItem(
     const sipixelobjects::CablingPathToDetUnit & path) const {
-  const PixelROC* roc = 0;
+  const PixelROC* roc = nullptr;
   Key key = {path.fed, path.link, path.roc};
   Map::const_iterator inMap = theMap.find(key);
   if (inMap!= theMap.end()) roc = &(inMap->second);
@@ -158,5 +158,17 @@ std::vector<sipixelobjects::CablingPathToDetUnit> SiPixelFedCablingMap::pathToDe
     }
   }
   return result;
+}
+
+bool SiPixelFedCablingMap::pathToDetUnitHasDetUnit(uint32_t rawDetId, unsigned int fedId) const {
+
+  auto end = theMap.end();
+  for (auto im = theMap.lower_bound( {fedId, 0, 0} ); 
+       im != end and im->first.fed == fedId; ++im) {
+    if(im->second.rawId()==rawDetId ) {
+      return true;
+    }
+  }
+  return false;
 }
 

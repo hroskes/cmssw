@@ -21,13 +21,12 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
  public:
 
   L1TStage2uGMT(const edm::ParameterSet& ps);
-  virtual ~L1TStage2uGMT();
+  ~L1TStage2uGMT() override;
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
  protected:
 
   void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override;
-  void beginLuminosityBlock(const edm::LuminosityBlock&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker&, const edm::Run&, const edm::EventSetup&) override;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
 
@@ -139,9 +138,6 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   MonitorElement* ugmtMuonPhiBmtf;
   MonitorElement* ugmtMuonPhiOmtf;
   MonitorElement* ugmtMuonPhiEmtf;
-  MonitorElement* ugmtMuonPhiAtVtxBmtf;
-  MonitorElement* ugmtMuonPhiAtVtxOmtf;
-  MonitorElement* ugmtMuonPhiAtVtxEmtf;
   MonitorElement* ugmtMuonDEtavsPtBmtf;
   MonitorElement* ugmtMuonDPhivsPtBmtf;
   MonitorElement* ugmtMuonDEtavsPtOmtf;
@@ -152,20 +148,17 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   MonitorElement* ugmtMuonPtvsEta;
   MonitorElement* ugmtMuonPtvsPhi;
   MonitorElement* ugmtMuonPhivsEta;
-  MonitorElement* ugmtMuonPtvsEtaAtVtx;
-  MonitorElement* ugmtMuonPtvsPhiAtVtx;
   MonitorElement* ugmtMuonPhiAtVtxvsEtaAtVtx;
 
   MonitorElement* ugmtMuonBXvsLink;
   MonitorElement* ugmtMuonBXvshwPt;
   MonitorElement* ugmtMuonBXvshwEta;
   MonitorElement* ugmtMuonBXvshwPhi;
-  MonitorElement* ugmtMuonBXvshwEtaAtVtx;
-  MonitorElement* ugmtMuonBXvshwPhiAtVtx;
   MonitorElement* ugmtMuonBXvshwCharge;
   MonitorElement* ugmtMuonBXvshwChargeValid;
   MonitorElement* ugmtMuonBXvshwQual;
   MonitorElement* ugmtMuonBXvshwIso;
+  MonitorElement* ugmtMuonChargevsLink;
 
   // muon correlations
   MonitorElement* ugmtMuMuInvMass;

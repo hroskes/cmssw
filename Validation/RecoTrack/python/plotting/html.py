@@ -1,5 +1,6 @@
 import os
 import collections
+import six
 
 def _lowerFirst(s):
     return s[0].lower()+s[1:]
@@ -60,8 +61,6 @@ def _allToHP(s):
     return s.replace("All", "High purity")
 def _allToBTV(s):
     return s.replace("All", "BTV-like")
-def _byOriginalAlgo(s):
-    return s.replace("tracks", "tracks by originalAlgo")
 def _ptCut(s):
     return s.replace("Tracks", "Tracks pT &gt; 0.9 GeV").replace("tracks", "tracks pT &gt; 0.9 GeV")
 _trackQualityNameOrder = collections.OrderedDict([
@@ -82,8 +81,10 @@ _trackQualityNameOrder = collections.OrderedDict([
     ("highPurityByAlgoMask", _toAlgoMask(_toHP(_allName))),
     ("tpPtLess09_", _tpPtLess09Name),
     ("tpPtLess09_highPurity", _allToHP(_tpPtLess09Name)),
-    ("tpPtLess09_ByOriginalAlgo", _byOriginalAlgo(_tpPtLess09Name)),
-    ("tpPtLess09_highPurityByOriginalAlgo", _byOriginalAlgo(_allToHP(_tpPtLess09Name))),
+    ("tpPtLess09_ByOriginalAlgo", _toOriAlgo(_tpPtLess09Name)),
+    ("tpPtLess09_highPurityByOriginalAlgo", _toOriAlgo(_allToHP(_tpPtLess09Name))),
+    ("tpPtLess09_ByAlgoMask", _toAlgoMask(_tpPtLess09Name)),
+    ("tpPtLess09_highPurityByAlgoMask", _toAlgoMask(_allToHP(_tpPtLess09Name))),
     ("btvLike", _allToBTV(_allName)),
     ("ak4PFJets", "AK4 PF jets"),
     ("allTPEffic_", _allTPEfficName),
@@ -166,6 +167,7 @@ _pageNameMap = {
     "miniaod": "MiniAOD",
     "timing": "Timing",
     "hlt": "HLT",
+    "pixel": "Pixel tracks",
 }
 
 _sectionNameMapOrder = collections.OrderedDict([
@@ -190,6 +192,8 @@ _sectionNameMapOrder = collections.OrderedDict([
     ("gsf", _gsfName),
     ("bhadron", _bhadronName),
     ("bhadron_highPurity", _allToHP(_bhadronName)),
+    # Pixel tracks
+    ("pixel", "Pixel tracks"),
     # These are for vertices
     ("genvertex", "Gen vertices"),
     ("pixelVertices", "Pixel vertices"),
@@ -294,6 +298,7 @@ class PlotPurpose:
     class MiniAOD: pass
     class Timing: pass
     class HLT: pass
+    class Pixel: pass
 
 class Page(object):
     def __init__(self, title, sampleName):
@@ -321,7 +326,7 @@ class Page(object):
         self._tables[section] = table
 
     def isEmpty(self):
-        for plotSet in self._plotSets.itervalues():
+        for plotSet in six.itervalues(self._plotSets):
             if len(plotSet) > 0:
                 return False
 
@@ -672,6 +677,7 @@ class IndexSection:
         self._miniaodPage = PageSet(*params)
         self._timingPage = PageSet(*params)
         self._hltPages = PageSet(*params, dqmSubFolderTranslatedToSectionName=lambda algoQuality: algoQuality[0])
+        self._pixelPages = PageSet(*params, dqmSubFolderTranslatedToSectionName=lambda algoQuality: algoQuality[0])
         self._otherPages = PageSet(*params)
 
         self._purposePageMap = {
@@ -681,6 +687,7 @@ class IndexSection:
             PlotPurpose.MiniAOD: self._miniaodPage,
             PlotPurpose.Timing: self._timingPage,
             PlotPurpose.HLT: self._hltPages,
+            PlotPurpose.Pixel: self._pixelPages,
         }
 
     def addPlots(self, plotterFolder, dqmSubFolder, plotFiles):
@@ -702,7 +709,7 @@ class IndexSection:
             "  <ul>",
             ]
 
-        for pages in [self._summaryPage, self._iterationPages, self._vertexPage, self._miniaodPage, self._timingPage, self._hltPages, self._otherPages]:
+        for pages in [self._summaryPage, self._iterationPages, self._pixelPages, self._vertexPage, self._miniaodPage, self._timingPage, self._hltPages, self._otherPages]:
             labelFiles = pages.write(baseDir)
             for label, fname in labelFiles:
                 ret.append('   <li><a href="%s">%s</a></li>' % (fname, label))

@@ -122,19 +122,19 @@ public:
 
   explicit LumiProducer(const edm::ParameterSet&);
 
-  ~LumiProducer();
+  ~LumiProducer() override;
   
 private:
   
-  virtual void produce(edm::Event&, const edm::EventSetup&) override final;
+  void produce(edm::Event&, const edm::EventSetup&) final;
 
-  virtual void beginRun(edm::Run const&, edm::EventSetup const &) override final;
+  void beginRun(edm::Run const&, edm::EventSetup const &) final;
 
-  virtual void beginLuminosityBlockProduce(edm::LuminosityBlock & iLBlock,
-				    edm::EventSetup const& iSetup) override final;
+  void beginLuminosityBlockProduce(edm::LuminosityBlock & iLBlock,
+				    edm::EventSetup const& iSetup) final;
  
-  virtual void endRun(edm::Run const&, edm::EventSetup const &) override final;
-  virtual void endRunProduce(edm::Run&, edm::EventSetup const &) override final;
+  void endRun(edm::Run const&, edm::EventSetup const &) final;
+  void endRunProduce(edm::Run&, edm::EventSetup const &) final;
 
   bool fillLumi(edm::LuminosityBlock & iLBlock);
   void fillRunCache(const coral::ISchema& schema,unsigned int runnumber);
@@ -262,7 +262,7 @@ LumiProducer::LumiProducer(const edm::ParameterSet& iConfig):m_cachedrun(0),m_is
       endservlet=connectStr.rfind('/',connectStr.length());
     }
     std::string servlet=connectStr.substr(startservlet,endservlet-startservlet);
-    if( (servlet !="")&& (servlet.find_first_of(":/)[]")==std::string::npos)){
+    if( (!servlet.empty())&& (servlet.find_first_of(":/)[]")==std::string::npos)){
       if(servlet=="cms_conditions_data") servlet="";
       
       std::string siteconfpath=iConfig.getUntrackedParameter<std::string>("siteconfpath","");
@@ -725,7 +725,7 @@ LumiProducer::fillLSCache(unsigned int luminum){
 	const void* trgcountblob_StartAddress=trgcountblob.startingAddress();
 	unsigned int* trgcounts=(unsigned int*)::malloc(trgcountblob.size());
 	std::memmove(trgcounts,trgcountblob_StartAddress,trgcountblob.size());
-	for(unsigned int i=0;i<sizeof(trgcounts)/sizeof(unsigned int);++i){
+	for(unsigned int i=0; i < trgcountblob.size()/sizeof(unsigned int); ++i){
 	  L1Data l1tmp;
 	  l1tmp.bitname=m_runcache.TRGBitNames[i];
 	  l1tmp.prescale=prescales[i];
@@ -778,14 +778,14 @@ LumiProducer::fillLSCache(unsigned int luminum){
 	const void* hltacceptblob_StartAddress=hltacceptblob.startingAddress();
 	unsigned int* hltaccepts=(unsigned int*)::malloc(hltacceptblob.size());
 	std::memmove(hltaccepts,hltacceptblob_StartAddress,hltacceptblob.size()); 	
-	unsigned int nhltaccepts = sizeof(hltaccepts)/sizeof(unsigned int);
-        if(nhltaccepts > 0 && m_runcache.HLTPathNames.size() == 0){
+	unsigned int nhltaccepts = hltacceptblob.size()/sizeof(unsigned int);
+        if(nhltaccepts > 0 && m_runcache.HLTPathNames.empty()){
           edm::LogWarning("CorruptOrMissingHLTData")<<"Got "<<nhltaccepts
 <<" hltaccepts, but the run chache is empty. hltdata will  not be written";
             break;
         }
 
-	for(unsigned int i=0;i<sizeof(hltaccepts)/sizeof(unsigned int);++i){
+	for(unsigned int i=0; i < hltacceptblob.size()/sizeof(unsigned int); ++i){
 	  HLTData hlttmp;
 	  hlttmp.pathname=m_runcache.HLTPathNames[i];
 	  hlttmp.prescale=hltprescales[i];

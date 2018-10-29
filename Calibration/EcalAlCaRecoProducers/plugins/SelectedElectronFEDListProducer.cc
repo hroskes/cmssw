@@ -335,7 +335,7 @@ void SelectedElectronFEDListProducer<TEle,TCand>::produce(edm::Event & iEvent, c
   // take the calo tower collection
   edm::Handle<HBHERecHitCollection> hbheRecHitHandle;
   if(!(HBHERecHitTag_ == edm::InputTag("")))  iEvent.getByToken(hbheRecHitToken_,hbheRecHitHandle);
-  const HBHERecHitCollection* hcalRecHitCollection = NULL;
+  const HBHERecHitCollection* hcalRecHitCollection = nullptr;
   if(!hbheRecHitHandle.failedToGet()) hcalRecHitCollection = hbheRecHitHandle.product();   
 
   double radTodeg = 180. / Geom::pi();
@@ -472,7 +472,7 @@ void SelectedElectronFEDListProducer<TEle,TCand>::produce(edm::Event & iEvent, c
 	      HBHERecHitCollection::const_iterator itHcalRecHit = hcalRecHitCollection->begin();
 	      for( ; itHcalRecHit != hcalRecHitCollection->end() ; ++itHcalRecHit) {
 		HcalDetId recHitId(itHcalRecHit->id());
-		const HcalGeometry* cellGeometry = (HcalGeometry*)(GeometryCalo_->getSubdetectorGeometry(recHitId));
+		const HcalGeometry* cellGeometry = static_cast<const HcalGeometry*>(GeometryCalo_->getSubdetectorGeometry(recHitId));
 		float dR = reco::deltaR(scRef->eta(),scRef->phi(),cellGeometry->getPosition(recHitId).eta(),cellGeometry->getPosition(recHitId).phi());
 		if(dR <= dRHcalRegion_) {
 		  const HcalElectronicsId electronicId = HcalReadoutMap_->lookup(recHitId);

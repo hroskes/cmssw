@@ -25,6 +25,7 @@ namespace edm {
   class ProductResolverIndexAndSkipBit;
   class ProductRegistry;
   class ThinnedAssociationsHelper;
+  class WaitingTaskWithArenaHolder;
 
   template<typename T>
   class WorkerT : public Worker {
@@ -43,6 +44,15 @@ namespace edm {
     }
     
     Types moduleType() const override;
+    
+    bool wantsGlobalRuns() const final;
+    bool wantsGlobalLuminosityBlocks() const final;
+    bool wantsStreamRuns() const final;
+    bool wantsStreamLuminosityBlocks() const final;
+
+    SerialTaskQueue* globalRunsQueue() final;
+    SerialTaskQueue* globalLuminosityBlocksQueue() final;
+
 
     void updateLookup(BranchType iBranchType,
                               ProductResolverIndexHelper const&) override;
@@ -77,6 +87,14 @@ namespace edm {
   private:
     bool implDo(EventPrincipal const& ep, EventSetup const& c,
                         ModuleCallingContext const* mcc) override;
+
+    void itemsToGetForSelection(std::vector<ProductResolverIndexAndSkipBit>&) const final;
+    bool implNeedToRunSelection() const final;
+
+    void implDoAcquire(EventPrincipal const& ep, EventSetup const& c,
+                       ModuleCallingContext const* mcc,
+                       WaitingTaskWithArenaHolder& holder) final;
+
     bool implDoPrePrefetchSelection(StreamID id,
                                             EventPrincipal const& ep,
                                             ModuleCallingContext const* mcc) override;
@@ -137,7 +155,14 @@ namespace edm {
       module_->preActionBeforeRunEventAsync(iTask,iModuleCallingContext,iPrincipal);
     }
 
-    
+    bool hasAcquire() const override {
+      return module_->hasAcquire();
+    }
+
+    bool hasAccumulator() const override {
+      return module_->hasAccumulator();
+    }
+
     edm::propagate_const<std::shared_ptr<T>> module_;
   };
 

@@ -9,6 +9,7 @@
 #include "FWCore/Framework/interface/EventSetupRecordIntervalFinder.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "CalibCalorimetry/HcalAlgos/interface/HcalDbASCIIIO.h"
+#include "CondFormats/DataRecord/interface/HcalTPParametersRcd.h"
 #include "CondFormats/HcalObjects/interface/AllObjects.h"
 class ParameterSet;
 
@@ -47,7 +48,7 @@ class HcalTextCalibrations : public edm::ESProducer,
 {
 public:
   HcalTextCalibrations (const edm::ParameterSet& );
-  virtual ~HcalTextCalibrations ();
+  ~HcalTextCalibrations () override;
 
   void produce () {};
 
@@ -68,7 +69,7 @@ public:
   class CheckGetObjectTopo : public CheckGetObject<T> {
     public:
       CheckGetObjectTopo(const HcalTopology* topo) : CheckGetObject<T>(topo), topo_(topo) {}
-      virtual ~CheckGetObjectTopo() = default;
+      ~CheckGetObjectTopo() override = default;
     protected:
       std::unique_ptr<T> makeResult() override { return std::make_unique<T>(topo_); }
     private:
@@ -84,12 +85,14 @@ public:
   };
   
 protected:
-  virtual void setIntervalFor(const edm::eventsetup::EventSetupRecordKey&,
+  void setIntervalFor(const edm::eventsetup::EventSetupRecordKey&,
 			      const edm::IOVSyncValue& , 
-			      edm::ValidityInterval&) ;
+			      edm::ValidityInterval&) override ;
 
   std::unique_ptr<HcalPedestals> producePedestals (const HcalPedestalsRcd& rcd);
   std::unique_ptr<HcalPedestalWidths> producePedestalWidths (const HcalPedestalWidthsRcd& rcd);
+  std::unique_ptr<HcalPedestals> produceEffectivePedestals (const HcalPedestalsRcd& rcd);
+  std::unique_ptr<HcalPedestalWidths> produceEffectivePedestalWidths (const HcalPedestalWidthsRcd& rcd);
   std::unique_ptr<HcalGains> produceGains (const HcalGainsRcd& rcd);
   std::unique_ptr<HcalGainWidths> produceGainWidths (const HcalGainWidthsRcd& rcd);
   std::unique_ptr<HcalQIEData> produceQIEData (const HcalQIEDataRcd& rcd);

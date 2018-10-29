@@ -50,7 +50,8 @@ namespace muon {
       AllME0Muons = 25,
       ME0MuonArbitrated = 26,
       AllGEMMuons = 27,
-      GEMMuonArbitrated = 28
+      GEMMuonArbitrated = 28,
+      TriggerIdLoose = 29          
    };
 
    /// a lightweight "map" for selection type string label and enum value
@@ -87,9 +88,11 @@ namespace muon {
 
    bool isTightMuon(const reco::Muon&, const reco::Vertex&);
    bool isLooseMuon(const reco::Muon&);
-   bool isMediumMuon(const reco::Muon&);
-   bool isSoftMuon(const reco::Muon&, const reco::Vertex&);
+   bool isMediumMuon(const reco::Muon&, bool run2016_hip_mitigation=false);
+   bool isSoftMuon(const reco::Muon&, const reco::Vertex&, bool run2016_hip_mitigation=false);
    bool isHighPtMuon(const reco::Muon&, const reco::Vertex&);
+   bool isTrackerHighPtMuon(const reco::Muon&, const reco::Vertex&);
+   bool isLooseTriggerMuon(const reco::Muon&);
    
    // determine if station was crossed well withing active volume
    unsigned int RequiredStationMask( const reco::Muon& muon,
@@ -116,5 +119,8 @@ namespace muon {
    int sharedSegments( const reco::Muon& muon1, const reco::Muon& muon2, 
                        unsigned int segmentArbitrationMask = reco::MuonSegmentMatch::BestInChamberByDR ) ;
 
+   void setCutBasedSelectorFlags(reco::Muon& muon,
+				 const reco::Vertex* vertex=nullptr,
+				 bool run2016_hip_mitigation=false);
 }
 #endif

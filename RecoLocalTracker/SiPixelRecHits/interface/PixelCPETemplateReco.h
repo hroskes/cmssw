@@ -14,7 +14,7 @@
 
 
 #ifndef SI_PIXEL_TEMPLATE_STANDALONE
-#include "RecoLocalTracker/SiPixelRecHits/interface/SiPixelTemplate.h"
+#include "CondFormats/SiPixelTransient/interface/SiPixelTemplate.h"
 #else
 #include "SiPixelTemplate.h"
 #endif
@@ -59,18 +59,18 @@ public:
    PixelCPETemplateReco(edm::ParameterSet const& conf, const MagneticField *, const TrackerGeometry&, const TrackerTopology&,
                         const SiPixelLorentzAngle *, const SiPixelTemplateDBObject *);
    
-   ~PixelCPETemplateReco();
+   ~PixelCPETemplateReco() override;
    
 private:
-   ClusterParam * createClusterParam(const SiPixelCluster & cl) const;
+   ClusterParam * createClusterParam(const SiPixelCluster & cl) const override;
    
    // We only need to implement measurementPosition, since localPosition() from
    // PixelCPEBase will call it and do the transformation
    // Gavril : put it back
-   LocalPoint localPosition (DetParam const & theDetParam, ClusterParam & theClusterParam) const;
+   LocalPoint localPosition (DetParam const & theDetParam, ClusterParam & theClusterParam) const override;
    
    // However, we do need to implement localError().
-   LocalError localError   (DetParam const & theDetParam, ClusterParam & theClusterParam) const;
+   LocalError localError   (DetParam const & theDetParam, ClusterParam & theClusterParam) const override;
    
    // Template storage
    std::vector< SiPixelTemplateStore > thePixelTemp_;
@@ -78,6 +78,11 @@ private:
    int speed_ ;
    
    bool UseClusterSplitter_;
+
+   // Template file management (when not getting the templates from the DB)
+   int barrelTemplateID_ ;
+   int forwardTemplateID_ ;
+   std::string templateDir_ ;
    
    //bool DoCosmics_;
    //bool LoadTemplatesFromDB_;

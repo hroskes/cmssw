@@ -16,15 +16,15 @@ HGCalTriggerCellThresholdCodec(const edm::ParameterSet& conf) : Codec(conf),
 
 void
 HGCalTriggerCellThresholdCodec::
-setDataPayloadImpl(const HGCEEDigiCollection& ee,
-        const HGCHEDigiCollection& fh,
-        const HGCBHDigiCollection& bh) 
+setDataPayloadImpl(const HGCalDigiCollection& ee,
+        const HGCalDigiCollection& fh,
+        const HGCalDigiCollection& bh) 
 {
     data_.reset();
-    std::vector<HGCDataFrame<DetId,HGCSample>> dataframes;
+    std::vector<HGCalDataFrame> dataframes;
     std::vector<std::pair<DetId, uint32_t > > linearized_dataframes;
     // convert ee, fh and bh hit collections into the same object
-    if(ee.size()>0)
+    if(!ee.empty())
     {
         for(const auto& eedata : ee)
         {
@@ -35,7 +35,7 @@ setDataPayloadImpl(const HGCEEDigiCollection& ee,
             }
         }
     }
-    else if(fh.size()>0)
+    else if(!fh.empty())
     {
         for(const auto& fhdata : fh)
         {
@@ -46,7 +46,7 @@ setDataPayloadImpl(const HGCEEDigiCollection& ee,
             }
         }
     }
-    else if(bh.size()>0)
+    else if(!bh.empty())
     {
         for(const auto& bhdata : bh)
         {

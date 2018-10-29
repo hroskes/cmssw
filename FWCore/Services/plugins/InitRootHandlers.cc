@@ -24,9 +24,13 @@
 #include <thread>
 #include <sys/wait.h>
 #include <sstream>
-#include <string.h>
+#include <cstring>
 #include <poll.h>
 #include <atomic>
+#include <algorithm>
+#include <vector>
+#include <string>
+#include <array>
 
 // WORKAROUND: At CERN, execv is replaced with a non-async-signal safe
 // version.  This can break our stack trace printer.  Avoid this by
@@ -73,7 +77,7 @@ namespace edm {
         ThreadTracker() : tbb::task_scheduler_observer() {
           observe(true);
         }
-        void on_scheduler_entry(bool) {
+        void on_scheduler_entry(bool) override {
           // ensure thread local has been allocated; not necessary on Linux with
           // the current cmsRun linkage, but could be an issue if the platform
           // or linkage leads to "lazy" allocation of the thread local.  By
@@ -89,7 +93,7 @@ namespace edm {
       };
 
       explicit InitRootHandlers(ParameterSet const& pset, ActivityRegistry& iReg);
-      virtual ~InitRootHandlers();
+      ~InitRootHandlers() override;
       
       static void fillDescriptions(ConfigurationDescriptions& descriptions);
       static void stacktraceFromThread();
@@ -100,9 +104,9 @@ namespace edm {
       static std::atomic<std::size_t> nextModule_, doneModules_;
     private:
       static char *const *getPstackArgv();
-      virtual void enableWarnings_() override;
-      virtual void ignoreWarnings_() override;
-      virtual void willBeUsingThreads() override;
+      void enableWarnings_() override;
+      void ignoreWarnings_(edm::RootHandlers::SeverityLevel level) override;
+      void willBeUsingThreads() override;
 
       void cachePidInfo();
       static void stacktraceHelperThread();
@@ -124,6 +128,7 @@ namespace edm {
       std::shared_ptr<const void> sigSegvHandler_;
       std::shared_ptr<const void> sigIllHandler_;
       std::shared_ptr<const void> sigTermHandler_;
+      std::shared_ptr<const void> sigAbrtHandler_;
     };
     
     inline
@@ -141,17 +146,40 @@ namespace edm {
 }
 
 namespace {
-  enum class SeverityLevel {
-    kInfo,
-    kWarning,
-    kError,
-    kSysError,
-    kFatal
-  };
-
-  thread_local bool s_ignoreWarnings = false;
+  thread_local edm::RootHandlers::SeverityLevel s_ignoreWarnings = edm::RootHandlers::SeverityLevel::kInfo;
 
   bool s_ignoreEverything = false;
+
+  template<std::size_t SIZE>
+  bool find_if_string(const std::string& search, const std::array<const char* const,SIZE>& substrs){
+    return (std::find_if(substrs.begin(), substrs.end(), [&search](const char* const s) -> bool { return (search.find(s) != std::string::npos); }) != substrs.end());
+  }
+
+  constexpr std::array<const char* const,8> in_message{{
+    "no dictionary for class",
+    "already in TClassTable",
+    "matrix not positive definite",
+    "not a TStreamerInfo object",
+    "Problems declaring payload",
+    "Announced number of args different from the real number of argument passed", // Always printed if gDebug>0 - regardless of whether warning message is real.
+    "nbins is <=0 - set to nbins = 1",
+    "nbinsy is <=0 - set to nbinsy = 1"
+  }};
+
+  constexpr std::array<const char* const,6> in_location{{
+    "Fit",
+    "TDecompChol::Solve",
+    "THistPainter::PaintInit",
+    "TUnixSystem::SetDisplay",
+    "TGClient::GetFontByName",
+    "Inverter::Dinv"
+  }};
+
+  constexpr std::array<const char* const,3> in_message_print{{
+    "number of iterations was insufficient",
+    "bad integrand behavior",
+    "integral is divergent, or slowly convergent"
+  }};
 
   void RootErrorHandlerImpl(int level, char const* location, char const* message) {
 
@@ -159,30 +187,30 @@ namespace {
 
   // Translate ROOT severity level to MessageLogger severity level
 
-    SeverityLevel el_severity = SeverityLevel::kInfo;
+    edm::RootHandlers::SeverityLevel el_severity = edm::RootHandlers::SeverityLevel::kInfo;
 
     if (level >= kFatal) {
-      el_severity = SeverityLevel::kFatal;
+      el_severity = edm::RootHandlers::SeverityLevel::kFatal;
     } else if (level >= kSysError) {
-      el_severity = SeverityLevel::kSysError;
+      el_severity = edm::RootHandlers::SeverityLevel::kSysError;
     } else if (level >= kError) {
-      el_severity = SeverityLevel::kError;
+      el_severity = edm::RootHandlers::SeverityLevel::kError;
     } else if (level >= kWarning) {
-      el_severity = s_ignoreWarnings ? SeverityLevel::kInfo : SeverityLevel::kWarning;
+      el_severity = edm::RootHandlers::SeverityLevel::kWarning;
     }
 
-    if(s_ignoreEverything) {
-      el_severity = SeverityLevel::kInfo;
+    if (s_ignoreEverything || el_severity <= s_ignoreWarnings) {
+      el_severity = edm::RootHandlers::SeverityLevel::kInfo;
     }
 
   // Adapt C-strings to std::strings
   // Arrange to report the error location as furnished by Root
 
     std::string el_location = "@SUB=?";
-    if (location != 0) el_location = std::string("@SUB=")+std::string(location);
+    if (location != nullptr) el_location = std::string("@SUB=")+std::string(location);
 
     std::string el_message  = "?";
-    if (message != 0) el_message  = message;
+    if (message != nullptr) el_message  = message;
 
   // Try to create a meaningful id string using knowledge of ROOT error messages
   //
@@ -216,38 +244,35 @@ namespace {
        && (el_message.find("fill branch") != std::string::npos)
        && (el_message.find("address") != std::string::npos)
        && (el_message.find("not set") != std::string::npos)) {
-        el_severity = SeverityLevel::kFatal;
+        el_severity = edm::RootHandlers::SeverityLevel::kFatal;
       }
 
       if ((el_message.find("Tree branches") != std::string::npos)
        && (el_message.find("different numbers of entries") != std::string::npos)) {
-        el_severity = SeverityLevel::kFatal;
+        el_severity = edm::RootHandlers::SeverityLevel::kFatal;
       }
 
 
   // Intercept some messages and downgrade the severity
 
-      if ((el_message.find("no dictionary for class") != std::string::npos) ||
-          (el_message.find("already in TClassTable") != std::string::npos) ||
-          (el_message.find("matrix not positive definite") != std::string::npos) ||
-          (el_message.find("not a TStreamerInfo object") != std::string::npos) ||
-          (el_message.find("Problems declaring payload") != std::string::npos) ||
-          (el_message.find("Announced number of args different from the real number of argument passed") != std::string::npos) || // Always printed if gDebug>0 - regardless of whether warning message is real.
-          (el_location.find("Fit") != std::string::npos) ||
-          (el_location.find("TDecompChol::Solve") != std::string::npos) ||
-          (el_location.find("THistPainter::PaintInit") != std::string::npos) ||
-          (el_location.find("TUnixSystem::SetDisplay") != std::string::npos) ||
-          (el_location.find("TGClient::GetFontByName") != std::string::npos) ||
-          (el_location.find("Inverter::Dinv") != std::string::npos) ||
-          (el_message.find("nbins is <=0 - set to nbins = 1") != std::string::npos) ||
-          (el_message.find("nbinsy is <=0 - set to nbinsy = 1") != std::string::npos) ||
-          (level < kError and
-           (el_location.find("CINTTypedefBuilder::Setup")!= std::string::npos) and
-           (el_message.find("possible entries are in use!") != std::string::npos))) {
-        el_severity = SeverityLevel::kInfo;
+      if (find_if_string(el_message,in_message) ||
+          find_if_string(el_location,in_location) ||
+          (level < kError and (el_location.find("CINTTypedefBuilder::Setup")!= std::string::npos) and (el_message.find("possible entries are in use!") != std::string::npos)))
+      {
+        el_severity = edm::RootHandlers::SeverityLevel::kInfo;
       }
 
-    if (el_severity == SeverityLevel::kInfo) {
+      // These are a special case because we do not want them to
+      // be fatal, but we do want an error to print.
+      bool alreadyPrinted = false;
+      if (find_if_string(el_message,in_message_print))
+      {
+        el_severity = edm::RootHandlers::SeverityLevel::kInfo;
+        edm::LogError("Root_Error") << el_location << el_message;
+        alreadyPrinted = true;
+      }
+
+    if (el_severity == edm::RootHandlers::SeverityLevel::kInfo) {
       // Don't throw if the message is just informational.
       die = false;
     } else {
@@ -272,16 +297,18 @@ namespace {
     // Typically, we get here only for informational messages,
     // but we leave the other code in just in case we change
     // the criteria for throwing.
-    if (el_severity == SeverityLevel::kFatal) {
-      edm::LogError("Root_Fatal") << el_location << el_message;
-    } else if (el_severity == SeverityLevel::kSysError) {
-      edm::LogError("Root_Severe") << el_location << el_message;
-    } else if (el_severity == SeverityLevel::kError) {
-      edm::LogError("Root_Error") << el_location << el_message;
-    } else if (el_severity == SeverityLevel::kWarning) {
-      edm::LogWarning("Root_Warning") << el_location << el_message ;
-    } else if (el_severity == SeverityLevel::kInfo) {
-      edm::LogInfo("Root_Information") << el_location << el_message ;
+    if (!alreadyPrinted) {
+      if (el_severity == edm::RootHandlers::SeverityLevel::kFatal) {
+        edm::LogError("Root_Fatal") << el_location << el_message;
+      } else if (el_severity == edm::RootHandlers::SeverityLevel::kSysError) {
+        edm::LogError("Root_Severe") << el_location << el_message;
+      } else if (el_severity == edm::RootHandlers::SeverityLevel::kError) {
+        edm::LogError("Root_Error") << el_location << el_message;
+      } else if (el_severity == edm::RootHandlers::SeverityLevel::kWarning) {
+        edm::LogWarning("Root_Warning") << el_location << el_message ;
+      } else if (el_severity == edm::RootHandlers::SeverityLevel::kInfo) {
+        edm::LogInfo("Root_Information") << el_location << el_message ;
+      }
     }
   }
 
@@ -290,6 +317,13 @@ namespace {
   }
 
   extern "C" {
+    void set_default_signals() {
+      signal(SIGILL, SIG_DFL);
+      signal(SIGSEGV, SIG_DFL);
+      signal(SIGBUS, SIG_DFL);
+      signal(SIGTERM, SIG_DFL);
+      signal(SIGABRT, SIG_DFL);
+    }
 
     static int full_write(int fd, const char *text)
     {
@@ -340,13 +374,20 @@ namespace {
           int ms_remaining = std::chrono::duration_cast<std::chrono::milliseconds>(end_time-std::chrono::steady_clock::now()).count();
           if (ms_remaining > 0)
           {
-            if (poll(&poll_info, 1, ms_remaining) == 0)
+            int rc = poll(&poll_info, 1, ms_remaining);
+            if (rc <= 0)
             {
+              if (rc < 0) {
+                if (errno == EINTR || errno == EAGAIN) { continue; }
+                rc = -errno;
+              } else {
+                rc = -ETIMEDOUT;
+              }
               if ((flags & O_NONBLOCK) != O_NONBLOCK)
               {
                 fcntl(fd, F_SETFL, flags);
               }
-              return -ETIMEDOUT;
+              return rc;
             }
           }
           else if (ms_remaining < 0)
@@ -410,7 +451,7 @@ namespace {
       sigset_t sigset;
       sigemptyset(&sigset);
       sigaddset(&sigset, RESUME_SIGNAL);
-      pthread_sigmask(SIG_UNBLOCK, &sigset, 0);
+      pthread_sigmask(SIG_UNBLOCK, &sigset, nullptr);
 #endif
       // sleep interrrupts on a handled delivery of the resume signal
       sleep(InitRootHandlers::stackTracePause());
@@ -446,13 +487,13 @@ namespace {
         act.sa_sigaction = sig_pause_for_stacktrace;
         act.sa_flags = 0;
         sigemptyset(&act.sa_mask);
-        sigaction(PAUSE_SIGNAL, &act, NULL);
+        sigaction(PAUSE_SIGNAL, &act, nullptr);
 
         // unblock pause signal globally, resume is unblocked in the pause handler
         sigset_t pausesigset;
         sigemptyset(&pausesigset);
         sigaddset(&pausesigset, PAUSE_SIGNAL);
-        sigprocmask(SIG_UNBLOCK, &pausesigset, 0);
+        sigprocmask(SIG_UNBLOCK, &pausesigset, nullptr);
 
         // send a pause signal to all CMSSW/TBB threads other than self
         for (auto id : tids) {
@@ -464,7 +505,7 @@ namespace {
 #ifdef RESUME_SIGNAL
         // install the "resume" handler
         act.sa_sigaction = sig_resume_handler;
-        sigaction(RESUME_SIGNAL, &act, NULL);
+        sigaction(RESUME_SIGNAL, &act, nullptr);
 #endif
       }
 #endif
@@ -489,6 +530,11 @@ namespace {
         case SIGTERM:
         {
           signalname = "external termination request";
+          break;
+        }
+        case SIGABRT:
+        {
+          signalname = "abort signal";
           break;
         }
         default:
@@ -554,15 +600,16 @@ namespace {
       full_cerr_write(signalname);
       full_cerr_write("\n");
 
-      // For these four known cases, re-raise the signal so get the correct
+      // For these five known cases, re-raise the signal to get the correct
       // exit code.
-      if ((sig == SIGILL) || (sig == SIGSEGV) || (sig == SIGBUS) || (sig == SIGTERM))
+      if ((sig == SIGILL) || (sig == SIGSEGV) || (sig == SIGBUS) || (sig == SIGTERM) || (sig == SIGABRT))
       {
         signal(sig, SIG_DFL);
         raise(sig);
       }
       else
       {
+        set_default_signals();
         ::abort();
       }
     }
@@ -575,18 +622,11 @@ namespace {
       raise(sig);
 
       // shouldn't get here
+      set_default_signals();
       ::sleep(10);
       ::abort();
     }
   }
-
-  void set_default_signals() {
-    signal(SIGILL, SIG_DFL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGTERM, SIG_DFL);
-  }
-
 }  // end of unnamed namespace
 
 namespace edm {
@@ -693,7 +733,7 @@ namespace edm {
 #else
         fork();
       if (child_stack_ptr) {} // Suppress 'unused variable' warning on non-Linux
-      if (pid == 0) {edm::service::cmssw_stacktrace(nullptr); ::abort();}
+      if (pid == 0) { edm::service::cmssw_stacktrace(nullptr); }
 #endif
       if (pid == -1)
       {
@@ -715,6 +755,8 @@ namespace edm {
 
     int cmssw_stacktrace(void * /*arg*/)
     {
+      set_default_signals();
+
       char *const *argv = edm::service::InitRootHandlers::getPstackArgv();
       // NOTE: this is NOT async-signal-safe at CERN's lxplus service.
       // CERN uses LD_PRELOAD to replace execv with a function from libsnoopy which
@@ -786,9 +828,13 @@ namespace edm {
         sigTermHandler_ = std::shared_ptr<const void>(nullptr,[](void*) {
           installCustomHandler(SIGTERM,sig_abort);
         });
+        installCustomHandler(SIGABRT,sig_dostack_then_abort);
+        sigAbrtHandler_ = std::shared_ptr<const void>(nullptr,[](void*) {
+          signal(SIGABRT,SIG_DFL); // release SIGABRT to default
+        });
       }
 
-      iReg.watchPreallocate([this](edm::service::SystemBounds const& iBounds){
+      iReg.watchPreallocate([](edm::service::SystemBounds const& iBounds){
         if (iBounds.maxNumberOfThreads() > moduleListBuffers_.size()) {
           moduleListBuffers_.resize(iBounds.maxNumberOfThreads());
         }
@@ -811,7 +857,7 @@ namespace edm {
       //G__SetCatchException(0);
 
       // Set custom streamers
-      setRefCoreStreamer();
+      setRefCoreStreamerInTClass();
 
       // Load the library containing dictionaries for std:: classes, if not already loaded.
       if (!hasDictionary(typeid(std::vector<std::vector<unsigned int> >))) {
@@ -825,7 +871,9 @@ namespace edm {
 
       // Enable Root implicit multi-threading
       bool imt = pset.getUntrackedParameter<bool>("EnableIMT");
-      if (imt) ROOT::EnableImplicitMT();
+      if (imt && not ROOT::IsImplicitMTEnabled()) {
+        ROOT::EnableImplicitMT();
+      }
     }
 
     InitRootHandlers::~InitRootHandlers () {
@@ -865,7 +913,7 @@ namespace edm {
           ->setComment("If True, enables automatic loading of data dictionaries.");
       desc.addUntracked<bool>("LoadAllDictionaries",false)
           ->setComment("If True, loads all ROOT dictionaries.");
-      desc.addUntracked<bool>("EnableIMT",false)
+      desc.addUntracked<bool>("EnableIMT",true)
           ->setComment("If True, calls ROOT::EnableImplicitMT().");
       desc.addUntracked<bool>("AbortOnSignal",true)
           ->setComment("If True, do an abort when a signal occurs that causes a crash. If False, ROOT will do an exit which attempts to do a clean shutdown.");
@@ -883,12 +931,12 @@ namespace edm {
 
     void
     InitRootHandlers::enableWarnings_() {
-      s_ignoreWarnings =false;
+      s_ignoreWarnings = edm::RootHandlers::SeverityLevel::kInfo;
     }
 
     void
-    InitRootHandlers::ignoreWarnings_() {
-      s_ignoreWarnings = true;
+    InitRootHandlers::ignoreWarnings_(edm::RootHandlers::SeverityLevel level) {
+      s_ignoreWarnings = level;
     }
 
     void

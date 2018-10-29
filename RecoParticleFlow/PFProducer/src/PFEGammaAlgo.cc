@@ -572,7 +572,6 @@ namespace {
 				       matched_pfcs.end()));	
       }
       for( const auto& clelem : best_comb ) {
-	const reco::PFClusterRef& clref = clelem->clusterRef();
 	if( std::find(cluster_list.begin(),cluster_list.end(),clelem) ==
 	    cluster_list.end() ) {
 	  cluster_list.push_back(clelem);
@@ -1528,7 +1527,7 @@ initializeProtoCands(std::list<PFEGammaAlgo::ProtoEGObject>& egobjs) {
 	   thefront.lateBrem = roToMerge->lateBrem;
 	 } else if ( thefront.electronSeed.isNonnull() && 
 		     roToMerge->electronSeed.isNonnull()) {
-	   LOGWARN("PFEGammaAlgo::mergeROsByAnyLink")
+	   LOGDRESSED("PFEGammaAlgo::mergeROsByAnyLink")
 	     << "Need to implement proper merging of two gsf candidates!"
 	     << std::endl;
 	 }

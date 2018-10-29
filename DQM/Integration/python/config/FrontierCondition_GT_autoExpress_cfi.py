@@ -1,3 +1,4 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.FrontierConditions_GlobalTag_cff import *
 
@@ -6,8 +7,7 @@ from Configuration.StandardSequences.FrontierConditions_GlobalTag_cff import *
 # It should be kept in synch with Express processing at Tier0: what the url
 # https://cmsweb.cern.ch/t0wmadatasvc/prod/express_config
 # would tell you.
-GlobalTag.connect = cms.string("frontier://(proxyurl=http://localhost:3128)(serverurl=http://localhost:8000/FrontierProd)(serverurl=http://localhost:8000/FrontierProd)(retrieve-ziplevel=0)(failovertoserver=no)/CMS_CONDITIONS")
-GlobalTag.globaltag = "92X_dataRun2_Express_v7"
+GlobalTag.globaltag = "101X_dataRun2_Express_v8"
 
 # ===== auto -> Automatically get the GT string from current Tier0 configuration via a Tier0Das call.
 #       This needs a valid proxy to access the cern.ch network from the .cms one.
@@ -131,8 +131,7 @@ class Tier0Handler( object ):
         Raises if connection error, bad response, timeout after retries occur, or if no Global Tags are available.
         """
         data = self._queryTier0DataSvc( os.path.join( self._uri, config ) )
-        gtnames = unique( [ str( di[ 'global_tag' ] ) for di in data['result'] if di[ 'global_tag' ] is not None ] )
-        gtnames.sort()
+        gtnames = sorted(unique( [ str( di[ 'global_tag' ] ) for di in data['result'] if di[ 'global_tag' ] is not None ] ))
         try:
             recentGT = gtnames[-1]
             return recentGT
@@ -151,11 +150,11 @@ if auto:
     try:
         # Get the express GT from Tie0 DataService API
         GlobalTag.globaltag = cms.string( t0.getGlobalTag( 'express_config' ) )
-        print "The query to the Tier0 DataService returns the express GT: \"%s\"" % ( GlobalTag.globaltag.value(), )
+        print("The query to the Tier0 DataService returns the express GT: \"%s\"" % ( GlobalTag.globaltag.value(), ))
     except Tier0Error as error:
         # the web query did not succeed, fall back to the default
-        print "Error in querying the Tier0 DataService"
-        print error
-        print "Falling back to the default value of the express GT: \"%s\"" % ( GlobalTag.globaltag.value(), )
+        print("Error in querying the Tier0 DataService")
+        print(error)
+        print("Falling back to the default value of the express GT: \"%s\"" % ( GlobalTag.globaltag.value(), ))
 else:
-    print "Using hardcoded GT: \"%s\"" % GlobalTag.globaltag.value()
+    print("Using hardcoded GT: \"%s\"" % GlobalTag.globaltag.value())

@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
-topSingleLeptonHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+topSingleLeptonHLTOfflineDQM = DQMEDAnalyzer('TopSingleLeptonHLTOfflineDQM',
   ## ------------------------------------------------------
   ## SETUP
   ##
@@ -31,13 +32,14 @@ topSingleLeptonHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
     ## will be filled w/o extras
     elecExtras = cms.PSet(
       ## when omitted electron plots will be filled w/o cut on electronId
+      electronId = cms.PSet( src = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Fall17-94X-V1-medium"), pattern = cms.int32(1) ),
       #electronId = cms.PSet( src = cms.InputTag("mvaTrigV0"), pattern = cms.int32(1) ),
       ## when omitted electron plots will be filled w/o additional pre-
       ## selection of the electron candidates                                                                                            
       select = cms.string("pt>30 & abs(eta)<2.5"),
       ## when omitted isolated electron multiplicity plot will be equi-
       ## valent to inclusive electron multiplicity plot 
-      isolation = cms.string("(dr03TkSumPt+dr04EcalRecHitSumEt+dr04HcalTowerSumEt)/pt<0.1"),
+      #isolation = cms.string("(dr03TkSumPt+dr04EcalRecHitSumEt+dr04HcalTowerSumEt)/pt<0.1"),
     ),
     ## [optional] : when omitted all monitoring plots for muons
     ## will be filled w/o extras
@@ -127,7 +129,7 @@ topSingleLeptonHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
   )
 )
 
-topSingleMuonHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
+topSingleMuonHLTOfflineDQM = DQMEDAnalyzer('TopSingleLeptonHLTOfflineDQM',
   ## ------------------------------------------------------
   ## SETUP
   ##
@@ -281,7 +283,7 @@ topSingleMuonHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
   )
 )
 
-topSingleElectronHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
+topSingleElectronHLTOfflineDQM = DQMEDAnalyzer('TopSingleLeptonHLTOfflineDQM',
   ## ------------------------------------------------------
   ## SETUP
   ##
@@ -313,13 +315,14 @@ topSingleElectronHLTOfflineDQM = cms.EDAnalyzer("TopSingleLeptonHLTOfflineDQM",
     ## will be filled w/o extras
     elecExtras = cms.PSet(
       ## when omitted electron plots will be filled w/o cut on electronId
+      electronId = cms.PSet( src = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Fall17-94X-V1-medium"), pattern = cms.int32(1) ),
       #electronId = cms.PSet( src = cms.InputTag("mvaTrigV0"), pattern = cms.int32(1) ),
       ## when omitted electron plots will be filled w/o additional pre-
       ## selection of the electron candidates
       select = cms.string("pt>30 & abs(eta)<2.5"),
       ## when omitted isolated electron multiplicity plot will be equi-
       ## valent to inclusive electron multiplicity plot 
-      isolation = cms.string("(dr03TkSumPt+dr04EcalRecHitSumEt+dr04HcalTowerSumEt)/pt<0.1"),
+      #isolation = cms.string("(dr03TkSumPt+dr04EcalRecHitSumEt+dr04HcalTowerSumEt)/pt<0.1"),
     ),
     ## [optional] : when omitted all monitoring plots for jets
     ## will be filled w/o extras

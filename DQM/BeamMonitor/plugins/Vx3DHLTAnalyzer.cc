@@ -12,6 +12,7 @@
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "FWCore/Utilities/interface/isFinite.h"
+#include "FWCore/Framework/interface/LuminosityBlock.h"
 
 #include <Math/Minimizer.h>
 #include <Math/Factory.h>
@@ -302,7 +303,7 @@ int Vx3DHLTAnalyzer::MyFit (vector<double>* vals)
   // # -5 == NO OK - maxLumiIntegration reached #
   // ############################################
 
-  if ((vals != NULL) && (vals->size() == nParams*2))
+  if ((vals != nullptr) && (vals->size() == nParams*2))
     {
       double nSigmaXY       = 10.;
       double nSigmaZ        = 10.;
@@ -642,7 +643,7 @@ void Vx3DHLTAnalyzer::reset (string ResetType)
     }
 
 
-  if (ResetType.compare("scratch") == 0)
+  if (ResetType == "scratch")
     {
       runNumber      = 0;
       numberGoodFits = 0;
@@ -700,7 +701,7 @@ void Vx3DHLTAnalyzer::reset (string ResetType)
       if (internalDebug == true) cout << "[Vx3DHLTAnalyzer]::\tReset issued: scratch" << endl;
       if ((debugMode == true) && (outputDebugFile.is_open() == true)) outputDebugFile << "Reset -scratch- issued\n" << endl;
     }
-  else if (ResetType.compare("whole") == 0)
+  else if (ResetType == "whole")
     {
       Vx_X->Reset();
       Vx_Y->Reset();
@@ -722,7 +723,7 @@ void Vx3DHLTAnalyzer::reset (string ResetType)
       if (internalDebug == true) cout << "[Vx3DHLTAnalyzer]::\tReset issued: whole" << endl;
       if ((debugMode == true) && (outputDebugFile.is_open() == true)) outputDebugFile << "Reset -whole- issued\n" << endl;
     }
-  else if (ResetType.compare("fit") == 0)
+  else if (ResetType == "fit")
     {
       Vx_X_Fit->Reset();
       Vx_Y_Fit->Reset();
@@ -731,7 +732,7 @@ void Vx3DHLTAnalyzer::reset (string ResetType)
       if (internalDebug == true) cout << "[Vx3DHLTAnalyzer]::\tReset issued: fit" << endl;
       if ((debugMode == true) && (outputDebugFile.is_open() == true)) outputDebugFile << "Reset -fit- issued\n" << endl;
     }
-  else if (ResetType.compare("hitCounter") == 0)
+  else if (ResetType == "hitCounter")
     {
       totalHits = 0;
 
@@ -753,7 +754,7 @@ void Vx3DHLTAnalyzer::writeToFile (vector<double>* vals,
 
   outputFile.open(fileName.c_str(), ios::out);
 
-  if ((outputFile.is_open() == true) && (vals != NULL) && (vals->size() == (nParams-1)*2))
+  if ((outputFile.is_open() == true) && (vals != nullptr) && (vals->size() == (nParams-1)*2))
     {
       vector<double>::const_iterator it = vals->begin();
 
@@ -819,7 +820,7 @@ void Vx3DHLTAnalyzer::writeToFile (vector<double>* vals,
     }
   outputFile.close();
   
-  if ((debugMode == true) && (outputDebugFile.is_open() == true) && (vals != NULL) && (vals->size() == (nParams-1)*2))
+  if ((debugMode == true) && (outputDebugFile.is_open() == true) && (vals != nullptr) && (vals->size() == (nParams-1)*2))
     {
       vector<double>::const_iterator it = vals->begin();
 
@@ -1103,7 +1104,7 @@ void Vx3DHLTAnalyzer::endLuminosityBlock (const LuminosityBlock& lumiBlock, cons
       reportSummary->Fill((numberFits != 0 ? ((double)numberGoodFits) / ((double)numberFits) : -1));
       reportSummaryMap->getTH1()->SetBinContent(1, 1, (numberFits != 0 ? ((double)numberGoodFits) / ((double)numberFits) : -1));
 
-      fitResults->setAxisTitle(histTitle.str().c_str(), 1);
+      fitResults->setAxisTitle(histTitle.str(), 1);
 
       fitResults->setBinContent(1, 9, vals[0]);
       fitResults->setBinContent(1, 8, vals[1]);
@@ -1223,7 +1224,7 @@ void Vx3DHLTAnalyzer::endLuminosityBlock (const LuminosityBlock& lumiBlock, cons
 	    }
 	}
       myGaussFit->SetRange(minXfit - (maxXfit-minXfit)/2.,maxXfit + (maxXfit-minXfit)/2.);
-      Vx_X_Fit->getTH1()->Fit(myGaussFit,"QR");
+      Vx_X_Fit->getTH1()->Fit(myGaussFit,"QRL");
 
       myGaussFit->SetParameter(0, Vx_Y_Fit->getTH1()->GetMaximum());
       myGaussFit->SetParameter(1, Vx_Y_Fit->getTH1()->GetMean());
@@ -1247,7 +1248,7 @@ void Vx3DHLTAnalyzer::endLuminosityBlock (const LuminosityBlock& lumiBlock, cons
 	    }
 	}
       myGaussFit->SetRange(minXfit - (maxXfit-minXfit)/2.,maxXfit + (maxXfit-minXfit)/2.);
-      Vx_Y_Fit->getTH1()->Fit(myGaussFit,"QR");
+      Vx_Y_Fit->getTH1()->Fit(myGaussFit,"QRL");
 
       myGaussFit->SetParameter(0, Vx_Z_Fit->getTH1()->GetMaximum());
       myGaussFit->SetParameter(1, Vx_Z_Fit->getTH1()->GetMean());
@@ -1271,14 +1272,14 @@ void Vx3DHLTAnalyzer::endLuminosityBlock (const LuminosityBlock& lumiBlock, cons
 	    }
 	}
       myGaussFit->SetRange(minXfit - (maxXfit-minXfit)/2.,maxXfit + (maxXfit-minXfit)/2.);
-      Vx_Z_Fit->getTH1()->Fit(myGaussFit,"QR");
+      Vx_Z_Fit->getTH1()->Fit(myGaussFit,"QRL");
 
       delete myGaussFit;
     }
   else if ((nLumiFit != 0) && (lumiCounter%nLumiFit != 0) && (beginTimeOfFit != 0) && (runNumber != 0))
     {
       histTitle << "Ongoing: accumulating evts (" << lumiCounter%nLumiFit << " - " << nLumiFit << " in " << lumiCounter << " - " << maxLumiIntegration << " lumis)";
-      fitResults->setAxisTitle(histTitle.str().c_str(), 1);
+      fitResults->setAxisTitle(histTitle.str(), 1);
       if ((debugMode == true) && (outputDebugFile.is_open() == true))
 	{
 	  outputDebugFile << "\n" << "Runnumber " << runNumber << endl;
@@ -1290,7 +1291,7 @@ void Vx3DHLTAnalyzer::endLuminosityBlock (const LuminosityBlock& lumiBlock, cons
   else if ((nLumiFit == 0) || (beginTimeOfFit == 0) || (runNumber == 0))
     {
       histTitle << "Ongoing: no ongoing fits";
-      fitResults->setAxisTitle(histTitle.str().c_str(), 1);
+      fitResults->setAxisTitle(histTitle.str(), 1);
       if ((debugMode == true) && (outputDebugFile.is_open() == true)) outputDebugFile << histTitle.str().c_str() << "\n" << endl;
 
       endLumiOfFit = lumiBlock.luminosityBlock();

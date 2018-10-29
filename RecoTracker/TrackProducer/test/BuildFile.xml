@@ -22,3 +22,7 @@
 <library   file="TrajectoryAnalyzer.cc" name="TrajectoryAnalyzer">
   <flags   EDM_PLUGIN="1"/>
 </library>
+<library   file="FakeCPEFiller.cc" name="FakeCPEFiller">
+  <use   name="SimTracker/TrackerHitAssociation"/>
+  <flags   EDM_PLUGIN="1"/>
+</library>

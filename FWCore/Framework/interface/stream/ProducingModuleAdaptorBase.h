@@ -73,6 +73,13 @@ namespace edm {
       // ---------- member functions ---------------------------
       const ModuleDescription& moduleDescription() const { return moduleDescription_;}
       
+      virtual bool wantsGlobalRuns() const = 0;
+      virtual bool wantsGlobalLuminosityBlocks() const = 0;
+      virtual bool hasAcquire() const = 0;
+      virtual bool hasAccumulator() const = 0;
+      bool wantsStreamRuns() const {return true;}
+      bool wantsStreamLuminosityBlocks() const {return true;}
+
       void
       registerProductsAndCallbacks(ProducingModuleAdaptorBase const*, ProductRegistry* reg);
       
@@ -135,6 +142,7 @@ namespace edm {
       const ProducingModuleAdaptorBase& operator=(const ProducingModuleAdaptorBase&) = delete; // stop default
 
       void doPreallocate(PreallocationConfiguration const&);
+      virtual void preallocLumis(unsigned int) {}
       virtual void setupStreamModules() = 0;
       void doBeginJob();
       virtual void doEndJob() = 0;

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import ConfigParser
 import os
 import re
@@ -125,6 +126,16 @@ class BetterConfigParser(ConfigParser.ConfigParser):
             if "alignment:" in section:
                 alignments.append( Alignment( section.split( "alignment:" )[1],
                                               self ) )
+        names_after_cleaning = [alignment.name for alignment in alignments]
+        duplicates = [name
+                      for name, count
+                      in collections.Counter(names_after_cleaning).items()
+                      if count > 1]
+        if len(duplicates) > 0:
+            msg = "Duplicate alignment names after removing invalid characters: "
+            msg += ", ".join(duplicates) +"\n"
+            msg += "Please rename the alignments to avoid name clashes."
+            raise AllInOneError(msg)
         return alignments
 
     def getCompares( self ):

@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import os
 import shutil
@@ -143,7 +144,7 @@ class CondXmlProcessor(object):
         	 codeFile.write(code)
     	 	 codeFile.close()
     
-    	cmd = "source /afs/cern.ch/cms/cmsset_default.sh;"
+    	cmd = "source $CMS_PATH/cmsset_default.sh;"
     	cmd += "(cd %s ; scram b 2>&1 >build.log)" %tmpDir
         pipe = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
         out, err = pipe.communicate()
@@ -153,6 +154,7 @@ class CondXmlProcessor(object):
         logging.info("Building done in %s sec., return code from build: %s" %(buildTime,ret) )
 
 	if (ret != 0):
+           logging.error("Local build for xml dump failed.")
            return None
 
         libFile = os.path.join(libDir,pluginName + '.so')
@@ -175,11 +177,12 @@ class CondXmlProcessor(object):
         convFuncName = sanitize(plType)+'2xml'
         xmlConverter = self.prepPayload2xml(plType)
 
-        obj = xmlConverter()
-        resultXML = obj.write( str(data) )
-        if destFile is None:
-           print resultXML    
-        else:
-           with open(destFile, 'w') as outFile:
-              outFile.write(resultXML)
-              outFile.close()
+        if xmlConverter is not None:
+           obj = xmlConverter()
+           resultXML = obj.write( str(data) )
+           if destFile is None:
+              print(resultXML)    
+           else:
+              with open(destFile, 'w') as outFile:
+                 outFile.write(resultXML)
+                 outFile.close()

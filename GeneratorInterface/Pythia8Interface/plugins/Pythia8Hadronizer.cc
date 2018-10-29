@@ -2,7 +2,7 @@
 #include <sstream>
 #include <string>
 #include <memory>
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 #include "HepMC/GenEvent.h"
@@ -10,6 +10,9 @@
 
 #include "Pythia8/Pythia.h"
 #include "Pythia8Plugins/HepMC2.h"
+
+#include "Vincia/Vincia.h"
+#include "Dire/Dire.h"
 
 using namespace Pythia8;
 
@@ -74,7 +77,7 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
   public:
 
     Pythia8Hadronizer(const edm::ParameterSet &params);
-   ~Pythia8Hadronizer();
+   ~Pythia8Hadronizer() override;
  
     bool initializeForInternalPartons() override;
     bool initializeForExternalPartons();
@@ -94,8 +97,11 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
     
   private:
 
-    virtual void doSetRandomEngine(CLHEP::HepRandomEngine* v) override { p8SetRandomEngine(v); }
-    virtual std::vector<std::string> const& doSharedResources() const override { return p8SharedResources; }
+    std::auto_ptr<Vincia::VinciaPlugin> fvincia;
+    std::auto_ptr<Pythia8::Dire> fDire;
+
+    void doSetRandomEngine(CLHEP::HepRandomEngine* v) override { p8SetRandomEngine(v); }
+    std::vector<std::string> const& doSharedResources() const override { return p8SharedResources; }
 
     /// Center-of-Mass energy
     double       comEnergy;
@@ -148,6 +154,8 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
     int  EV1_emittedMode;
     int  EV1_pTdefMode;
     bool EV1_MPIvetoOn;   
+    int  EV1_QEDvetoMode;
+    int  EV1_nFinalMode;
 
     static const std::vector<std::string> p8SharedResources;
     
@@ -157,7 +165,6 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
 
     int nISRveto;
     int nFSRveto;
-    int nFSRvetoBB4L;
     
 };
 
@@ -168,7 +175,7 @@ Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params) :
   comEnergy(params.getParameter<double>("comEnergy")),
   LHEInputFileName(params.getUntrackedParameter<std::string>("LHEInputFileName","")),
   fInitialState(PP),
-  nME(-1), nMEFiltered(-1), nISRveto(0), nFSRveto(0), nFSRvetoBB4L(0)
+  nME(-1), nMEFiltered(-1), nISRveto(0), nFSRveto(0)
 {
 
   // J.Y.: the following 3 parameters are hacked "for a reason"
@@ -300,11 +307,27 @@ Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params) :
     if(params.exists("EV1_pTdefMode")) EV1_pTdefMode = params.getParameter<int>("EV1_pTdefMode");
     EV1_MPIvetoOn = false;
     if(params.exists("EV1_MPIvetoOn")) EV1_MPIvetoOn = params.getParameter<bool>("EV1_MPIvetoOn");
+    EV1_QEDvetoMode = 0;
+    if(params.exists("EV1_QEDvetoMode")) EV1_QEDvetoMode = params.getParameter<int>("EV1_QEDvetoMode");
+    EV1_nFinalMode = 0;
+    if(params.exists("EV1_nFinalMode")) EV1_nFinalMode = params.getParameter<int>("EV1_nFinalMode");
     fEmissionVetoHook1.reset(new EmissionVetoHook1(EV1_nFinal, EV1_vetoOn,
                                EV1_maxVetoCount, EV1_pThardMode, EV1_pTempMode,
-                               EV1_emittedMode, EV1_pTdefMode, EV1_MPIvetoOn, 0));
+                               EV1_emittedMode, EV1_pTdefMode, 
+			       EV1_MPIvetoOn, EV1_QEDvetoMode, EV1_nFinalMode, 0));
   }
   
+  if( params.exists( "VinciaPlugin" ) ) {
+    fMasterGen.reset(new Pythia);
+    fvincia.reset(new Vincia::VinciaPlugin(fMasterGen.get()));
+  }
+  if( params.exists( "DirePlugin" ) ) {
+    fMasterGen.reset(new Pythia);
+    fDire.reset(new Pythia8::Dire());
+    fDire->initSettings(*fMasterGen.get());
+    fDire->initShowersAndWeights(*fMasterGen.get(), nullptr, nullptr);
+  }
+
 }
 
 
@@ -430,7 +453,19 @@ bool Pythia8Hadronizer::initializeForInternalPartons()
   }
 
   edm::LogInfo("Pythia8Interface") << "Initializing MasterGen";
-  status = fMasterGen->init();
+  if( fvincia.get() ) {
+    fvincia->init(); status = true;
+  }
+  else if( fDire.get() ) {
+    //fDire->initTune(*fMasterGen.get());
+    fDire->weightsPtr->setup();
+    fMasterGen->init();
+    fDire->setup(*fMasterGen.get());
+    status = true;
+  }
+  else {
+    status = fMasterGen->init();
+  }
   
   //clean up temp file
   if (!slhafile_.empty()) {
@@ -452,15 +487,9 @@ bool Pythia8Hadronizer::initializeForInternalPartons()
   status1 = fDecayer->init();
 
   if (useEvtGen) {
-    edm::LogInfo("Pythia8Interface") << "Creating and initializing pythia8 EvtGen plugin";
-
-    evtgenDecays.reset(new EvtGenDecays(fMasterGen.get(), evtgenDecFile.c_str(), evtgenPdlFile.c_str()));
-
-    for (unsigned int i=0; i<evtgenUserFiles.size(); i++) {
-      edm::FileInPath evtgenUserFile(evtgenUserFiles.at(i)); 
-      evtgenDecays->readDecayFile(evtgenUserFile.fullPath().c_str());
-    }
-
+    edm::LogInfo("Pythia8Hadronizer") << "Creating and initializing pythia8 EvtGen plugin";
+    evtgenDecays.reset(new EvtGenDecays(fMasterGen.get(), evtgenDecFile, evtgenPdlFile));
+    for (unsigned int i=0; i<evtgenUserFiles.size(); i++) evtgenDecays->readDecayFile(evtgenUserFiles.at(i));
   }
 
   return (status&&status1);
@@ -556,7 +585,7 @@ bool Pythia8Hadronizer::initializeForExternalPartons()
     fMasterGen->setUserHooksPtr(fMultiUserHook.get());
   }  
   
-  if(LHEInputFileName != std::string()) {
+  if(!LHEInputFileName.empty()) {
 
     edm::LogInfo("Pythia8Interface") << "Initialize direct pythia8 reading from LHE file "
                                      << LHEInputFileName;
@@ -602,16 +631,9 @@ bool Pythia8Hadronizer::initializeForExternalPartons()
   status1 = fDecayer->init();
 
   if (useEvtGen) {
-    edm::LogInfo("Pythia8Interface") << "Creating and initializing pythia8 EvtGen plugin";
-
-    std::string evtgenpath(getenv("EVTGENDATA"));
-    evtgenDecays.reset(new EvtGenDecays(fMasterGen.get(), evtgenDecFile.c_str(), evtgenPdlFile.c_str()));
-
-    for (unsigned int i=0; i<evtgenUserFiles.size(); i++) {
-      edm::FileInPath evtgenUserFile(evtgenUserFiles.at(i));
-      evtgenDecays->readDecayFile(evtgenUserFile.fullPath().c_str());
-    }
-
+    edm::LogInfo("Pythia8Hadronizer") << "Creating and initializing pythia8 EvtGen plugin";
+    evtgenDecays.reset(new EvtGenDecays(fMasterGen.get(), evtgenDecFile, evtgenPdlFile));
+    for (unsigned int i=0; i<evtgenUserFiles.size(); i++) evtgenDecays->readDecayFile(evtgenUserFiles.at(i));
   }
 
   return (status&&status1);
@@ -627,11 +649,6 @@ void Pythia8Hadronizer::statistics()
       << "Number of ISR vetoed = " << nISRveto;
     edm::LogPrint("Pythia8Interface")
       << "Number of FSR vetoed = " << nFSRveto;
-  }
-
-  if(fPowhegHooksBB4L.get()) {
-    edm::LogInfo("Pythia8Interface") << "\n"
-      << "BB4L: Number of FSR vetoed = " << nFSRvetoBB4L;
   }
 
   double xsec = fMasterGen->info.sigmaGen(); // cross section in mb
@@ -699,9 +716,6 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
     nISRveto += fEmissionVetoHook->getNISRveto();
     nFSRveto += fEmissionVetoHook->getNFSRveto();  
   }
-  if (fPowhegHooksBB4L.get()) {
-    nFSRvetoBB4L += fPowhegHooksBB4L->getNFSRveto();
-  }
   
   //fill additional weights for systematic uncertainties
   if (fMasterGen->info.getWeightsDetailedSize() > 0) {
@@ -725,6 +739,30 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
       event()->weights().push_back(wgt);
     }
   }
+  
+  // VINCIA shower weights
+  // http://vincia.hepforge.org/current/share/Vincia/htmldoc/VinciaUncertainties.html
+  if( fvincia.get() ) {
+    event()->weights()[0] *= fvincia->weight(0);
+    for (int iVar=1; iVar < fvincia->nWeights(); iVar++) {
+      event()->weights().push_back(fvincia->weight(iVar));
+    }
+  }
+  
+  // Retrieve Dire shower weights
+  if( fDire.get() ) {
+    fDire->weightsPtr->calcWeight(0.);
+    fDire->weightsPtr->reset();
+    
+    //Make sure the base weight comes first
+    event()->weights()[0] *= fDire->weightsPtr->getShowerWeight("base");
+    
+    map<string, double>::iterator it;
+    for ( it = fDire->weightsPtr->getShowerWeights()->begin(); it != fDire->weightsPtr->getShowerWeights()->end(); it++ ) {
+      if (it->first == "base") continue;
+      event()->weights().push_back(it->second);
+    }
+  }
 
   return true;
   
@@ -736,7 +774,7 @@ bool Pythia8Hadronizer::hadronize()
   DJR.resize(0);
   nME = -1;
   nMEFiltered = -1;
-  if(LHEInputFileName == std::string()) lhaUP->loadEvent(lheEvent());
+  if(LHEInputFileName.empty()) lhaUP->loadEvent(lheEvent());
 
   if ( fJetMatchingHook.get() ) 
   {
@@ -792,6 +830,15 @@ bool Pythia8Hadronizer::hadronize()
   if (fEmissionVetoHook.get()) {
     nISRveto += fEmissionVetoHook->getNISRveto();
     nFSRveto += fEmissionVetoHook->getNFSRveto();  
+  }
+
+  // fill shower weights
+  // http://home.thep.lu.se/~torbjorn/pythia82html/Variations.html
+  if( fMasterGen->info.nWeights() > 1 ){
+    for(int i = 0; i < fMasterGen->info.nWeights(); ++i) {
+      double wgt = fMasterGen->info.weight(i);
+      event()->weights().push_back(wgt);
+    }
   }
 
   return true;
@@ -850,7 +897,7 @@ bool Pythia8Hadronizer::residualDecay()
 
 void Pythia8Hadronizer::finalizeEvent()
 {
-  bool lhe = lheEvent() != 0;
+  bool lhe = lheEvent() != nullptr;
 
   // now create the GenEventInfo product from the GenEvent and fill
   // the missing pieces
@@ -937,6 +984,25 @@ GenLumiInfoHeader *Pythia8Hadronizer::getGenLumiInfoHeader() const {
   if( fMasterGen->info.nWeights() > 1 ){
     for(int i = 0; i < fMasterGen->info.nWeights(); ++i) {
       genLumiInfoHeader->weightNames().push_back( fMasterGen->info.weightLabel(i) );
+    }
+  }
+  
+  // VINCIA shower weights
+  // http://vincia.hepforge.org/current/share/Vincia/htmldoc/VinciaUncertainties.html
+  if( fvincia.get() ) {
+    for (int iVar=0; iVar < fvincia->nWeights(); iVar++) {
+      genLumiInfoHeader->weightNames().push_back( fvincia->weightLabel(iVar) );
+    }
+  }
+  
+  if( fDire.get() ) {
+    //Make sure the base weight comes first
+    genLumiInfoHeader->weightNames().push_back("base");
+    
+    map<string, double>::iterator it;
+    for ( it = fDire->weightsPtr->getShowerWeights()->begin(); it != fDire->weightsPtr->getShowerWeights()->end(); it++ ) {
+      if (it->first == "base") continue;
+      genLumiInfoHeader->weightNames().push_back(it->first);
     }
   }
 

@@ -6,7 +6,6 @@
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-#include "DataFormats/Common/interface/ValueMap.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -15,8 +14,6 @@
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
-#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
-#include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
@@ -33,7 +30,7 @@ PuppiPhoton::PuppiPhoton(const edm::ParameterSet& iConfig) {
   usePFphotons_          = iConfig.getParameter<bool>("usePFphotons");
   if(!usePFphotons_)
     tokenPhotonCandidates_ = consumes<CandidateView>(iConfig.getParameter<edm::InputTag>("photonName"));
-  usePhotonId_           = (iConfig.getParameter<edm::InputTag>("photonId")).label().size() != 0;
+  usePhotonId_           = !(iConfig.getParameter<edm::InputTag>("photonId")).label().empty();
   if(usePhotonId_)
     tokenPhotonId_         = consumes<edm::ValueMap<bool>  >(iConfig.getParameter<edm::InputTag>("photonId"));
   runOnMiniAOD_          = iConfig.getParameter<bool>("runOnMiniAOD");
@@ -97,7 +94,7 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     if(!passObject && usePhotonId_) continue;
     if(runOnMiniAOD_) {
       const pat::Photon *pPho = dynamic_cast<const pat::Photon*>(&(*itPho));
-      if(pPho != 0) {
+      if(pPho != nullptr) {
         for( const edm::Ref<pat::PackedCandidateCollection> & ref : pPho->associatedPackedPFCandidates() ) {
 	  if(fabs(ref->eta()) < eta_ ) {
 	    phoIndx.push_back(ref.key());
@@ -107,7 +104,7 @@ void PuppiPhoton::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
         continue;
       }
       const pat::Electron *pElectron = dynamic_cast<const pat::Electron*>(&(*itPho));
-      if(pElectron != 0) {
+      if(pElectron != nullptr) {
         for( const edm::Ref<pat::PackedCandidateCollection> & ref : pElectron->associatedPackedPFCandidates() )
 	  if(fabs(ref->eta()) < eta_ )  {
 	    phoIndx.push_back(ref.key());

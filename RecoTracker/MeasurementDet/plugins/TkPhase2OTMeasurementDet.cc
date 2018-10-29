@@ -12,7 +12,7 @@ TkPhase2OTMeasurementDet::TkPhase2OTMeasurementDet( const GeomDet* gdet,
     MeasurementDet (gdet),
     theDetConditions(&conditions)
   {
-    if ( dynamic_cast<const PixelGeomDetUnit*>(gdet) == 0) {
+    if ( dynamic_cast<const PixelGeomDetUnit*>(gdet) == nullptr) {
       throw MeasurementDetException( "TkPhase2OTMeasurementDet constructed with a GeomDet which is not a PixelGeomDetUnit");
     }
   }
@@ -39,7 +39,7 @@ bool TkPhase2OTMeasurementDet::measurements( const TrajectoryStateOnSurface& sta
 bool TkPhase2OTMeasurementDet::recHits( const TrajectoryStateOnSurface& stateOnThisDet, const MeasurementEstimator& est, const MeasurementTrackerEvent & data,
                                         RecHitContainer & result, std::vector<float> & diffs) const {
 
-  if unlikely( (!isActive(data)) || isEmpty(data.phase2OTData()) ) return false;
+  if UNLIKELY( (!isActive(data)) || isEmpty(data.phase2OTData()) ) return false;
 
   auto oldSize = result.size();
 
@@ -134,8 +134,8 @@ TkPhase2OTMeasurementDet::recHits( const TrajectoryStateOnSurface& ts, const Mea
   RecHitContainer result;
   if (isEmpty(data.phase2OTData())) return result;
   if (!isActive(data)) return result;
-  const Phase2TrackerCluster1D* begin=0;
-  if (0 != data.phase2OTData().handle()->data().size()) {
+  const Phase2TrackerCluster1D* begin=nullptr;
+  if (!data.phase2OTData().handle()->data().empty()) {
      begin = &(data.phase2OTData().handle()->data().front());
   }
   const detset & detSet = data.phase2OTData().detSet(index());

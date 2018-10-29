@@ -42,11 +42,11 @@
 class HLTBTagPerformanceAnalyzer : public DQMEDAnalyzer { 
 		public:
 			explicit HLTBTagPerformanceAnalyzer(const edm::ParameterSet&);
-			~HLTBTagPerformanceAnalyzer();
+			~HLTBTagPerformanceAnalyzer() override;
 			void dqmBeginRun(const edm::Run& iRun, const edm::EventSetup& iSetup) override;
 
 		private:
-			virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+			void analyze(const edm::Event&, const edm::EventSetup&) override;
 			void bookHistograms(DQMStore::IBooker & ibooker, edm::Run const & iRun,edm::EventSetup const &  iSetup ) override;
 
 		struct JetRefCompare :
@@ -62,6 +62,7 @@ class HLTBTagPerformanceAnalyzer : public DQMEDAnalyzer {
 
 		// variables from python configuration
 		edm::EDGetTokenT<edm::TriggerResults> hlTriggerResults_;
+		std::string mainFolder_;
 		std::vector<std::string> hltPathNames_;
 		HLTConfigProvider hltConfigProvider_;
 		bool triggerConfChanged_;

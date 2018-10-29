@@ -32,13 +32,13 @@ class EcalUncalibRecHitWorkerWeights : public EcalUncalibRecHitWorkerRunOneDigiB
 
         public:
                 EcalUncalibRecHitWorkerWeights(const edm::ParameterSet&, edm::ConsumesCollector& c);
-		EcalUncalibRecHitWorkerWeights() {};
-                virtual ~EcalUncalibRecHitWorkerWeights() {};
+		EcalUncalibRecHitWorkerWeights():useDBShape(false),testbeamEEShape(EEShape(useDBShape)), testbeamEBShape(EBShape(useDBShape)){;}
+                ~EcalUncalibRecHitWorkerWeights() override {};
 
-                void set(const edm::EventSetup& es);
-                bool run(const edm::Event& evt, const EcalDigiCollection::const_iterator & digi, EcalUncalibratedRecHitCollection & result);
+                void set(const edm::EventSetup& es) override;
+                bool run(const edm::Event& evt, const EcalDigiCollection::const_iterator & digi, EcalUncalibratedRecHitCollection & result) override;
 
-		edm::ParameterSetDescription getAlgoDescription();
+		edm::ParameterSetDescription getAlgoDescription() override;
 
         protected:
 
@@ -57,8 +57,9 @@ class EcalUncalibRecHitWorkerWeights : public EcalUncalibRecHitWorkerRunOneDigiB
                 EcalUncalibRecHitRecWeightsAlgo<EBDataFrame> uncalibMaker_barrel_;
                 EcalUncalibRecHitRecWeightsAlgo<EEDataFrame> uncalibMaker_endcap_;
 
- 		const EEShape testbeamEEShape; // used in the chi2
-                const EBShape testbeamEBShape; // can be replaced by simple shape arrays of floats in the future (kostas)
+                bool useDBShape;
+ 		EEShape testbeamEEShape; // used in the chi2
+                EBShape testbeamEBShape; // can be replaced by simple shape arrays of floats in the future (kostas)
 
 };
 

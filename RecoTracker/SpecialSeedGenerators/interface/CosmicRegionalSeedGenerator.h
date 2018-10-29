@@ -19,7 +19,7 @@
 
 #include "RecoTracker/TkTrackingRegions/interface/TrackingRegionProducer.h"
 #include "RecoTracker/TkTrackingRegions/interface/GlobalTrackingRegion.h"
-#include "../interface/CosmicTrackingRegion.h"
+#include "RecoTracker/SpecialSeedGenerators/interface/CosmicTrackingRegion.h"
 
 #include "DataFormats/HLTReco/interface/TriggerObject.h"
 #include "FWCore/Common/interface/TriggerNames.h"
@@ -52,9 +52,9 @@ class CosmicRegionalSeedGenerator : public TrackingRegionProducer {
  public:
   explicit CosmicRegionalSeedGenerator(const edm::ParameterSet& conf, edm::ConsumesCollector && iC);
 
-  virtual ~CosmicRegionalSeedGenerator() {}
+  ~CosmicRegionalSeedGenerator() override {}
   
-  virtual std::vector<std::unique_ptr<TrackingRegion> > regions(const edm::Event& event, const edm::EventSetup& es) const override;
+  std::vector<std::unique_ptr<TrackingRegion> > regions(const edm::Event& event, const edm::EventSetup& es) const override;
 
  private:
   edm::ParameterSet conf_;

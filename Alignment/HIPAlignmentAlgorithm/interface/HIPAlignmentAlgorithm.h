@@ -36,23 +36,23 @@ public:
   HIPAlignmentAlgorithm(const edm::ParameterSet& cfg);
 
   /// Destructor
-  ~HIPAlignmentAlgorithm(){};
+  ~HIPAlignmentAlgorithm() override{};
 
   /// Call at beginning of job
   void initialize(
     const edm::EventSetup& setup,
     AlignableTracker* tracker, AlignableMuon* muon, AlignableExtras* extras,
     AlignmentParameterStore* store
-    );
+    ) override;
 
   /// Call at end of job
-  void terminate(const edm::EventSetup& setup);
+  void terminate(const edm::EventSetup& setup) override;
 
   /// Called at start of new loop
-  void startNewLoop(void);
+  void startNewLoop(void) override;
 
   /// Run the algorithm
-  void run(const edm::EventSetup& setup, const EventInfo& eventInfo);
+  void run(const edm::EventSetup& setup, const EventInfo& eventInfo) override;
 
 private:
   bool processHit1D(
@@ -89,7 +89,7 @@ private:
 
   std::unique_ptr<AlignableObjectId> alignableObjectId_;
   AlignmentParameterStore* theAlignmentParameterStore;
-  std::vector<Alignable*> theAlignables;
+  align::Alignables theAlignables;
   std::unique_ptr<AlignableNavigator> theAlignableDetAccessor;
 
   AlignmentIORoot theIO;
@@ -113,7 +113,7 @@ private:
   // alignment position error parameters
   bool theApplyAPE;
   std::vector<edm::ParameterSet> theAPEParameterSet;
-  std::vector<std::pair<std::vector<Alignable*>, std::vector<double> > > theAPEParameters;
+  std::vector<std::pair<align::Alignables, std::vector<double> > > theAPEParameters;
 
   // Default alignment specifications
   // - min number of hits on alignable to calc parameters

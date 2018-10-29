@@ -127,6 +127,102 @@ namespace edm{
   WorkerT<T>::~WorkerT() {
   }
 
+  
+  template<typename T>
+  bool WorkerT<T>::wantsGlobalRuns() const {
+    return module_->wantsGlobalRuns();
+  }
+  
+  template<typename T>
+  bool WorkerT<T>::wantsGlobalLuminosityBlocks() const {
+    return module_->wantsGlobalLuminosityBlocks();
+  }
+
+  template<typename T>
+  bool WorkerT<T>::wantsStreamRuns() const {
+    return module_->wantsStreamRuns();
+  }
+  
+  template<typename T>
+  bool WorkerT<T>::wantsStreamLuminosityBlocks() const {
+    return module_->wantsStreamLuminosityBlocks();
+  }
+
+  template<typename T>
+  SerialTaskQueue* WorkerT<T>::globalRunsQueue() {
+    return nullptr;
+  }
+  template<typename T>
+  SerialTaskQueue* WorkerT<T>::globalLuminosityBlocksQueue() {
+    return nullptr;
+  }
+  template<>
+  SerialTaskQueue* WorkerT<EDProducer>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<EDProducer>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<EDFilter>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<EDFilter>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<EDAnalyzer>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<EDAnalyzer>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<OutputModule>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<OutputModule>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  //one
+  template<>
+  SerialTaskQueue* WorkerT<one::EDProducerBase>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::EDProducerBase>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::EDFilterBase>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::EDFilterBase>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::EDAnalyzerBase>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::EDAnalyzerBase>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::OutputModuleBase>::globalRunsQueue() {
+    return module_->globalRunsQueue();
+  }
+  template<>
+  SerialTaskQueue* WorkerT<one::OutputModuleBase>::globalLuminosityBlocksQueue() {
+    return module_->globalLuminosityBlocksQueue();
+  }
+
+  
   template<typename T>
   inline
   bool
@@ -137,13 +233,71 @@ namespace edm{
 
   template<typename T>
   inline
+  void
+  WorkerT<T>::implDoAcquire(EventPrincipal const&, EventSetup const&,
+                            ModuleCallingContext const*,
+                            WaitingTaskWithArenaHolder&) {
+  }
+
+  template<>
+  inline
+  void
+  WorkerT<global::EDProducerBase>::implDoAcquire(EventPrincipal const& ep, EventSetup const& c,
+                                                 ModuleCallingContext const* mcc,
+                                                 WaitingTaskWithArenaHolder& holder) {
+    module_->doAcquire(ep, c, activityRegistry(), mcc, holder);
+  }
+
+  template<>
+  inline
+  void
+  WorkerT<global::EDFilterBase>::implDoAcquire(EventPrincipal const& ep, EventSetup const& c,
+                                               ModuleCallingContext const* mcc,
+                                               WaitingTaskWithArenaHolder& holder) {
+    module_->doAcquire(ep, c, activityRegistry(), mcc, holder);
+  }
+
+  template<>
+  inline
+  void
+  WorkerT<stream::EDProducerAdaptorBase>::implDoAcquire(EventPrincipal const& ep, EventSetup const& c,
+                                                        ModuleCallingContext const* mcc,
+                                                        WaitingTaskWithArenaHolder& holder) {
+    module_->doAcquire(ep, c, activityRegistry(), mcc, holder);
+  }
+
+  template<>
+  inline
+  void
+  WorkerT<stream::EDFilterAdaptorBase>::implDoAcquire(EventPrincipal const& ep, EventSetup const& c,
+                                                      ModuleCallingContext const* mcc,
+                                                      WaitingTaskWithArenaHolder& holder) {
+    module_->doAcquire(ep, c, activityRegistry(), mcc, holder);
+  }
+
+  template<typename T>
+  inline
+  bool
+  WorkerT<T>::implNeedToRunSelection() const { return false;}
+
+  template<typename T>
+  inline
   bool
   WorkerT<T>::implDoPrePrefetchSelection(StreamID id,
                                          EventPrincipal const& ep,
                                          ModuleCallingContext const* mcc) {
     return true;
   }
+  template<typename T>
+  inline
+  void
+  WorkerT<T>::itemsToGetForSelection(std::vector<ProductResolverIndexAndSkipBit>&) const {}
 
+
+  template<>
+  inline
+  bool
+  WorkerT<OutputModule>::implNeedToRunSelection() const { return true;}
   template<>
   inline
   bool
@@ -152,6 +306,17 @@ namespace edm{
                                                     ModuleCallingContext const* mcc) {
     return module_->prePrefetchSelection(id,ep,mcc);
   }
+  template<>
+  inline
+  void
+  WorkerT<OutputModule>::itemsToGetForSelection(std::vector<ProductResolverIndexAndSkipBit>& iItems) const {
+    iItems = module_->productsUsedBySelection();
+  }
+
+  template<>
+  inline
+  bool
+  WorkerT<edm::one::OutputModuleBase>::implNeedToRunSelection() const { return true;}
 
   template<>
   inline
@@ -161,7 +326,17 @@ namespace edm{
                                                                   ModuleCallingContext const* mcc) {
     return module_->prePrefetchSelection(id,ep,mcc);
   }
+  template<>
+  inline
+  void
+  WorkerT<edm::one::OutputModuleBase>::itemsToGetForSelection(std::vector<ProductResolverIndexAndSkipBit>& iItems) const {
+    iItems = module_->productsUsedBySelection();
+  }
 
+  template<>
+  inline
+  bool
+  WorkerT<edm::global::OutputModuleBase>::implNeedToRunSelection() const { return true;}
   template<>
   inline
   bool
@@ -170,7 +345,17 @@ namespace edm{
                                                                      ModuleCallingContext const* mcc) {
     return module_->prePrefetchSelection(id,ep,mcc);
   }
+  template<>
+  inline
+  void
+  WorkerT<edm::global::OutputModuleBase>::itemsToGetForSelection(std::vector<ProductResolverIndexAndSkipBit>& iItems) const {
+    iItems = module_->productsUsedBySelection();
+  }
 
+  template<>
+  inline
+  bool
+  WorkerT<edm::limited::OutputModuleBase>::implNeedToRunSelection() const { return true;}
   template<>
   inline
   bool
@@ -178,6 +363,12 @@ namespace edm{
                                                                      EventPrincipal const& ep,
                                                                      ModuleCallingContext const* mcc) {
     return module_->prePrefetchSelection(id,ep,mcc);
+  }
+  template<>
+  inline
+  void
+  WorkerT<edm::limited::OutputModuleBase>::itemsToGetForSelection(std::vector<ProductResolverIndexAndSkipBit>& iItems) const {
+    iItems = module_->productsUsedBySelection();
   }
 
   template<typename T>

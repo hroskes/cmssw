@@ -10,6 +10,9 @@ from PhysicsTools.PatAlgos.patTemplate_cfg import *
 ## to run in un-scheduled mode uncomment the following lines
 process.load("PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff")
 patAlgosToolsTask.add(process.patCandidatesTask)
+# Temporary customize to the unit tests that fail due to old input samples
+process.patTaus.skipMissingTauID = True
+process.patMuons.addTriggerMatching = False
 
 process.load("PhysicsTools.PatAlgos.selectionLayer1.selectedPatCandidates_cff")
 patAlgosToolsTask.add(process.selectedPatCandidatesTask)

@@ -9,7 +9,8 @@ L1TStage2MuonComp::L1TStage2MuonComp(const edm::ParameterSet& ps)
       muonColl2Title(ps.getUntrackedParameter<std::string>("muonCollection2Title")),
       summaryTitle(ps.getUntrackedParameter<std::string>("summaryTitle")),
       ignoreBin(ps.getUntrackedParameter<std::vector<int>>("ignoreBin")),
-      verbose(ps.getUntrackedParameter<bool>("verbose"))
+      verbose(ps.getUntrackedParameter<bool>("verbose")),  
+      enable2DComp(ps.getUntrackedParameter<bool>("enable2DComp"))  // When true eta-phi comparison plots are also produced 
 {
   // First include all bins
   for (unsigned int i = 1; i <= RIDX; i++) {
@@ -35,12 +36,12 @@ void L1TStage2MuonComp::fillDescriptions(edm::ConfigurationDescriptions& descrip
   desc.addUntracked<std::string>("summaryTitle", "Summary")->setComment("Title of summary histogram.");
   desc.addUntracked<std::vector<int>>("ignoreBin", std::vector<int>())->setComment("List of bins to ignore");
   desc.addUntracked<bool>("verbose", false);
+  desc.addUntracked<bool>("enable2DComp", false);
   descriptions.add("l1tStage2MuonComp", desc);
 }
 
 void L1TStage2MuonComp::dqmBeginRun(const edm::Run& r, const edm::EventSetup& c) {}
 
-void L1TStage2MuonComp::beginLuminosityBlock(const edm::LuminosityBlock&, const edm::EventSetup&) {}
 
 void L1TStage2MuonComp::bookHistograms(DQMStore::IBooker& ibooker, const edm::Run&, const edm::EventSetup&) {
 
@@ -86,71 +87,83 @@ void L1TStage2MuonComp::bookHistograms(DQMStore::IBooker& ibooker, const edm::Ru
       errorSummaryNum->setBinLabel(i, "Ignored", 1);
     }
   }
+  // Setting canExtend to false is needed to get the correct behaviour when running multithreaded.
+  // Otherwise, when merging the histgrams of the threads, TH1::Merge sums bins that have the same label in one bin.
+  // This needs to come after the calls to setBinLabel.
+  errorSummaryNum->getTH1F()->GetXaxis()->SetCanExtend(false);
 
   errorSummaryDen = ibooker.book1D("errorSummaryDen", "denominators", 13, 1, 14); // range to match bin numbering
   errorSummaryDen->setBinLabel(RBXRANGE, "# events", 1);
   errorSummaryDen->setBinLabel(RNMUON, "# muon collections", 1);
-  errorSummaryDen->setBinLabel(RMUON, "# muons", 1);
-  errorSummaryDen->setBinLabel(RPT, "# muons", 1);
-  errorSummaryDen->setBinLabel(RETA, "# muons", 1);
-  errorSummaryDen->setBinLabel(RPHI, "# muons", 1);
-  errorSummaryDen->setBinLabel(RETAATVTX, "# muons", 1);
-  errorSummaryDen->setBinLabel(RPHIATVTX, "# muons", 1);
-  errorSummaryDen->setBinLabel(RCHARGE, "# muons", 1);
-  errorSummaryDen->setBinLabel(RCHARGEVAL, "# muons", 1);
-  errorSummaryDen->setBinLabel(RQUAL, "# muons", 1);
-  errorSummaryDen->setBinLabel(RISO, "# muons", 1);
-  errorSummaryDen->setBinLabel(RIDX, "# muons", 1);
+  for (int i = RMUON; i <= RIDX; ++i) {
+    errorSummaryDen->setBinLabel(i, "# muons", 1);
+  }
+  // Needed for correct histogram summing in multithreaded running.
+  errorSummaryDen->getTH1F()->GetXaxis()->SetCanExtend(false);
 
-  muColl1BxRange = ibooker.book1D("muColl1BxRange", (muonColl1Title+" mismatching BX range").c_str(), 5, -2.5, 2.5);
+  muColl1BxRange = ibooker.book1D("muBxRangeColl1", (muonColl1Title+" mismatching BX range").c_str(), 5, -2.5, 2.5);
   muColl1BxRange->setAxisTitle("BX range", 1);
-  muColl1nMu = ibooker.book1D("muColl1nMu", (muonColl1Title+" mismatching muon multiplicity").c_str(), 9, -0.5, 8.5);
+  muColl1nMu = ibooker.book1D("nMuColl1", (muonColl1Title+" mismatching muon multiplicity").c_str(), 9, -0.5, 8.5);
   muColl1nMu->setAxisTitle("Muon multiplicity", 1);
-  muColl1hwPt = ibooker.book1D("muColl1hwPt", (muonColl1Title+" mismatching muon p_{T}").c_str(), 512, -0.5, 511.5);
+  muColl1hwPt = ibooker.book1D("muHwPtColl1", (muonColl1Title+" mismatching muon p_{T}").c_str(), 512, -0.5, 511.5);
   muColl1hwPt->setAxisTitle("Hardware p_{T}", 1);
-  muColl1hwEta = ibooker.book1D("muColl1hwEta", (muonColl1Title+" mismatching muon #eta").c_str(), 461, -230.5, 230.5);
+  muColl1hwEta = ibooker.book1D("muHwEtaColl1", (muonColl1Title+" mismatching muon #eta").c_str(), 461, -230.5, 230.5);
   muColl1hwEta->setAxisTitle("Hardware #eta", 1);
-  muColl1hwPhi = ibooker.book1D("muColl1hwPhi", (muonColl1Title+" mismatching muon #phi").c_str(), 576, -0.5, 575.5);
+  muColl1hwPhi = ibooker.book1D("muHwPhiColl1", (muonColl1Title+" mismatching muon #phi").c_str(), 576, -0.5, 575.5);
   muColl1hwPhi->setAxisTitle("Hardware #phi", 1);
-  muColl1hwEtaAtVtx = ibooker.book1D("muColl1hwEtaAtVtx", (muonColl1Title+" mismatching muon #eta at vertex").c_str(), 461, -230.5, 230.5);
+  muColl1hwEtaAtVtx = ibooker.book1D("muHwEtaAtVtxColl1", (muonColl1Title+" mismatching muon #eta at vertex").c_str(), 461, -230.5, 230.5);
   muColl1hwEtaAtVtx->setAxisTitle("Hardware #eta at vertex", 1);
-  muColl1hwPhiAtVtx = ibooker.book1D("muColl1hwPhiAtVtx", (muonColl1Title+" mismatching muon #phi at vertex").c_str(), 576, -0.5, 575.5);
+  muColl1hwPhiAtVtx = ibooker.book1D("muHwPhiAtVtxColl1", (muonColl1Title+" mismatching muon #phi at vertex").c_str(), 576, -0.5, 575.5);
   muColl1hwPhiAtVtx->setAxisTitle("Hardware #phi at vertex", 1);
-  muColl1hwCharge = ibooker.book1D("muColl1hwCharge", (muonColl1Title+" mismatching muon charge").c_str(), 2, -0.5, 1.5);
+  muColl1hwCharge = ibooker.book1D("muHwChargeColl1", (muonColl1Title+" mismatching muon charge").c_str(), 2, -0.5, 1.5);
   muColl1hwCharge->setAxisTitle("Hardware charge", 1);
-  muColl1hwChargeValid = ibooker.book1D("muColl1hwChargeValid", (muonColl1Title+" mismatching muon charge valid").c_str(), 2, -0.5, 1.5);
+  muColl1hwChargeValid = ibooker.book1D("muHwChargeValidColl1", (muonColl1Title+" mismatching muon charge valid").c_str(), 2, -0.5, 1.5);
   muColl1hwChargeValid->setAxisTitle("Hardware charge valid", 1);
-  muColl1hwQual = ibooker.book1D("muColl1hwQual", (muonColl1Title+" mismatching muon quality").c_str(), 16, -0.5, 15.5);
+  muColl1hwQual = ibooker.book1D("muHwQualColl1", (muonColl1Title+" mismatching muon quality").c_str(), 16, -0.5, 15.5);
   muColl1hwQual->setAxisTitle("Hardware quality", 1);
-  muColl1hwIso = ibooker.book1D("muColl1hwIso", (muonColl1Title+" mismatching muon isolation").c_str(), 4, -0.5, 3.5);
+  muColl1hwIso = ibooker.book1D("muHwIsoColl1", (muonColl1Title+" mismatching muon isolation").c_str(), 4, -0.5, 3.5);
   muColl1hwIso->setAxisTitle("Hardware isolation", 1);
-  muColl1Index = ibooker.book1D("muColl1Index", (muonColl1Title+" mismatching Input muon index").c_str(), 108, -0.5, 107.5);
+  muColl1Index = ibooker.book1D("muIndexColl1", (muonColl1Title+" mismatching Input muon index").c_str(), 108, -0.5, 107.5);
   muColl1Index->setAxisTitle("Index", 1);
+  
+  // if enable2DComp variable is True, book also the eta-phi map
+  if(enable2DComp){
+    muColl1EtaPhimap = ibooker.book2D("muEtaPhimapColl1", (muonColl1Title+" mismatching muon #eta-#phi map").c_str(),25,-2.5,2.5,25,-3.2,3.2);
+    muColl1EtaPhimap->setAxisTitle("#eta", 1);
+    muColl1EtaPhimap->setAxisTitle("#phi", 2);
+  }
 
-  muColl2BxRange = ibooker.book1D("muColl2BxRange", (muonColl2Title+" mismatching BX range").c_str(), 5, -2.5, 2.5);
+  muColl2BxRange = ibooker.book1D("muBxRangeColl2", (muonColl2Title+" mismatching BX range").c_str(), 5, -2.5, 2.5);
   muColl2BxRange->setAxisTitle("BX range", 1);
-  muColl2nMu = ibooker.book1D("muColl2nMu", (muonColl2Title+" mismatching muon multiplicity").c_str(), 9, -0.5, 8.5);
+  muColl2nMu = ibooker.book1D("nMuColl2", (muonColl2Title+" mismatching muon multiplicity").c_str(), 9, -0.5, 8.5);
   muColl2nMu->setAxisTitle("Muon multiplicity", 1);
-  muColl2hwPt = ibooker.book1D("muColl2hwPt", (muonColl2Title+" mismatching muon p_{T}").c_str(), 512, -0.5, 511.5);
+  muColl2hwPt = ibooker.book1D("muHwPtColl2", (muonColl2Title+" mismatching muon p_{T}").c_str(), 512, -0.5, 511.5);
   muColl2hwPt->setAxisTitle("Hardware p_{T}", 1);
-  muColl2hwEta = ibooker.book1D("muColl2hwEta", (muonColl2Title+" mismatching muon #eta").c_str(), 461, -230.5, 230.5);
+  muColl2hwEta = ibooker.book1D("muHwEtaColl2", (muonColl2Title+" mismatching muon #eta").c_str(), 461, -230.5, 230.5);
   muColl2hwEta->setAxisTitle("Hardware #eta", 1);
-  muColl2hwPhi = ibooker.book1D("muColl2hwPhi", (muonColl2Title+" mismatching muon #phi").c_str(), 576, -0.5, 575.5);
+  muColl2hwPhi = ibooker.book1D("muHwPhiColl2", (muonColl2Title+" mismatching muon #phi").c_str(), 576, -0.5, 575.5);
   muColl2hwPhi->setAxisTitle("Hardware #phi", 1);
-  muColl2hwEtaAtVtx = ibooker.book1D("muColl2hwEtaAtVtx", (muonColl2Title+" mismatching muon #eta at vertex").c_str(), 461, -230.5, 230.5);
+  muColl2hwEtaAtVtx = ibooker.book1D("muHwEtaAtVtxColl2", (muonColl2Title+" mismatching muon #eta at vertex").c_str(), 461, -230.5, 230.5);
   muColl2hwEtaAtVtx->setAxisTitle("Hardware #eta at vertex", 1);
-  muColl2hwPhiAtVtx = ibooker.book1D("muColl2hwPhiAtVtx", (muonColl2Title+" mismatching muon #phi at vertex").c_str(), 576, -0.5, 575.5);
+  muColl2hwPhiAtVtx = ibooker.book1D("muHwPhiAtVtxColl2", (muonColl2Title+" mismatching muon #phi at vertex").c_str(), 576, -0.5, 575.5);
   muColl2hwPhiAtVtx->setAxisTitle("Hardware #phi at vertex", 1);
-  muColl2hwCharge = ibooker.book1D("muColl2hwCharge", (muonColl2Title+" mismatching muon charge").c_str(), 2, -0.5, 1.5);
+  muColl2hwCharge = ibooker.book1D("muHwChargeColl2", (muonColl2Title+" mismatching muon charge").c_str(), 2, -0.5, 1.5);
   muColl2hwCharge->setAxisTitle("Hardware charge", 1);
-  muColl2hwChargeValid = ibooker.book1D("muColl2hwChargeValid", (muonColl2Title+" mismatching muon charge valid").c_str(), 2, -0.5, 1.5);
+  muColl2hwChargeValid = ibooker.book1D("muHwChargeValidColl2", (muonColl2Title+" mismatching muon charge valid").c_str(), 2, -0.5, 1.5);
   muColl2hwChargeValid->setAxisTitle("Hardware charge valid", 1);
-  muColl2hwQual = ibooker.book1D("muColl2hwQual", (muonColl2Title+" mismatching muon quality").c_str(), 16, -0.5, 15.5);
+  muColl2hwQual = ibooker.book1D("muHwQualColl2", (muonColl2Title+" mismatching muon quality").c_str(), 16, -0.5, 15.5);
   muColl2hwQual->setAxisTitle("Hardware quality", 1);
-  muColl2hwIso = ibooker.book1D("muColl2hwIso", (muonColl2Title+" mismatching muon isolation").c_str(), 4, -0.5, 3.5);
+  muColl2hwIso = ibooker.book1D("muHwIsoColl2", (muonColl2Title+" mismatching muon isolation").c_str(), 4, -0.5, 3.5);
   muColl2hwIso->setAxisTitle("Hardware isolation", 1);
-  muColl2Index = ibooker.book1D("muColl2Index", (muonColl2Title+" mismatching Input muon index").c_str(), 108, -0.5, 107.5);
+  muColl2Index = ibooker.book1D("muIndexColl2", (muonColl2Title+" mismatching Input muon index").c_str(), 108, -0.5, 107.5);
   muColl2Index->setAxisTitle("Index", 1);
+ 
+  // if enable2DdeMu variable is True, book also the eta-phi map
+  if(enable2DComp){
+    muColl2EtaPhimap = ibooker.book2D("muEtaPhimapColl2", (muonColl2Title+" mismatching muon #eta-#phi map").c_str(),25,-2.5,2.5,25,-3.2,3.2);
+    muColl2EtaPhimap->setAxisTitle("#eta", 1);
+    muColl2EtaPhimap->setAxisTitle("#phi", 2);
+  }
 }
 
 void L1TStage2MuonComp::analyze(const edm::Event& e, const edm::EventSetup& c) {
@@ -207,6 +220,7 @@ void L1TStage2MuonComp::analyze(const edm::Event& e, const edm::EventSetup& c) {
           muColl1hwQual->Fill(muonIt1->hwQual());
           muColl1hwIso->Fill(muonIt1->hwIso());
           muColl1Index->Fill(muonIt1->tfMuonIndex());
+          if(enable2DComp) muColl1EtaPhimap->Fill(muonIt1->eta(),muonIt1->phi());
         }
       } else {
         muonIt2 = muonBxColl2->begin(iBx) + muonBxColl1->size(iBx);
@@ -220,7 +234,8 @@ void L1TStage2MuonComp::analyze(const edm::Event& e, const edm::EventSetup& c) {
           muColl2hwChargeValid->Fill(muonIt2->hwChargeValid());
           muColl2hwQual->Fill(muonIt2->hwQual());
           muColl2hwIso->Fill(muonIt2->hwIso());
-          muColl2Index->Fill(muonIt2->tfMuonIndex());
+          muColl2Index->Fill(muonIt2->tfMuonIndex()); 
+          if(enable2DComp) muColl2EtaPhimap->Fill(muonIt2->eta(), muonIt2->phi()); 
         }
       }
     } else {
@@ -334,6 +349,7 @@ void L1TStage2MuonComp::analyze(const edm::Event& e, const edm::EventSetup& c) {
         muColl1hwQual->Fill(muonIt1->hwQual());
         muColl1hwIso->Fill(muonIt1->hwIso());
         muColl1Index->Fill(muonIt1->tfMuonIndex());
+        if(enable2DComp) muColl1EtaPhimap->Fill(muonIt1->eta(),muonIt1->phi());
 
         muColl2hwPt->Fill(muonIt2->hwPt());
         muColl2hwEta->Fill(muonIt2->hwEta());
@@ -345,7 +361,10 @@ void L1TStage2MuonComp::analyze(const edm::Event& e, const edm::EventSetup& c) {
         muColl2hwQual->Fill(muonIt2->hwQual());
         muColl2hwIso->Fill(muonIt2->hwIso());
         muColl2Index->Fill(muonIt2->tfMuonIndex());
-      } else {
+        if(enable2DComp) muColl2EtaPhimap->Fill(muonIt2->eta(),muonIt2->phi());
+      
+      }
+      else {
         summary->Fill(MUONGOOD);
       }
 

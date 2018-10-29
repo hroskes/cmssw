@@ -5,6 +5,7 @@ from FWCore.ParameterSet.SequenceTypes import *
 from PhysicsTools.PatAlgos.tools.helpers import *
 from PhysicsTools.PatAlgos.recoLayer0.bTagging_cff import *
 import sys
+from FWCore.ParameterSet.MassReplace import MassSearchReplaceAnyInputTagVisitor
 
 ## dictionary with supported jet clustering algorithms
 supportedJetAlgos = {
@@ -15,7 +16,7 @@ supportedJetAlgos = {
 
 def checkJetCorrectionsFormat(jetCorrections):
     ## check for the correct format
-    if type(jetCorrections) != type(('PAYLOAD-LABEL',['CORRECTION-LEVEL-A','CORRECTION-LEVEL-B'], 'MET-LABEL')):
+    if not isinstance(jetCorrections, type(('PAYLOAD-LABEL',['CORRECTION-LEVEL-A','CORRECTION-LEVEL-B'], 'MET-LABEL'))):
         raise ValueError("In addJetCollection: 'jetCorrections' must be 'None' (as a python value w/o quotation marks), or of type ('PAYLOAD-LABEL', ['CORRECTION-LEVEL-A', \
         'CORRECTION-LEVEL-B', ...], 'MET-LABEL'). Note that 'MET-LABEL' can be set to 'None' (as a string in quotation marks) in case you do not want to apply MET(Type1) \
         corrections.")
@@ -236,6 +237,15 @@ def setupBTagging(process, jetSource, pfCandidates, explicitJTA, pvSource, svSou
 
     task = getPatAlgosToolsTask(process)
 
+    ## expand the btagDiscriminators to remove the meta taggers and substitute the equivalent sources
+    discriminators = set(btagDiscriminators)
+    present_meta = discriminators.intersection(set(supportedMetaDiscr.keys()))
+    discriminators -= present_meta
+    for meta_tagger in present_meta:
+        for src in supportedMetaDiscr[meta_tagger]:
+            discriminators.add(src)
+    btagDiscriminators = list(discriminators)
+
     ## expand tagInfos to what is explicitly required by user + implicit
     ## requirements that come in from one or the other discriminator
     requiredTagInfos = list(btagInfos)
@@ -312,6 +322,51 @@ def setupBTagging(process, jetSource, pfCandidates, explicitJTA, pvSource, svSou
     ## setup all required btagInfos : we give a dedicated treatment for different
     ## types of tagInfos here. A common treatment is possible but might require a more
     ## general approach anyway in coordination with the btagging POG.
+
+    runNegativeVertexing = False
+    runNegativeCvsLVertexing = False
+    for btagInfo in requiredTagInfos:
+        if btagInfo == 'pfInclusiveSecondaryVertexFinderNegativeTagInfos' or btagInfo == 'pfNegativeDeepFlavourTagInfos':
+            runNegativeVertexing = True
+        if btagInfo == 'pfInclusiveSecondaryVertexFinderNegativeCvsLTagInfos':
+            runNegativeCvsLVertexing = True
+            
+    if runNegativeVertexing or runNegativeCvsLVertexing:
+        import RecoVertex.AdaptiveVertexFinder.inclusiveNegativeVertexing_cff as NegVertex
+
+    if runNegativeVertexing:                
+        addToProcessAndTask(btagPrefix+'inclusiveCandidateNegativeVertexFinder'+labelName+postfix,
+                            NegVertex.inclusiveCandidateNegativeVertexFinder.clone(primaryVertices = pvSource,tracks=pfCandidates),
+                            process, task)
+        addToProcessAndTask(btagPrefix+'candidateNegativeVertexMerger'+labelName+postfix,
+                            NegVertex.candidateNegativeVertexMerger.clone(secondaryVertices = cms.InputTag(btagPrefix+'inclusiveCandidateNegativeVertexFinder'+labelName+postfix)),
+                            process, task)
+        addToProcessAndTask(btagPrefix+'candidateNegativeVertexArbitrator'+labelName+postfix,
+                            NegVertex.candidateNegativeVertexArbitrator.clone( secondaryVertices = cms.InputTag(btagPrefix+'candidateNegativeVertexMerger'+labelName+postfix)
+                                                                               ,primaryVertices = pvSource
+                                                                               ,tracks=pfCandidates),
+                            process, task)
+        addToProcessAndTask(btagPrefix+'inclusiveCandidateNegativeSecondaryVertices'+labelName+postfix,
+                            NegVertex.inclusiveCandidateNegativeSecondaryVertices.clone(secondaryVertices = cms.InputTag(btagPrefix+'candidateNegativeVertexArbitrator'+labelName+postfix)),
+                            process, task)
+
+    if runNegativeCvsLVertexing:
+        addToProcessAndTask(btagPrefix+'inclusiveCandidateNegativeVertexFinderCvsL'+labelName+postfix,
+                            NegVertex.inclusiveCandidateNegativeVertexFinderCvsL.clone(primaryVertices = pvSource,tracks=pfCandidates),
+                            process, task)
+        addToProcessAndTask(btagPrefix+'candidateNegativeVertexMergerCvsL'+labelName+postfix,
+                            NegVertex.candidateNegativeVertexMergerCvsL.clone(secondaryVertices = cms.InputTag(btagPrefix+'inclusiveCandidateNegativeVertexFinderCvsL'+labelName+postfix)),
+                            process, task)
+        addToProcessAndTask(btagPrefix+'candidateNegativeVertexArbitratorCvsL'+labelName+postfix,
+                            NegVertex.candidateNegativeVertexArbitratorCvsL.clone( secondaryVertices = cms.InputTag(btagPrefix+'candidateNegativeVertexMergerCvsL'+labelName+postfix)
+                                                                               ,primaryVertices = pvSource
+                                                                               ,tracks=pfCandidates),
+                            process, task)
+        addToProcessAndTask(btagPrefix+'inclusiveCandidateNegativeSecondaryVerticesCvsL'+labelName+postfix,
+                            NegVertex.inclusiveCandidateNegativeSecondaryVerticesCvsL.clone(secondaryVertices = cms.InputTag(btagPrefix+'candidateNegativeVertexArbitratorCvsL'+labelName+postfix)),
+                            process, task)
+
+
     acceptedTagInfos = list()
     for btagInfo in requiredTagInfos:
         if hasattr(btag,btagInfo):
@@ -454,7 +509,7 @@ def setupBTagging(process, jetSource, pfCandidates, explicitJTA, pvSource, svSou
                 addToProcessAndTask(btagPrefix+btagInfo+labelName+postfix,
                                     btag.pfInclusiveSecondaryVertexFinderNegativeCvsLTagInfos.clone(
                                         trackIPTagInfos = cms.InputTag(btagPrefix+'pfImpactParameterTagInfos'+labelName+postfix),
-                                        extSVCollection=svSourceCvsL),
+                                        extSVCollection = btagPrefix+'inclusiveCandidateNegativeSecondaryVerticesCvsL'+labelName+postfix),
                                     process, task)
                 if svClustering or fatJets != cms.InputTag(''):
                     setupSVClustering(getattr(process, btagPrefix+btagInfo+labelName+postfix), svClustering, algo, rParam, fatJets, groomedFatJets)
@@ -476,7 +531,7 @@ def setupBTagging(process, jetSource, pfCandidates, explicitJTA, pvSource, svSou
                 addToProcessAndTask(btagPrefix+btagInfo+labelName+postfix,
                                     btag.pfInclusiveSecondaryVertexFinderNegativeTagInfos.clone(
                                         trackIPTagInfos = cms.InputTag(btagPrefix+'pfImpactParameterTagInfos'+labelName+postfix),
-                                        extSVCollection=svSource),
+                                        extSVCollection=cms.InputTag(btagPrefix+'inclusiveCandidateNegativeSecondaryVertices'+labelName+postfix)),
                                     process, task)
                 if svClustering or fatJets != cms.InputTag(''):
                     setupSVClustering(getattr(process, btagPrefix+btagInfo+labelName+postfix), svClustering, algo, rParam, fatJets, groomedFatJets)
@@ -536,6 +591,45 @@ def setupBTagging(process, jetSource, pfCandidates, explicitJTA, pvSource, svSou
                 addToProcessAndTask(btagPrefix+btagInfo+labelName+postfix,
                                     btag.softPFElectronsTagInfos.clone(jets = jetSource, primaryVertex=pvSource, electrons=elSource),
                                     process, task)
+
+            if 'DeepFlavourTagInfos' in btagInfo:
+                svUsed = svSource
+                if btagInfo == 'pfNegativeDeepFlavourTagInfos':
+                    deep_csv_tag_infos = 'pfDeepCSVNegativeTagInfos'
+                    svUsed = cms.InputTag(btagPrefix+'inclusiveCandidateNegativeSecondaryVertices'+labelName+postfix)
+                    flip = True 
+                else:
+                    deep_csv_tag_infos = 'pfDeepCSVTagInfos' 
+                    flip = False
+                # use right input tags when running with RECO PF candidates, which actually
+                # depens of wether jets were slimmed or not (check for s/S-limmed in name)
+                if not ('limmed' in jetSource.value()):
+                  puppi_value_map = cms.InputTag("puppi")
+                  vertex_associator = cms.InputTag("primaryVertexAssociation","original")
+                else:
+                  puppi_value_map = cms.InputTag("")
+                  vertex_associator = cms.InputTag("")
+                addToProcessAndTask(btagPrefix+btagInfo+labelName+postfix,
+                                    btag.pfDeepFlavourTagInfos.clone(
+                                      jets = jetSource,
+                                      vertices=pvSource,
+                                      secondary_vertices=svUsed,
+                                      shallow_tag_infos = cms.InputTag(btagPrefix+deep_csv_tag_infos+labelName+postfix),
+                                      puppi_value_map = puppi_value_map,
+                                      vertex_associator = vertex_associator,
+                                      flip = flip),
+                                    process, task)
+                
+            if btagInfo == 'pfDeepDoubleBTagInfos':
+                addToProcessAndTask(btagPrefix+btagInfo+labelName+postfix,
+                                    btag.pfDeepDoubleBTagInfos.clone(
+                                      jets = jetSource,
+                                      vertices=pvSource,
+                                      secondary_vertices=svSource,
+                                      shallow_tag_infos = cms.InputTag(btagPrefix+'pfBoostedDoubleSVAK8TagInfos'+labelName+postfix),
+                                      ),
+                                    process, task)
+
             acceptedTagInfos.append(btagInfo)
         elif hasattr(toptag, btagInfo) :
             acceptedTagInfos.append(btagInfo)
@@ -576,6 +670,32 @@ def setupBTagging(process, jetSource, pfCandidates, explicitJTA, pvSource, svSou
             acceptedBtagDiscriminators.append(discriminator_name)
         else:
             print '  --> %s ignored, since not available via RecoBTag.Configuration.RecoBTag_cff!'%(btagDiscr)
+    #update meta-taggers, if any
+    for meta_tagger in present_meta:
+        btagDiscr = meta_tagger.split(':')[0] #split input tag to get the producer label
+        #print discriminator_name, '-->', btagDiscr
+        if hasattr(btag,btagDiscr): 
+            newDiscr = btagPrefix+btagDiscr+labelName+postfix #new discriminator name
+            if hasattr(process, newDiscr):
+                pass 
+            else:
+                addToProcessAndTask(
+                    newDiscr,
+                    getattr(btag, btagDiscr).clone(),
+                    process,
+                    task
+                )
+                for dependency in supportedMetaDiscr[meta_tagger]:
+                    if ':' in dependency:
+                        new_dep = btagPrefix+dependency.split(':')[0]+labelName+postfix+':'+dependency.split(':')[1]
+                    else:
+                        new_dep = btagPrefix+dependency+labelName+postfix
+                    replace = MassSearchReplaceAnyInputTagVisitor(dependency, new_dep)
+                    replace.doIt(getattr(process, newDiscr), newDiscr)
+            acceptedBtagDiscriminators.append(meta_tagger)            
+        else:
+            print '  --> %s ignored, since not available via RecoBTag.Configuration.RecoBTag_cff!'%(btagDiscr)
+        
     ## replace corresponding tags for pat jet production
     patJets.tagInfoSources = cms.VInputTag( *[ cms.InputTag(btagPrefix+x+labelName+postfix) for x in acceptedTagInfos ] )
     patJets.discriminatorSources = cms.VInputTag(*[ 
@@ -708,7 +828,7 @@ class AddJetCollection(ConfigToolBase):
         and \'type-2\' are not case sensitive.", tuple, acceptNoneValue=True)
         self.addParameter(self._defaultParameters,'btagDiscriminators',['None'], "If you are interested in btagging, in most cases just the labels of the btag discriminators that \
         you are interested in is all relevant information that you need for a high level analysis. Add here all btag discriminators, that you are interested in as a list of strings. \
-        If this list is empty no btag discriminator information will be added to your new patJet collection.", allowedValues=supportedBtagDiscr.keys(),Type=list)
+        If this list is empty no btag discriminator information will be added to your new patJet collection.", allowedValues=(supportedBtagDiscr.keys()+supportedMetaDiscr.keys()),Type=list)
         self.addParameter(self._defaultParameters,'btagInfos',['None'], "The btagInfos objects contain all relevant information from which all discriminators of a certain \
         type have been calculated. You might be interested in keeping this information for low level tests or to re-calculate some discriminators from hand. Note that this information \
         on the one hand can be very space consuming and that it is not necessary to access the pre-calculated btag discriminator information that has been derived from it. Only in very \
@@ -1114,7 +1234,7 @@ class SwitchJetCollection(ConfigToolBase):
         applied. If you are not interested in MET(Type1) corrections to this new patJet collection pass None as third argument of the python tuple.", tuple, acceptNoneValue=True)
         self.addParameter(self._defaultParameters,'btagDiscriminators',['None'], "If you are interested in btagging in general the btag discriminators is all relevant \
         information that you need for a high level analysis. Add here all btag discriminators, that you are interested in as a list of strings. If this list is empty no btag \
-        discriminator information will be added to your new patJet collection.", allowedValues=supportedBtagDiscr.keys(),Type=list)
+        discriminator information will be added to your new patJet collection.", allowedValues=(supportedBtagDiscr.keys()+supportedMetaDiscr.keys()),Type=list)
         self.addParameter(self._defaultParameters,'btagInfos',['None'], "The btagInfos objects conatin all relevant information from which all discriminators of a certain \
         type have been calculated. Note that this information on the one hand can be very space consuming and on the other hand is not necessary to access the btag discriminator \
         information that has been derived from it. Only in very special cases the btagInfos might really be needed in your analysis. Add here all btagInfos, that you are interested \
@@ -1316,6 +1436,7 @@ class UpdateJetCollection(ConfigToolBase):
         self.addParameter(self._defaultParameters,'groomedFatJets', cms.InputTag(''), "Groomed fat jet collection used for secondary vertex clustering", cms.InputTag)
         self.addParameter(self._defaultParameters,'algo', 'AK', "Jet algorithm of the input collection from which the new patJet collection should be created")
         self.addParameter(self._defaultParameters,'rParam', 0.4, "Jet size (distance parameter R used in jet clustering)")
+        self.addParameter(self._defaultParameters,'printWarning', True, "To be use as False in production to reduce log size")
         self.addParameter(self._defaultParameters,'jetCorrections',None, "Add all relevant information about jet energy corrections that you want to be added to your new patJet \
         collection. The format has to be given in a python tuple of type: (\'AK4Calo\',[\'L2Relative\', \'L3Absolute\'], patMet). Here the first argument corresponds to the payload \
         in the CMS Conditions database for the given jet collection; the second argument corresponds to the jet energy correction levels that you want to be embedded into your \
@@ -1326,7 +1447,7 @@ class UpdateJetCollection(ConfigToolBase):
         and \'type-2\' are not case sensitive.", tuple, acceptNoneValue=True)
         self.addParameter(self._defaultParameters,'btagDiscriminators',['None'], "If you are interested in btagging, in most cases just the labels of the btag discriminators that \
         you are interested in is all relevant information that you need for a high level analysis. Add here all btag discriminators, that you are interested in as a list of strings. \
-        If this list is empty no btag discriminator information will be added to your new patJet collection.", allowedValues=supportedBtagDiscr.keys(),Type=list)
+        If this list is empty no btag discriminator information will be added to your new patJet collection.", allowedValues=(supportedBtagDiscr.keys()+supportedMetaDiscr.keys()),Type=list)
         self.addParameter(self._defaultParameters,'btagInfos',['None'], "The btagInfos objects contain all relevant information from which all discriminators of a certain \
         type have been calculated. You might be interested in keeping this information for low level tests or to re-calculate some discriminators from hand. Note that this information \
         on the one hand can be very space consuming and that it is not necessary to access the pre-calculated btag discriminator information that has been derived from it. Only in very \
@@ -1348,7 +1469,7 @@ class UpdateJetCollection(ConfigToolBase):
         """
         return self._defaultParameters
 
-    def __call__(self,process,labelName=None,postfix=None,btagPrefix=None,jetSource=None,pfCandidates=None,explicitJTA=None,pvSource=None,svSource=None,elSource=None,muSource=None,runIVF=None,tightBTagNTkHits=None,loadStdRecoBTag=None,svClustering=None,fatJets=None,groomedFatJets=None,algo=None,rParam=None,jetCorrections=None,btagDiscriminators=None,btagInfos=None):
+    def __call__(self,process,labelName=None,postfix=None,btagPrefix=None,jetSource=None,pfCandidates=None,explicitJTA=None,pvSource=None,svSource=None,elSource=None,muSource=None,runIVF=None,tightBTagNTkHits=None,loadStdRecoBTag=None,svClustering=None,fatJets=None,groomedFatJets=None,algo=None,rParam=None,printWarning=None,jetCorrections=None,btagDiscriminators=None,btagInfos=None):
         """
         Function call wrapper. This will check the parameters and call the actual implementation that
         can be found in toolCode via the base class function apply.
@@ -1407,6 +1528,9 @@ class UpdateJetCollection(ConfigToolBase):
         if rParam is None:
             rParam=self._defaultParameters['rParam'].value
         self.setParameter('rParam', rParam)
+        if printWarning is None:
+            printWarning=self._defaultParameters['printWarning'].value
+        self.setParameter('printWarning', printWarning)
         if jetCorrections is None:
             jetCorrections=self._defaultParameters['jetCorrections'].value
         self.setParameter('jetCorrections', jetCorrections)
@@ -1441,6 +1565,7 @@ class UpdateJetCollection(ConfigToolBase):
         groomedFatJets=self._parameters['groomedFatJets'].value
         algo=self._parameters['algo'].value
         rParam=self._parameters['rParam'].value
+        printWarning=self._parameters['printWarning'].value
         jetCorrections=self._parameters['jetCorrections'].value
         btagDiscriminators=list(self._parameters['btagDiscriminators'].value)
         btagInfos=list(self._parameters['btagInfos'].value)
@@ -1477,7 +1602,8 @@ class UpdateJetCollection(ConfigToolBase):
             _newPatJets.jetSource=jetSource
         else :
             addToProcessAndTask('updatedPatJets'+_labelName+postfix,
-                                updatedPatJets.clone(jetSource=jetSource), process, task)
+                                updatedPatJets.clone(jetSource=jetSource,
+                                printWarning=printWarning), process, task)
             _newPatJets=getattr(process, 'updatedPatJets'+_labelName+postfix)
             knownModules.append('updatedPatJets'+_labelName+postfix)
         ## add new selectedUpdatedPatJets to process
@@ -1493,11 +1619,12 @@ class UpdateJetCollection(ConfigToolBase):
 
         ## run btagging if required by user
         if (bTagging):
-            sys.stderr.write("**************************************************************\n")
-            sys.stderr.write("b tagging needs to be run on uncorrected jets. Hence, the JECs\n")
-            sys.stderr.write("will first be undone for 'updatedPatJets%s' and then applied to\n" % (_labelName+postfix) )
-            sys.stderr.write("'updatedPatJetsTransientCorrected%s'.\n" % (_labelName+postfix) )
-            sys.stderr.write("**************************************************************\n")
+            if printWarning:
+               sys.stderr.write("**************************************************************\n")
+               sys.stderr.write("b tagging needs to be run on uncorrected jets. Hence, the JECs\n")
+               sys.stderr.write("will first be undone for 'updatedPatJets%s' and then applied to\n" % (_labelName+postfix) )
+               sys.stderr.write("'updatedPatJetsTransientCorrected%s'.\n" % (_labelName+postfix) )
+               sys.stderr.write("**************************************************************\n")
             _jetSource = cms.InputTag('updatedPatJets'+_labelName+postfix)
             ## insert new jet collection with jet corrections applied and btag info added
             self(

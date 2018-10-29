@@ -6,7 +6,7 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include "DataFormats/L1THGCal/interface/HGCFETriggerDigi.h"
-#include "DataFormats/L1THGCal/interface/HGCFETriggerDigiFwd.h"
+#include "DataFormats/L1THGCal/interface/HGCFETriggerDigiDefs.h"
 #include "DataFormats/HGCDigi/interface/HGCDigiCollections.h"
 
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
@@ -22,10 +22,10 @@ class HGCalTriggerDigiFEReproducer : public edm::stream::EDProducer<>
 {  
     public:    
         HGCalTriggerDigiFEReproducer(const edm::ParameterSet&);
-        ~HGCalTriggerDigiFEReproducer() { }
+        ~HGCalTriggerDigiFEReproducer() override { }
 
-        virtual void beginRun(const edm::Run&, const edm::EventSetup&);
-        virtual void produce(edm::Event&, const edm::EventSetup&);
+        void beginRun(const edm::Run&, const edm::EventSetup&) override;
+        void produce(edm::Event&, const edm::EventSetup&) override;
 
     private:
         // inputs

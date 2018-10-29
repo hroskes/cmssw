@@ -1,5 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 from DQMOffline.L1Trigger import L1TEGammaOffline_cfi
+import six
 
 variables = {
     'electron': L1TEGammaOffline_cfi.electronEfficiencyThresholds,
@@ -14,7 +15,7 @@ plots = {
 
 allEfficiencyPlots = []
 add_plot = allEfficiencyPlots.append
-for variable, thresholds in variables.iteritems():
+for variable, thresholds in six.iteritems(variables):
     for plot in plots[variable]:
         for threshold in thresholds:
             plotName = '{0}_threshold_{1}'.format(plot, threshold)
@@ -39,20 +40,48 @@ plots2D = [
     'L1EGammaEtavsPhotonEta',
 ]
 
+# remove photon variables (code to produce them is currently commented out)
+resolution_plots = [plot for plot in resolution_plots if 'Photon' not in plot]
+plots2D = [plot for plot in plots2D if 'Photon' not in plot]
+
 allPlots = []
 allPlots.extend(allEfficiencyPlots)
 allPlots.extend(resolution_plots)
 allPlots.extend(plots2D)
 
+
 from DQMOffline.L1Trigger.L1TDiffHarvesting_cfi import l1tDiffHarvesting
 l1tEGammaEmuDiff = l1tDiffHarvesting.clone(
     plotCfgs=cms.untracked.VPSet(
         cms.untracked.PSet(  # EMU comparison
-            dir1=cms.untracked.string("L1T/L1TEGamma"),
-            dir2=cms.untracked.string("L1TEMU/L1TEGamma"),
+            dir1=cms.untracked.string("L1T/L1TObjects/L1TEGamma/L1TriggerVsReco"),
+            dir2=cms.untracked.string("L1TEMU/L1TObjects/L1TEGamma/L1TriggerVsReco"),
             outputDir=cms.untracked.string(
-                "L1TEMU/L1TEGamma/Comparison"),
+                "L1TEMU/L1TObjects/L1TEGamma/L1TriggerVsReco/Comparison"),
             plots=cms.untracked.vstring(allPlots)
         ),
     )
+)
+
+# modifications for the pp reference run
+variables_HI = {
+    'electron': L1TEGammaOffline_cfi.electronEfficiencyThresholds_HI,
+}
+
+allEfficiencyPlots_HI = []
+add_plot = allEfficiencyPlots_HI.append
+for variable, thresholds in six.iteritems(variables_HI):
+    for plot in plots[variable]:
+        for threshold in thresholds:
+            plotName = '{0}_threshold_{1}'.format(plot, threshold)
+            add_plot(plotName)
+
+allPlots_HI = []
+allPlots_HI.extend(allEfficiencyPlots_HI)
+allPlots_HI.extend(resolution_plots)
+allPlots_HI.extend(plots2D)
+
+from Configuration.Eras.Modifier_ppRef_2017_cff import ppRef_2017
+ppRef_2017.toModify(l1tEGammaEmuDiff,
+    plotCfgs = {0:dict(plots = allPlots_HI)}
 )

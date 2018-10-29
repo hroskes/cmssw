@@ -6,7 +6,6 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackBase.h"
 
-#include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "CommonTools/Utils/interface/StringToEnumValue.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 
@@ -77,9 +76,10 @@ OniaPhotonConversionProducer:: OniaPhotonConversionProducer(const edm::Parameter
   convAlgo_ = StringToEnumValue<reco::Conversion::ConversionAlgorithm>(algo);
 
   std::vector<std::string> qual = ps.getParameter<std::vector<std::string> >("convQuality"); 
-  if( qual[0] != "" ) convQuality_ =StringToEnumValue<reco::Conversion::ConversionQuality>(qual);
+  if( !qual[0].empty() ) convQuality_ =StringToEnumValue<reco::Conversion::ConversionQuality>(qual);
 
   convSelectionCuts_ = ps.getParameter<std::string>("convSelection");
+  convSelection_ = std::make_unique<StringCutObjectSelector<reco::Conversion>>(convSelectionCuts_);
   produces<pat::CompositeCandidateCollection>("conversions");
 }
 
@@ -99,8 +99,6 @@ void OniaPhotonConversionProducer::produce(edm::Event& event, const edm::EventSe
 
   const reco::PFCandidateCollection pfphotons = selectPFPhotons(*pfcandidates);  
 
-  StringCutObjectSelector<reco::Conversion> *convSelection_ = new StringCutObjectSelector<reco::Conversion>(convSelectionCuts_);
-
   for(reco::ConversionCollection::const_iterator conv = pConv->begin(); conv != pConv->end(); ++conv){
 
     if (! ( *convSelection_)(*conv)){
@@ -109,7 +107,7 @@ void OniaPhotonConversionProducer::produce(edm::Event& event, const edm::EventSe
     if (convAlgo_ != 0 && conv->algo()!= convAlgo_){
 	continue; // select algorithm
     }
-    if(convQuality_.size() > 0){
+    if(!convQuality_.empty()){
 	bool flagsok=true;
 	for (std::vector<int>::const_iterator flag = convQuality_.begin(); flag!=convQuality_.end(); ++flag){
 	reco::Conversion::ConversionQuality q = (reco::Conversion::ConversionQuality)(*flag);
@@ -175,8 +173,6 @@ void OniaPhotonConversionProducer::produce(edm::Event& event, const edm::EventSe
      }
   }
   event.put(std::move(patoutCollection),"conversions");
-
-  delete convSelection_;
 }
 
 int OniaPhotonConversionProducer::PackFlags(const reco::Conversion& conv, bool flagTkVtxCompatibility, 
@@ -245,7 +241,7 @@ bool OniaPhotonConversionProducer::checkTkVtxCompatibility(const reco::Conversio
       if(fabs(dz_)/dzError_ > sigmaTkVtxComp_) continue;
       idx[ik].push_back(std::pair<double,short>(fabs(dz_),count));
     }
-    if (idx[ik].size()==0) return false;
+    if (idx[ik].empty()) return false;
     if (idx[ik].size()>1) std::stable_sort(idx[ik].begin(),idx[ik].end(),lt_);
   }
   if (ik!=1) return false;
@@ -259,7 +255,7 @@ bool OniaPhotonConversionProducer::checkTkVtxCompatibility(const reco::Conversio
 bool OniaPhotonConversionProducer::foundCompatibleInnerHits(const reco::HitPattern& hitPatA, const reco::HitPattern& hitPatB) {
   size_t count=0;
   uint32_t oldSubStr=0;
-  for (int i=0; i<hitPatA.numberOfHits(reco::HitPattern::HitCategory::TRACK_HITS) && count<2; i++) {
+  for (int i=0; i<hitPatA.numberOfAllHits(reco::HitPattern::HitCategory::TRACK_HITS) && count<2; i++) {
     uint32_t hitA = hitPatA.getHitPattern(reco::HitPattern::HitCategory::TRACK_HITS,i);
     if (!hitPatA.validHitFilter(hitA) || !hitPatA.trackerHitFilter(hitA)) continue;
     

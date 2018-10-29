@@ -8,6 +8,7 @@ import collections
 from operator import itemgetter, methodcaller
 
 from Validation.RecoTrack.plotting.ntupleDataFormat import *
+import six
 
 # Common track-track matching by hits (=clusters)
 def _commonHits(trk1, trk2):
@@ -75,7 +76,7 @@ class _TracksByHitsMatcher(object):
                 tracks[ot] += 1
 
         best = (None, 0)
-        for t, ncommon in tracks.iteritems():
+        for t, ncommon in six.iteritems(tracks):
             if ncommon > best[1]:
                 best = (t, ncommon)
         return best
@@ -150,7 +151,7 @@ class _DiffResult(object):
                 yield line
 
     def __str__(self):
-        return "\n".join(filter(lambda s: s != "", (str(item) for item in self._diff)))
+        return "\n".join([s for s in (str(item) for item in self._diff) if s != ""])
 
     def __len__(self):
         return len(self._diff)
@@ -484,7 +485,7 @@ def _associateTracksByTrackingParticlesAndHits(lst1, lst2):
 
     # merge results
     # any good way to avoid copy-past?
-    for ind, assoc in trkAssoc1.iteritems():
+    for ind, assoc in six.iteritems(trkAssoc1):
         for t1 in assoc.trks1():
             a = trkAssoc1[t1.index()]
             assoc.merge(a)
@@ -493,7 +494,7 @@ def _associateTracksByTrackingParticlesAndHits(lst1, lst2):
             a = trkAssoc2[t2.index()]
             assoc.merge(a)
             a.merge(assoc)
-    for ind, assoc in trkAssoc2.iteritems():
+    for ind, assoc in six.iteritems(trkAssoc2):
         for t2 in assoc.trks2():
             a = trkAssoc2[t2.index()]
             assoc.merge(a)
@@ -503,7 +504,7 @@ def _associateTracksByTrackingParticlesAndHits(lst1, lst2):
             assoc.merge(a)
             a.merge(assoc)
 
-    for ind, assoc in itertools.chain(trkAssoc1.iteritems(), trkAssoc2.iteritems()):
+    for ind, assoc in itertools.chain(six.iteritems(trkAssoc1), six.iteritems(trkAssoc2)):
         #if ind in [437, 1101]:
         #    print "----"
         #    print ind, [t.index() for t in assoc.trks1()], [t.index() for t in assoc.trks2()]
@@ -811,7 +812,7 @@ class _TrackingParticleMatchPrinter(object):
             if self._bestMatchingTrackingParticle:
                 bestTP = track.bestMatchingTrackingParticle()
                 if bestTP is not None:
-                    lst.extend(self._printTrackingParticles(pfx, [bestTP], "not matched to any TP, but a following TP with >= 3 matched hits is found"))
+                    lst.extend(self._printTrackingParticles(pfx, [bestTP], "not matched to any TP, but a following TP with >= 3 matched hits is found (shared hit fraction %.2f)" % track.bestMatchingTrackingParticleShareFrac()))
                 else:
                     lst.append(prefix+"not matched to any TP")
             else:
@@ -925,9 +926,12 @@ class TrackPrinter(_RecHitPrinter):
         lst.append(self._prefix+" is %s algo %s originalAlgo %s%s stopReason %s" % (hp, Algo.toString(track.algo()), Algo.toString(track.originalAlgo()), algoMaskStr, StopReason.toString(track.stopReason())))
         lst.append(self._prefix+" px %f py %f pz %f p %f" % (track.px(), track.py(), track.pz(), math.sqrt(track.px()**2+track.py()**2+track.pz()**2)))
         if self._trackingParticleMatchPrinter.bestMatchingTrackingParticle():
-            ptPull = track.ptPull()
-            if ptPull is not None:
-                lst.append(self._prefix+" pulls pt %f dxy %f dz %f" % (ptPull, track.dxyPull(), track.dzPull()))
+            bestTP = track.bestMatchingTrackingParticle()
+            if bestTP:
+                lst.append(self._prefix+" best-matching TP %d" % bestTP.index())
+                lst.append(self._prefix+"  shared hits %d reco denom %.3f sim denom %.3f sim cluster denom %.3f" % (track.bestMatchingTrackingParticleShareFrac()*track.nValid(), track.bestMatchingTrackingParticleShareFrac(), track.bestMatchingTrackingParticleShareFracSimDenom(), track.bestMatchingTrackingParticleShareFracSimClusterDenom()))
+                lst.append(self._prefix+"  matching chi2/ndof %f" % track.bestMatchingTrackingParticleNormalizedChi2())
+                lst.append(self._prefix+"  pulls pt %f theta %f phi %f dxy %f dz %f" % (track.ptPull(), track.thetaPull(), track.phiPull(), track.dxyPull(), track.dzPull()))
         return lst
 
     def printHits(self, track):
@@ -1067,7 +1071,7 @@ class TrackingParticlePrinter(_IndentPrinter):
             fromB = " from B hadron"
         return [
             self._prefix+"TP %d pdgId %d%s%s ev:bx %d:%d pT %f eta %f phi %f" % (tp.index(), tp.pdgId(), genIds, fromB, tp.event(), tp.bunchCrossing(), tp.pt(), tp.eta(), tp.phi()),
-            self._prefix+" pixel hits %d strip hits %d dxy %f dz %f" % (tp.nPixel(), tp.nStrip(), tp.pca_dxy(), tp.pca_dz())
+            self._prefix+" pixel hits %d strip hits %d numberOfTrackerHits() %d associated reco clusters %d dxy %f dz %f" % (tp.nPixel(), tp.nStrip(), tp.nTrackerHits(), tp.nRecoClusters(), tp.pca_dxy(), tp.pca_dz())
         ]
         
 

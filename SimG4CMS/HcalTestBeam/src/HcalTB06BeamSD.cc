@@ -20,7 +20,10 @@
 #include "G4Material.hh"
 #include "CLHEP/Units/GlobalSystemOfUnits.h"
 
-HcalTB06BeamSD::HcalTB06BeamSD(const G4String& name, const DDCompactView & cpv,
+//#define EDM_ML_DEBUG
+
+HcalTB06BeamSD::HcalTB06BeamSD(const std::string& name, 
+			       const DDCompactView & cpv,
 			       const SensitiveDetectorCatalog & clg,
 			       edm::ParameterSet const & p, 
 			       const SimTrackManager* manager) : 
@@ -33,9 +36,10 @@ HcalTB06BeamSD::HcalTB06BeamSD(const G4String& name, const DDCompactView & cpv,
   birk2      = m_HC.getParameter<double>("BirkC2");
   birk3      = m_HC.getParameter<double>("BirkC3");
 
-  edm::LogInfo("HcalTB06BeamSD") << "HcalTB06BeamSD:: Use of Birks law is set to " 
-			    << useBirk << "  with three constants kB = "
-			    << birk1 << ", C1 = " <<birk2 << ", C2 = " <<birk3;
+  edm::LogInfo("HcalTB06BeamSD") << "HcalTB06BeamSD:: Use of Birks law is set "
+				 << "to " << useBirk << "  with three "
+				 << "constants kB = " << birk1 << ", C1 = " 
+				 << birk2 << ", C2 = " << birk3;
 
   std::string attribute, value;
 
@@ -45,9 +49,9 @@ HcalTB06BeamSD::HcalTB06BeamSD(const G4String& name, const DDCompactView & cpv,
   DDSpecificsMatchesValueFilter filter1{DDValue(attribute,value,0)};
   DDFilteredView fv1(cpv,filter1);
   wcNames = getNames(fv1);
-  edm::LogInfo("HcalTB06BeamSD") 
-    << "HcalTB06BeamSD:: Names to be tested for " 
-    << attribute << " = " << value << ": " << wcNames.size() << " paths";
+  edm::LogInfo("HcalTB06BeamSD") << "HcalTB06BeamSD:: Names to be tested for " 
+				 << attribute << " = " << value << ": " 
+				 << wcNames.size() << " paths";
   for (unsigned int i=0; i<wcNames.size(); i++)
     edm::LogInfo("HcalTB06BeamSD") << "HcalTB06BeamSD:: (" << i << ") " 
 				   << wcNames[i];
@@ -86,30 +90,30 @@ HcalTB06BeamSD::HcalTB06BeamSD(const G4String& name, const DDCompactView & cpv,
     matName = "Not Found";
   }
 
-  edm::LogInfo("HcalTB06BeamSD") 
-    << "HcalTB06BeamSD: Material name for " 
-    << attribute << " = " << name << ":" << matName;
+  edm::LogInfo("HcalTB06BeamSD") << "HcalTB06BeamSD: Material name for " 
+				 << attribute << " = " << name << ":" 
+				 << matName;
 }
 
 HcalTB06BeamSD::~HcalTB06BeamSD() {}
 
-double HcalTB06BeamSD::getEnergyDeposit(G4Step* aStep) {
+double HcalTB06BeamSD::getEnergyDeposit(const G4Step* aStep) {
 
   double destep = aStep->GetTotalEnergyDeposit();
   double weight = 1;
-  if (useBirk && matName == aStep->GetPreStepPoint()->GetMaterial()->GetName()) {
+  if (useBirk && matName == aStep->GetPreStepPoint()->GetMaterial()->GetName())
     weight *= getAttenuation(aStep, birk1, birk2, birk3);
-  }
-  LogDebug("HcalTB06BeamSD") 
-    << "HcalTB06BeamSD: Detector " 
-    << aStep->GetPreStepPoint()->GetTouchable()->GetVolume()->GetName()
-    << " weight " << weight;
+#ifdef EDM_ML_DEBUG
+  edm::LogVerbatim("HcalTB06BeamSD") << "HcalTB06BeamSD: Detector " 
+				     << aStep->GetPreStepPoint()->GetTouchable()->GetVolume()->GetName()
+				     << " weight " << weight;
+#endif
   return weight*destep;
 }
 
-uint32_t HcalTB06BeamSD::setDetUnitId(G4Step * aStep) { 
+uint32_t HcalTB06BeamSD::setDetUnitId(const G4Step * aStep) { 
 
-  G4StepPoint* preStepPoint = aStep->GetPreStepPoint(); 
+  const G4StepPoint* preStepPoint = aStep->GetPreStepPoint(); 
   const G4VTouchable* touch = preStepPoint->GetTouchable();
   G4String name             = preStepPoint->GetPhysicalVolume()->GetName();
 
@@ -144,7 +148,7 @@ std::vector<G4String> HcalTB06BeamSD::getNames(DDFilteredView& fv) {
   return tmp;
 }
  
-bool HcalTB06BeamSD::isItWireChamber (G4String name) {
+bool HcalTB06BeamSD::isItWireChamber (const G4String& name) {
  
   std::vector<G4String>::const_iterator it = wcNames.begin();
   for (; it != wcNames.end(); it++)

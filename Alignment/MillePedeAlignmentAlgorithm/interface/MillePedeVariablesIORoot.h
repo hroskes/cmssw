@@ -12,6 +12,7 @@
 ///  (last update by $Author: flucke $)
 
 
+#include "Alignment/CommonAlignment/interface/Utilities.h"
 #include "Alignment/CommonAlignmentAlgorithm/interface/AlignmentIORootBase.h"
 #include "Alignment/CommonAlignmentAlgorithm/interface/AlignmentUserVariablesIO.h"
 
@@ -31,36 +32,36 @@ class MillePedeVariablesIORoot : public AlignmentIORootBase, public AlignmentUse
 {
   public:
   MillePedeVariablesIORoot();
-  virtual ~MillePedeVariablesIORoot() {}
+  ~MillePedeVariablesIORoot() override {}
 
   /** write user variables */
-  void writeMillePedeVariables(const std::vector<Alignable*> &alivec, const char *filename,
+  void writeMillePedeVariables(const align::Alignables &alivec, const char *filename,
 			       int iter, bool validCheck, int &ierr);
 
   /** read user variables (not that their memory is owned by this class!) */
   std::vector<AlignmentUserVariables*> readMillePedeVariables
-    (const std::vector<Alignable*> &alivec, const char *filename, int iter, int &ierr);
+    (const align::Alignables &alivec, const char *filename, int iter, int &ierr);
 
  protected:
 
   /** write MillePedeVariables attached to AlignmentParameters of one Alignable */
-  virtual int writeOne(Alignable *ali); // inherited from AlignmentUserVariablesIO
+  int writeOne(Alignable *ali) override; // inherited from AlignmentUserVariablesIO
 
   /** read MillePedeVariables belonging to one Alignable */
-  virtual AlignmentUserVariables* readOne(Alignable *ali, int &ierr);
+  AlignmentUserVariables* readOne(Alignable *ali, int &ierr) override;
   // previous inherited from AlignmentUserVariablesIO
 
   /** open IO */  // inherited from AlignmentUserVariablesIO
-  virtual int open(const char *filename, int iteration, bool writemode) 
+  int open(const char *filename, int iteration, bool writemode) override 
     { return this->openRoot(filename, iteration, writemode);}
 
   /** close IO */
-  virtual int close() {return this->closeRoot();} // inherited from AlignmentUserVariablesIO
+  int close() override {return this->closeRoot();} // inherited from AlignmentUserVariablesIO
 
   /// create root branches 
-  virtual void createBranches();      // inherited from AlignmentIORootBase
+  void createBranches() override;      // inherited from AlignmentIORootBase
   /// set root branche addresses 
-  virtual void setBranchAddresses();  // inherited from AlignmentIORootBase
+  void setBranchAddresses() override;  // inherited from AlignmentIORootBase
 
  private:
   // variables for ROOT tree

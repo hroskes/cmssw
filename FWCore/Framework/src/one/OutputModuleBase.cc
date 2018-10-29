@@ -223,6 +223,23 @@ namespace edm {
       endJob();
     }
     
+    bool OutputModuleBase::needToRunSelection() const {
+      return !wantAllEvents_;
+    }
+
+    std::vector<ProductResolverIndexAndSkipBit>
+    OutputModuleBase::productsUsedBySelection() const {
+      std::vector<ProductResolverIndexAndSkipBit> returnValue;
+      auto const& s = selectors_[0];
+      auto const n = s.numberOfTokens();
+      returnValue.reserve(n);
+      
+      for(unsigned int i=0; i< n;++i) {
+        returnValue.emplace_back(uncheckedIndexFrom(s.token(i)));
+      }
+      return returnValue;
+    }
+    
     bool OutputModuleBase::prePrefetchSelection(StreamID id, EventPrincipal const& ep, ModuleCallingContext const* mcc) {
       if(wantAllEvents_) return true;
       auto& s = selectors_[id.value()];
@@ -253,7 +270,7 @@ namespace edm {
     OutputModuleBase::doBeginRun(RunPrincipal const& rp,
                                  EventSetup const&,
                                  ModuleCallingContext const* mcc) {
-      RunForOutput r(rp, moduleDescription_, mcc);
+      RunForOutput r(rp, moduleDescription_, mcc, false);
       r.setConsumer(this);
       doBeginRun_(r);
       return true;
@@ -263,7 +280,7 @@ namespace edm {
     OutputModuleBase::doEndRun(RunPrincipal const& rp,
                                EventSetup const&,
                                ModuleCallingContext const* mcc) {
-      RunForOutput r(rp, moduleDescription_, mcc);
+      RunForOutput r(rp, moduleDescription_, mcc, true);
       r.setConsumer(this);
       doEndRun_(r);
       return true;
@@ -272,7 +289,7 @@ namespace edm {
     void
     OutputModuleBase::doWriteRun(RunPrincipal const& rp,
                                  ModuleCallingContext const* mcc) {
-      RunForOutput r(rp, moduleDescription_, mcc);
+      RunForOutput r(rp, moduleDescription_, mcc, true);
       r.setConsumer(this);
       writeRun(r);
     }
@@ -281,7 +298,7 @@ namespace edm {
     OutputModuleBase::doBeginLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                              EventSetup const&,
                                              ModuleCallingContext const* mcc) {
-      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc, false);
       lb.setConsumer(this);
       doBeginLuminosityBlock_(lb);
       return true;
@@ -291,7 +308,7 @@ namespace edm {
     OutputModuleBase::doEndLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                            EventSetup const&,
                                            ModuleCallingContext const* mcc) {
-      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc, true);
       lb.setConsumer(this);
       doEndLuminosityBlock_(lb);
 
@@ -300,7 +317,7 @@ namespace edm {
     
     void OutputModuleBase::doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                                   ModuleCallingContext const* mcc) {
-      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc, true);
       lb.setConsumer(this);
       writeLuminosityBlock(lb);
     }

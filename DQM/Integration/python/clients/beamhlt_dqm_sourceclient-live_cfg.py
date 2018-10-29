@@ -1,7 +1,8 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process("BeamMonitor", eras.Run2_2017)
+process = cms.Process("BeamMonitor", eras.Run2_2018)
 
 # Message logger
 #process.load("FWCore.MessageLogger.MessageLogger_cfi")
@@ -59,14 +60,14 @@ process.load("DQM.Integration.config.FrontierCondition_GT_cfi")
 # Change Beam Monitor variables
 if process.dqmRunConfig.type.value() is "production":
   process.dqmBeamMonitor.BeamFitter.WriteAscii = True
-  process.dqmBeamMonitor.BeamFitter.AsciiFileName = '/nfshome0/yumiceva/BeamMonitorDQM/BeamFitResultsHLT.txt'
+  process.dqmBeamMonitor.BeamFitter.AsciiFileName = '/nfshome0/yumiceva/BeamMonitorDQM/BeamFitResults.txt'
   process.dqmBeamMonitor.BeamFitter.WriteDIPAscii = True
-  process.dqmBeamMonitor.BeamFitter.DIPFileName = '/nfshome0/dqmpro/BeamMonitorDQM/BeamFitResultsHLT.txt'
+  process.dqmBeamMonitor.BeamFitter.DIPFileName = '/nfshome0/dqmpro/BeamMonitorDQM/BeamFitResults.txt'
 else:
   process.dqmBeamMonitor.BeamFitter.WriteAscii = False
-  process.dqmBeamMonitor.BeamFitter.AsciiFileName = '/nfshome0/yumiceva/BeamMonitorDQM/BeamFitResultsHLT.txt'
+  process.dqmBeamMonitor.BeamFitter.AsciiFileName = '/nfshome0/yumiceva/BeamMonitorDQM/BeamFitResults.txt'
   process.dqmBeamMonitor.BeamFitter.WriteDIPAscii = True
-  process.dqmBeamMonitor.BeamFitter.DIPFileName = '/nfshome0/dqmdev/BeamMonitorDQM/BeamFitResultsHLT.txt'
+  process.dqmBeamMonitor.BeamFitter.DIPFileName = '/nfshome0/dqmdev/BeamMonitorDQM/BeamFitResults.txt'
 
 process.dqmcommon = cms.Sequence(process.dqmEnv
                                * process.dqmSaver)
@@ -88,7 +89,7 @@ if (process.runType.getRunType() == process.runType.pp_run or
     process.runType.getRunType() == process.runType.cosmic_run_stage1 or 
     process.runType.getRunType() == process.runType.hpu_run):
 
-    print "[beamhlt_dqm_sourceclient-live_cfg]:: Running pp"
+    print("[beamhlt_dqm_sourceclient-live_cfg]:: Running pp")
 
     process.load("RecoVertex.BeamSpotProducer.BeamSpot_cfi")
 

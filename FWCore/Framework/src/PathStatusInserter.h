@@ -3,6 +3,7 @@
 
 #include "FWCore/Framework/interface/global/EDProducer.h"
 #include "DataFormats/Common/interface/HLTPathStatus.h"
+#include "FWCore/Utilities/interface/EDPutToken.h"
 #include <vector>
 
 namespace edm {
@@ -18,11 +19,12 @@ namespace edm {
 
     void setPathStatus(StreamID const&, HLTPathStatus const&);
 
-    void produce(StreamID, Event&, EventSetup const&) const override final;
+    void produce(StreamID, Event&, EventSetup const&) const final;
 
   private:
 
     std::vector<HLTPathStatus> hltPathStatus_;
+    EDPutTokenT<HLTPathStatus> token_;
   };
 }
 #endif

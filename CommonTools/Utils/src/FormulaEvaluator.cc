@@ -74,14 +74,14 @@ namespace {
   }
 
   class ConstantFinder : public ExpressionElementFinderBase {
-    virtual bool checkStart(char iSymbol) const override final {
+    bool checkStart(char iSymbol) const final {
       if( iSymbol == '-' or iSymbol == '.' or std::isdigit(iSymbol) ) {
         return true;
       }
       return false;
     }
 
-    virtual EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const override final {
+    EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const final {
       EvaluatorInfo info;
       try {
         size_t endIndex=0;
@@ -91,7 +91,7 @@ namespace {
         info.nextParseIndex = endIndex;
         info.evaluator = std::make_shared<reco::formula::ConstantEvaluator>(value);
         info.top = info.evaluator;
-      } catch ( std::invalid_argument ) {}
+      } catch ( std::invalid_argument const& ) {}
 
       return info;
 
@@ -100,14 +100,14 @@ namespace {
 
 
   class ParameterFinder : public ExpressionElementFinderBase {
-    virtual bool checkStart(char iSymbol) const override final {
+    bool checkStart(char iSymbol) const final {
       if( iSymbol == '[') {
         return true;
       }
       return false;
     }
 
-    virtual EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const override final {
+    EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const final {
       EvaluatorInfo info;
       if(iEnd == iBegin) {
         return info;
@@ -130,7 +130,7 @@ namespace {
         info.maxNumParameters = value+1;
         info.evaluator = std::make_shared<reco::formula::ParameterEvaluator>(value);
         info.top = info.evaluator;
-      } catch ( std::invalid_argument ) {}
+      } catch ( std::invalid_argument const& ) {}
       
       return info;
 
@@ -138,14 +138,14 @@ namespace {
   };
   
   class VariableFinder : public ExpressionElementFinderBase {
-    virtual bool checkStart(char iSymbol) const override final {
+    bool checkStart(char iSymbol) const final {
       if( iSymbol == 'x' or iSymbol == 'y' or iSymbol == 'z' or iSymbol == 't' ) {
         return true;
       }
       return false;
     }
     
-    virtual EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const override final {
+    EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const final {
       EvaluatorInfo info;
       if(iBegin == iEnd) {
         return info;
@@ -179,11 +179,11 @@ namespace {
     FunctionFinder(ExpressionFinder const* iEF):
       m_expressionFinder(iEF) {};
 
-    virtual bool checkStart(char iSymbol) const override final {
+    bool checkStart(char iSymbol) const final {
       return std::isalpha(iSymbol);
     }
 
-    virtual EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const override final;
+    EvaluatorInfo createEvaluator(std::string::const_iterator iBegin, std::string::const_iterator iEnd) const final;
 
   private:
     ExpressionFinder const* m_expressionFinder;
@@ -295,6 +295,11 @@ namespace {
       if (iBegin + fullExpression.nextParseIndex != iEnd) {
         //did not parse the full expression
         fullExpression.evaluator.reset();
+      }
+
+      if(fullExpression.evaluator == nullptr) {
+        //we had a parsing problem
+        return fullExpression;
       }
 
       //Now to handle precedence
@@ -573,6 +578,10 @@ namespace {
   const std::string k_TMath__Erf("TMath::Erf");
   const std::string k_erf("erf");
   const std::string k_TMath__Landau("TMath::Landau");
+  const std::string k_sqrt("sqrt");
+  const std::string k_TMath__Sqrt("TMath::Sqrt");
+  const std::string k_abs("abs");
+  const std::string k_TMath__Abs("TMath::Abs");
 
 
   EvaluatorInfo 
@@ -617,6 +626,30 @@ namespace {
 
     info = checkForSingleArgFunction(iBegin, iEnd, m_expressionFinder,
                                      k_exp, [](double iArg)->double { return std::exp(iArg); } );
+    if(info.evaluator.get() != nullptr) {
+      return info;
+    }
+
+    info = checkForSingleArgFunction(iBegin, iEnd, m_expressionFinder,
+                                     k_sqrt, [](double iArg)->double { return std::sqrt(iArg); } );
+    if(info.evaluator.get() != nullptr) {
+      return info;
+    }
+
+    info = checkForSingleArgFunction(iBegin, iEnd, m_expressionFinder,
+                                     k_TMath__Sqrt, [](double iArg)->double { return std::sqrt(iArg); } );
+    if(info.evaluator.get() != nullptr) {
+      return info;
+    }
+
+    info = checkForSingleArgFunction(iBegin, iEnd, m_expressionFinder,
+                                     k_abs, [](double iArg)->double { return std::abs(iArg); } );
+    if(info.evaluator.get() != nullptr) {
+      return info;
+    }
+
+    info = checkForSingleArgFunction(iBegin, iEnd, m_expressionFinder,
+                                     k_TMath__Abs, [](double iArg)->double { return std::abs(iArg); } );
     if(info.evaluator.get() != nullptr) {
       return info;
     }

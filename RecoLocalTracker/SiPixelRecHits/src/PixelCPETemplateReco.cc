@@ -46,7 +46,7 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
                                            const TrackerTopology& ttopo,
                                            const SiPixelLorentzAngle * lorentzAngle,
                                            const SiPixelTemplateDBObject * templateDBobject)
-: PixelCPEBase(conf, mag, geom, ttopo, lorentzAngle, 0, templateDBobject, 0,1)
+: PixelCPEBase(conf, mag, geom, ttopo, lorentzAngle, nullptr, templateDBobject, nullptr,1)
 {
    //cout << endl;
    //cout << "Constructing PixelCPETemplateReco::PixelCPETemplateReco(...)................................................." << endl;
@@ -73,15 +73,18 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
    }
    else
    {
-      //cout << "PixelCPETemplateReco : Loading templates 40 and 41 from ASCII files ------------------------" << endl;
-      
-      if ( !SiPixelTemplate::pushfile( 40, thePixelTemp_ ) )
+      //cout << "PixelCPETemplateReco : Loading templates for barrel and forward from ASCII files ----------" << endl;
+      barrelTemplateID_  = conf.getParameter<int>( "barrelTemplateID" );
+      forwardTemplateID_ = conf.getParameter<int>( "forwardTemplateID" );
+      templateDir_       = conf.getParameter<int>( "directoryWithTemplates" );
+     
+      if ( !SiPixelTemplate::pushfile( barrelTemplateID_  , thePixelTemp_ , templateDir_ ) )
          throw cms::Exception("PixelCPETemplateReco")
-         << "\nERROR: Templates 40 not loaded correctly from text file. Reconstruction will fail.\n\n";
+	 << "\nERROR: Template ID " << barrelTemplateID_ << " not loaded correctly from text file. Reconstruction will fail.\n\n";
       
-      if ( !SiPixelTemplate::pushfile( 41, thePixelTemp_ ) )
+      if ( !SiPixelTemplate::pushfile( forwardTemplateID_ , thePixelTemp_ , templateDir_ ) )
          throw cms::Exception("PixelCPETemplateReco")
-         << "\nERROR: Templates 41 not loaded correctly from text file. Reconstruction will fail.\n\n";
+	 << "\nERROR: Template ID " << forwardTemplateID_ << " not loaded correctly from text file. Reconstruction will fail.\n\n";
    }
    
    speed_ = conf.getParameter<int>( "speed");
@@ -97,7 +100,7 @@ PixelCPETemplateReco::PixelCPETemplateReco(edm::ParameterSet const & conf,
 //-----------------------------------------------------------------------------
 PixelCPETemplateReco::~PixelCPETemplateReco()
 {
-   // &&& delete template store?
+   for(auto x : thePixelTemp_) x.destroy();
 }
 
 PixelCPEBase::ClusterParam* PixelCPETemplateReco::createClusterParam(const SiPixelCluster & cl) const
@@ -129,10 +132,12 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
    if ( LoadTemplatesFromDB_ ) {
       int ID0 = templateDBobject_->getTemplateID(theDetParam.theDet->geographicalId()); // just to comapre
       ID = theDetParam.detTemplateId;
-      if(ID0!=ID) cout<<" different id"<< ID<<" "<<ID0<<endl;
+      if(ID0!=ID) edm::LogError("PixelCPETemplateReco") <<" different id"<< ID<<" "<<ID0<<endl;
    } else { // from asci file
-      if ( !fpix ) ID = 40; // barrel
-      else ID = 41; // endcap
+      if ( !fpix )
+	ID = barrelTemplateID_  ; // barrel
+      else
+	ID = forwardTemplateID_ ; // forward
    }
    //cout << "PixelCPETemplateReco : ID = " << ID << endl;
    
@@ -151,8 +156,8 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
    int col_offset = theClusterParam.theCluster->minPixelCol();
    
    // Store the coordinates of the center of the (0,0) pixel of the array that
-   // gets passed to PixelTempReco2D
-   // Will add these values to the output of  PixelTempReco2D
+   // gets passed to PixelTempReco1D
+   // Will add these values to the output of  PixelTempReco1D
    float tmp_x = float(row_offset) + 0.5f;
    float tmp_y = float(col_offset) + 0.5f;
    
@@ -238,7 +243,7 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
    float locBx = theDetParam.bx;
    
    theClusterParam.ierr =
-   PixelTempReco2D( ID, theClusterParam.cotalpha, theClusterParam.cotbeta,
+   PixelTempReco1D( ID, theClusterParam.cotalpha, theClusterParam.cotbeta,
                    locBz, locBx,
                    clusterPayload,
                    templ,
@@ -252,14 +257,14 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
    // ******************************************************************
    
    // Check exit status
-   if unlikely( theClusterParam.ierr != 0 )
+   if UNLIKELY( theClusterParam.ierr != 0 )
    {
       LogDebug("PixelCPETemplateReco::localPosition") <<
       "reconstruction failed with error " << theClusterParam.ierr << "\n";
       
       // Gavril: what do we do in this case ? For now, just return the cluster center of gravity in microns
       // In the x case, apply a rough Lorentz drift average correction
-      // To do: call PixelCPEGeneric whenever PixelTempReco2D fails
+      // To do: call PixelCPEGeneric whenever PixelTempReco1D fails
       float lorentz_drift = -999.9;
       if ( !fpix )
          lorentz_drift = 60.0f; // in microns
@@ -281,7 +286,7 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
          theClusterParam.templYrec_ = theDetParam.theTopol->localY( theClusterParam.theCluster->y() );
       }
    }
-   else if unlikely( UseClusterSplitter_ && theClusterParam.templQbin_ == 0 )
+   else if UNLIKELY( UseClusterSplitter_ && theClusterParam.templQbin_ == 0 )
    {
       cout << " PixelCPETemplateReco : We should never be here !!!!!!!!!!!!!!!!!!!!!!" << endl;
       cout << "                 (int)UseClusterSplitter_ = " << (int)UseClusterSplitter_ << endl;
@@ -324,7 +329,7 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
          
          // Gavril: what do we do in this case ? For now, just return the cluster center of gravity in microns
          // In the x case, apply a rough Lorentz drift average correction
-         // To do: call PixelCPEGeneric whenever PixelTempReco2D fails
+         // To do: call PixelCPEGeneric whenever PixelTempReco1D fails
          float lorentz_drift = -999.9f;
          if ( !fpix )
             lorentz_drift = 60.0f; // in microns
@@ -362,54 +367,17 @@ PixelCPETemplateReco::localPosition(DetParam const & theDetParam, ClusterParam &
          templXrec2_ += lp.x();
          templYrec2_ += lp.y();
          
-         // calculate distance from each hit to the track and choose the
-         // hit closest to the track
-         float distance11 = sqrt( (templXrec1_ - theClusterParam.trk_lp_x)*(templXrec1_ - theClusterParam.trk_lp_x) +
-                                 (templYrec1_ - theClusterParam.trk_lp_y)*(templYrec1_ - theClusterParam.trk_lp_y) );
-         
-         float distance12 = sqrt( (templXrec1_ - theClusterParam.trk_lp_x)*(templXrec1_ - theClusterParam.trk_lp_x) +
-                                 (templYrec2_ - theClusterParam.trk_lp_y)*(templYrec2_ - theClusterParam.trk_lp_y) );
-         
-         float distance21 = sqrt( (templXrec2_ - theClusterParam.trk_lp_x)*(templXrec2_ - theClusterParam.trk_lp_x) +
-                                 (templYrec1_ - theClusterParam.trk_lp_y)*(templYrec1_ - theClusterParam.trk_lp_y) );
-         
-         float distance22 = sqrt( (templXrec2_ - theClusterParam.trk_lp_x)*(templXrec2_ - theClusterParam.trk_lp_x) +
-                                 (templYrec2_ - theClusterParam.trk_lp_y)*(templYrec2_ - theClusterParam.trk_lp_y) );
-         
-         float min_templXrec_ = -999.9;
-         float min_templYrec_ = -999.9;
-         float distance_min = 9999999999.9;
-         if ( distance11 < distance_min )
-         {
-            distance_min = distance11;
-            min_templXrec_ = templXrec1_;
-            min_templYrec_ = templYrec1_;
-         }
-         if ( distance12 < distance_min )
-         {
-            distance_min = distance12;
-            min_templXrec_ = templXrec1_;
-            min_templYrec_ = templYrec2_;
-         }
-         if ( distance21 < distance_min )
-         {
-            distance_min = distance21;
-            min_templXrec_ = templXrec2_;
-            min_templYrec_ = templYrec1_;
-         }
-         if ( distance22 < distance_min )
-         {
-            distance_min = distance22;
-            min_templXrec_ = templXrec2_;
-            min_templYrec_ = templYrec2_;
-         }
-         
-         theClusterParam.templXrec_ = min_templXrec_;
-         theClusterParam.templYrec_ = min_templYrec_;
+         // calculate distance from each hit to the track and choose the hit closest to the track
+         float distX1 = std::abs (templXrec1_ - theClusterParam.trk_lp_x);
+         float distX2 = std::abs (templXrec2_ - theClusterParam.trk_lp_x);
+         float distY1 = std::abs (templYrec1_ - theClusterParam.trk_lp_y);
+         float distY2 = std::abs (templYrec2_ - theClusterParam.trk_lp_y);
+         theClusterParam.templXrec_ = (distX1<distX2? templXrec1_ : templXrec2_);
+         theClusterParam.templYrec_ = (distY1<distY2? templYrec1_ : templYrec2_);
       }
    } // else if ( UseClusterSplitter_ && templQbin_ == 0 )
    
-   else // apparenly this is he good one!
+   else // apparenly this is the good one!
    {
       // go from micrometer to centimeter
       theClusterParam.templXrec_ *= micronsToCm;
@@ -476,9 +444,11 @@ PixelCPETemplateReco::localError(DetParam const & theDetParam,  ClusterParam & t
    //cout << "CPETemplate : " << endl;
    
    //--- Default is the maximum error used for edge clusters.
-   const float sig12 = 1./sqrt(12.0);
-   float xerr = theDetParam.thePitchX *sig12;
-   float yerr = theDetParam.thePitchY *sig12;
+   //--- (never used, in fact: let comment it out, shut up the complains of the static analyzer, and save a few CPU cycles)
+   //   const float sig12 = 1./sqrt(12.0);
+   //   float xerr = theDetParam.thePitchX *sig12;
+   //   float yerr = theDetParam.thePitchY *sig12;
+   float xerr, yerr;
    
    // Check if the errors were already set at the clusters splitting level
    if ( theClusterParam.theCluster->getSplitClusterErrorX() > 0.0f && theClusterParam.theCluster->getSplitClusterErrorX() < 7777.7f &&

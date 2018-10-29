@@ -31,7 +31,7 @@ vector<TrajectoryMeasurement> SimpleDAFHitCollector::recHits(const Trajectory& t
 
   //WARNING: At the moment the trajectories has the measurements 
   //with reversed sorting after the track smoothing
-  const vector<TrajectoryMeasurement> meas = traj.measurements();
+  const vector<TrajectoryMeasurement>& meas = traj.measurements();
   unsigned int hitcounter = 1;
 
   if (meas.empty()) return vector<TrajectoryMeasurement>();
@@ -167,7 +167,7 @@ void SimpleDAFHitCollector::Debug( const std::vector<TrajectoryMeasurement> TM )
       DetId hitId = itrajmeas->recHit()->geographicalId();
 
       if(hitId.det() == DetId::Tracker) {
-        switch (hitId.subdetid()) {
+        switch (hitId.subdetId()) {
           case StripSubdetector::TIB:
             LogTrace("MultiRecHitCollector") << "  I am TIB " << theTopology->tibLayer(hitId); break;
           case StripSubdetector::TOB:

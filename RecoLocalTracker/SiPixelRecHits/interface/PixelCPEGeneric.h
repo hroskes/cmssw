@@ -36,8 +36,8 @@
 
 // The template header files
 //#include "RecoLocalTracker/SiPixelRecHits/interface/SiPixelTemplateReco.h"
-#include "RecoLocalTracker/SiPixelRecHits/interface/SiPixelTemplate.h"
-#include "RecoLocalTracker/SiPixelRecHits/interface/SiPixelGenError.h"
+#include "CondFormats/SiPixelTransient/interface/SiPixelTemplate.h"
+#include "CondFormats/SiPixelTransient/interface/SiPixelGenError.h"
 
 
 #include <utility>
@@ -84,15 +84,15 @@ public:
                    const TrackerGeometry&, const TrackerTopology&, const SiPixelLorentzAngle *,
                    const SiPixelGenErrorDBObject *, const SiPixelLorentzAngle *);
    
-   ~PixelCPEGeneric() {;}
+   ~PixelCPEGeneric() override {;}
    
    
    
 private:
-   ClusterParam * createClusterParam(const SiPixelCluster & cl) const;
+   ClusterParam * createClusterParam(const SiPixelCluster & cl) const override;
    
-   LocalPoint localPosition (DetParam const & theDetParam, ClusterParam & theClusterParam) const;
-   LocalError localError   (DetParam const & theDetParam, ClusterParam & theClusterParam) const;
+   LocalPoint localPosition (DetParam const & theDetParam, ClusterParam & theClusterParam) const override;
+   LocalError localError   (DetParam const & theDetParam, ClusterParam & theClusterParam) const override;
    
    //--------------------------------------------------------------------
    //  Methods.

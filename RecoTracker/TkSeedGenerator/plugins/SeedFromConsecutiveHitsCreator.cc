@@ -120,7 +120,7 @@ bool SeedFromConsecutiveHitsCreator::initialKinematic(GlobalTrajectoryParameters
     kine = GlobalTrajectoryParameters(vertexPos, initMomentum, 1, &*bfield);
   } 
 
-  if unlikely(isBOFF && (theBOFFMomentum > 0)) {
+  if UNLIKELY(isBOFF && (theBOFFMomentum > 0)) {
       kine = GlobalTrajectoryParameters(kine.position(),
 					kine.momentum().unit() * theBOFFMomentum,
 					kine.charge(),
@@ -170,7 +170,7 @@ void SeedFromConsecutiveHitsCreator::buildSeed(
   TrajectoryStateOnSurface updatedState;
   edm::OwnVector<TrackingRecHit> seedHits;
   
-  const TrackingRecHit* hit = 0;
+  const TrackingRecHit* hit = nullptr;
   for ( unsigned int iHit = 0; iHit < hits.size(); iHit++) {
     hit = hits[iHit]->hit();
     TrajectoryStateOnSurface state = (iHit==0) ? 

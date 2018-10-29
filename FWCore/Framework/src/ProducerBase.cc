@@ -23,7 +23,7 @@ namespace edm {
    namespace {
      class CallbackWrapper {
        public:  
-        CallbackWrapper(ProducerBase* iProd,
+        CallbackWrapper(ProductRegistryHelper* iProd,
                         std::function<void(BranchDescription const&)> iCallback,
                         ProductRegistry* iReg,
                         const ModuleDescription& iDesc):
@@ -41,13 +41,13 @@ namespace edm {
            if(lastSize_!=plist.size()){
               ProducerBase::TypeLabelList::const_iterator pStart = plist.begin();
               advance(pStart, lastSize_);
-              ProductRegistryHelper::addToRegistry(pStart, plist.end() ,mdesc_, *reg_);
+              ProductRegistryHelper::addToRegistry(pStart, plist.end() ,mdesc_, *reg_, prod_);
               lastSize_ = plist.size();
            }
         }
 
       private:
-        ProducerBase* prod_;
+        ProductRegistryHelper* prod_;
         std::function<void(BranchDescription const&)> callback_;
         ProductRegistry* reg_;
         ModuleDescription mdesc_;
@@ -75,7 +75,7 @@ namespace edm {
     }
     TypeLabelList const& plist = typeLabelList();
 
-    ProductRegistryHelper::addToRegistry(plist.begin(), plist.end(), md, *(iReg), isListener);
+    ProductRegistryHelper::addToRegistry(plist.begin(), plist.end(), md, *(iReg), this, isListener);
     if(registrationCallback()) {
        Service<ConstProductRegistry> regService;
        regService->watchProductAdditions(CallbackWrapper(producer, registrationCallback(), iReg, md));
@@ -99,7 +99,10 @@ namespace edm {
            (tl.typeID_ == *std::get<0>(it->second)) and
            (tl.productInstanceName_ == std::get<1>(it->second)) ) {
           putTokenToResolverIndex_[i] = std::get<2>(it->second);
-          break;
+          //NOTE: The ExternalLHEProducer puts the 'same' product in at
+          // both beginRun and endRun. Therefore we can get multiple matches.
+          // When the module is finally fixed, we can use the 'break'
+          //break;
         }
         ++i;
       }

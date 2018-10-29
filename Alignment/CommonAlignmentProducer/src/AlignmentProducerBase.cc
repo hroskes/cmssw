@@ -211,7 +211,7 @@ AlignmentProducerBase::processEvent(const edm::Event& event,
 
     // Run the alignment algorithm with its input
     const AliClusterValueMap* clusterValueMapPtr{nullptr};
-    if (clusterValueMapTag_.encode().size()) {
+    if (!clusterValueMapTag_.encode().empty()) {
       edm::Handle<AliClusterValueMap> clusterValueMap;
       getAliClusterValueMap(event, clusterValueMap);
       clusterValueMapPtr = &(*clusterValueMap);
@@ -260,6 +260,8 @@ AlignmentProducerBase::beginRunImpl(const edm::Run& run, const edm::EventSetup& 
   alignmentAlgo_->beginRun(run, setup,
                            changed && (runAtPCL_ || enableAlignableUpdates_));
 
+  for (const auto& iCal:calibrations_) iCal->beginRun(run, setup);
+
   //store the first run analyzed to be used for setting the IOV (for PCL)
   if (firstRun_ > static_cast<cond::Time_t>(run.id().run())) {
     firstRun_ = static_cast<cond::Time_t>(run.id().run());
@@ -271,7 +273,7 @@ AlignmentProducerBase::beginRunImpl(const edm::Run& run, const edm::EventSetup& 
 void
 AlignmentProducerBase::endRunImpl(const edm::Run& run, const edm::EventSetup& setup)
 {
-  if (tkLasBeamTag_.encode().size()) {
+  if (!tkLasBeamTag_.encode().empty()) {
     edm::Handle<TkFittedLasBeamCollection> lasBeams;
     edm::Handle<TsosVectorCollection> tsoses;
     getTkFittedLasBeamCollection(run, lasBeams);
@@ -282,7 +284,7 @@ AlignmentProducerBase::endRunImpl(const edm::Run& run, const edm::EventSetup& se
     edm::LogInfo("Alignment")
       << "@SUB=AlignmentProducerBase::endRunImpl"
       << "No Tk LAS beams to forward to algorithm.";
-    alignmentAlgo_->endRun(EndRunInfo(run.id(), 0, 0), setup);
+    alignmentAlgo_->endRun(EndRunInfo(run.id(), nullptr, nullptr), setup);
   }
 
 }
@@ -363,20 +365,6 @@ AlignmentProducerBase::createCalibrations()
                             ->create(iCalib.getParameter<std::string>("calibrationName"),
                                      iCalib));
   }
-
-  // Not all algorithms support calibrations - so do not pass empty vector
-  // and throw if non-empty and not supported:
-  if (!calibrations_.empty()) {
-    if (alignmentAlgo_->supportsCalibrations()) {
-      alignmentAlgo_->addCalibrations(calibrations_);
-
-    } else {
-      throw cms::Exception("BadConfig")
-        << "@SUB=AlignmentProducerBase::createCalibrations\n"
-        << "Configured " << calibrations_.size() << " calibration(s) "
-        << "for algorithm not supporting it.";
-    }
-  }
 }
 
 
@@ -442,7 +430,7 @@ AlignmentProducerBase::initAlignmentAlgorithm(const edm::EventSetup& setup,
 {
   edm::LogInfo("Alignment")
     << "@SUB=AlignmentProducerBase::initAlignmentAlgorithm"
-    << "Bwgin";
+    << "Begin";
 
   auto isTrueUpdate = update && isAlgoInitialized_;
 
@@ -469,6 +457,20 @@ AlignmentProducerBase::initAlignmentAlgorithm(const edm::EventSetup& setup,
                              alignableMuon_,
                              alignableExtras_,
                              alignmentParameterStore_);
+
+  // Not all algorithms support calibrations - so do not pass empty vector
+  // and throw if non-empty and not supported:
+  if (!calibrations_.empty()) {
+    if (alignmentAlgo_->supportsCalibrations()) {
+      alignmentAlgo_->addCalibrations(calibrations_);
+    } else {
+      throw cms::Exception("BadConfig")
+        << "@SUB=AlignmentProducerBase::createCalibrations\n"
+        << "Configured " << calibrations_.size() << " calibration(s) "
+        << "for algorithm not supporting it.";
+    }
+  }
+
   isAlgoInitialized_ = true;
 
   applyAlignmentsToGeometry();
@@ -710,7 +712,7 @@ AlignmentProducerBase::simpleMisalignment(const align::Alignables &alivec,
 
     std::vector<bool> commSel(0);
     if (selection != "-1") {
-      AlignmentParameterSelector aSelector(0,0); // no alignable needed here...
+      AlignmentParameterSelector aSelector(nullptr,nullptr); // no alignable needed here...
       const std::vector<char> cSel(aSelector.convertParamSel(selection));
       if (cSel.size() < RigidBodyAlignmentParameters::N_PARAM) {
         throw cms::Exception("BadConfig")
@@ -925,8 +927,6 @@ AlignmentProducerBase::finish()
     return false;
   }
 
-  for (const auto& iCal:calibrations_) iCal->endOfJob();
-
   if (saveToDB_ || saveApeToDB_ || saveDeformationsToDB_) {
     if (alignmentAlgo_->storeAlignments()) storeAlignmentsToDB();
   } else {
@@ -934,6 +934,10 @@ AlignmentProducerBase::finish()
       << "@SUB=AlignmentProducerBase::finish"
       << "No payload to be stored!";
   }
+
+  // takes care of storing output of calibrations, but needs to be called only
+  // after 'storeAlignmentsToDB()'
+  for (const auto& iCal:calibrations_) iCal->endOfJob();
 
   return true;
 }

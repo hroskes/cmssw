@@ -2,7 +2,8 @@ import FWCore.ParameterSet.Config as cms
 
 from DQM.TrackingMonitor.BXlumiParameters_cfi import BXlumiSetup
 
-TrackMon = cms.EDAnalyzer("TrackingMonitor",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+TrackMon = DQMEDAnalyzer('TrackingMonitor',
     
     # input tags
     numCut           = cms.string(" pt >= 1 & quality('highPurity') "),
@@ -413,10 +414,24 @@ LongDCAMax = cms.double(8.0),
 )
 
 # Overcoming the 255 arguments limit
+# binning for 2D plots (identical to 1D, but in muon tracks)
+# track eta 2D histo
+TrackMon.Eta2DBin = cms.int32(26)
+# track phi 2D histo
+TrackMon.Phi2DBin = cms.int32(32)
+# track pt 2D histo
+TrackMon.TrackPt2DBin = cms.int32(100)
+
 # TrackingRegion monitoring
+TrackMon.PVBin = cms.int32 ( 40 )
+TrackMon.PVMin = cms.double( -0.5)
+TrackMon.PVMax = cms.double( 79.5) ## it might need to be adjust if CMS asks to have lumi levelling at lower values
+
 TrackMon.RegionProducer = cms.InputTag("")
+TrackMon.RegionSeedingLayersProducer = cms.InputTag("")
 TrackMon.RegionCandidates = cms.InputTag("")
 TrackMon.doRegionPlots = cms.bool(False)
+TrackMon.doRegionCandidatePlots = cms.bool(False)
 TrackMon.RegionSizeBin = cms.int32(20)
 TrackMon.RegionSizeMax = cms.double(19.5)
 TrackMon.RegionSizeMin = cms.double(-0.5)
@@ -431,5 +446,8 @@ TrackMon.SeedCandMin = cms.double(-0.5)
 
 from Configuration.Eras.Modifier_phase1Pixel_cff import phase1Pixel
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker
-phase1Pixel.toModify(TrackMon, EtaBin=30, EtaMin=-3, EtaMax=3)
+phase1Pixel.toModify(TrackMon, EtaBin=31, EtaMin=-3., EtaMax=3.)
+phase1Pixel.toModify(TrackMon, LUMIBin=300, LUMIMin=200., LUMIMax=20000.)
 phase2_tracker.toModify(TrackMon, EtaBin=46, EtaMin=-4.5, EtaMax=4.5)
+phase2_tracker.toModify(TrackMon, PVBin=125, PVMin=-0.5, PVMax=249.5)
+phase2_tracker.toModify(TrackMon, LUMIBin=700, LUMIMin=0., LUMIMax=70000.)

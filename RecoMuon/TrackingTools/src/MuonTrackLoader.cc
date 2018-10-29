@@ -304,12 +304,12 @@ MuonTrackLoader::loadTracks(const TrajectoryContainer& trajectories,
       auto const & hit = (*recHitCollection)[ih];
       auto hits = MuonTrackLoader::unpackHit(hit);
       for (auto hh : hits) {
-          if unlikely(!track.appendHitPattern(*hh, ttopo)) break;
+          if UNLIKELY(!track.appendHitPattern(*hh, ttopo)) break;
       }
  
       if(theUpdatingAtVtx && updateResult.first){
         for (auto hh : hits) {
-              if unlikely(!updateResult.second.appendHitPattern(*hh, ttopo)) break;
+              if UNLIKELY(!updateResult.second.appendHitPattern(*hh, ttopo)) break;
         }
       }
     }
@@ -479,7 +479,7 @@ MuonTrackLoader::loadTracks(const CandidateContainer& muonCands,
     delete *it;
   }
 
-  if( thePutTkTrackFlag && trackerTracks.isValid() && !(combinedTracks->size() > 0 && trackerTracks->size() > 0 ) )
+  if( thePutTkTrackFlag && trackerTracks.isValid() && !(!combinedTracks->empty() && !trackerTracks->empty() ) )
     LogWarning(metname)<<"The MuonTrackLinkCollection is incomplete"; 
   
   // put the MuonCollection in the event
@@ -630,12 +630,12 @@ MuonTrackLoader::loadTracks(const TrajectoryContainer& trajectories,
       auto const & hit = (*recHitCollection)[ih];
       auto hits = MuonTrackLoader::unpackHit(hit);
       for (auto hh : hits) {
-          if unlikely(!track.appendHitPattern(*hh, ttopo)) break;
+          if UNLIKELY(!track.appendHitPattern(*hh, ttopo)) break;
       }
  
       if(theUpdatingAtVtx && updateResult.first){
         for (auto hh : hits) {
-              if unlikely(!updateResult.second.appendHitPattern(*hh, ttopo)) break;
+              if UNLIKELY(!updateResult.second.appendHitPattern(*hh, ttopo)) break;
         }
       }
     }

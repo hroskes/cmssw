@@ -9,7 +9,7 @@ namespace hcaldqm
 	using namespace mapper;
 
 	Container2D::Container2D():
-		_qz(NULL)
+		_qz(nullptr)
 	{}
 
 	Container2D::Container2D(std::string const& folder,
@@ -24,9 +24,9 @@ namespace hcaldqm
 
 	Container2D::~Container2D()
 	{
-		if (_qz!=NULL)
+		if (_qz!=nullptr)
 			delete _qz;
-		_qz = NULL;
+		_qz = nullptr;
 	}
 	
 	/* virtual */ void Container2D::initialize(std::string const& folder, 
@@ -900,7 +900,7 @@ namespace hcaldqm
 		//	full path as in Container1D.cc
 		//
 		ib.setCurrentFolder(subsystem+"/"+_folder+"/"+_qname+
-			(aux==""?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
+			(aux.empty()?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
 		if (_hashmap.isDHash())
 		{
 			//	for Detector Hashes
@@ -982,7 +982,7 @@ namespace hcaldqm
 		//	full path as in Container1D.cc
 		//
 		ib.setCurrentFolder(subsystem+"/"+_folder+"/"+_qname+
-			(aux==""?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
+			(aux.empty()?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
 		if (_hashmap.isDHash())
 		{
 			//	for Detector Hashes
@@ -1070,7 +1070,7 @@ namespace hcaldqm
 		//	full path as in Container1D.cc
 		//
 		store->setCurrentFolder(subsystem+"/"+_folder+"/"+_qname+
-			(aux==""?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
+			(aux.empty()?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
 		if (_hashmap.isDHash())
 		{
 			//	for Detector Hashes
@@ -1152,7 +1152,7 @@ namespace hcaldqm
 		//	full path as in Container1D.cc
 		//
 		store->setCurrentFolder(subsystem+"/"+_folder+"/"+_qname+
-			(aux==""?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
+			(aux.empty()?aux:"_"+aux)+"/"+_hashmap.getHashTypeName());
 		if (_hashmap.isDHash())
 		{
 			//	for Detector Hashes
@@ -1252,6 +1252,11 @@ namespace hcaldqm
 			me->setBinLabel(i+1, ylabels[i], 2);
 		}
 	}
+
+	void Container2D::showOverflowZ(bool showOverflow) {
+		_qz->showOverflow(showOverflow);
+	}
 }
+
 
 

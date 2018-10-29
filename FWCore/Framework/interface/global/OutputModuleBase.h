@@ -66,7 +66,7 @@ namespace edm {
       typedef OutputModuleBase ModuleType;
       
       explicit OutputModuleBase(ParameterSet const& pset);
-      virtual ~OutputModuleBase();
+      ~OutputModuleBase() override;
       
       OutputModuleBase(OutputModuleBase const&) = delete; // Disallow copying and moving
       OutputModuleBase& operator=(OutputModuleBase const&) = delete; // Disallow copying and moving
@@ -92,14 +92,22 @@ namespace edm {
       static void prevalidate(ConfigurationDescriptions& );
       
       bool wantAllEvents() const {return wantAllEvents_;}
-      
-      BranchIDLists const* branchIDLists();
+
+      BranchIDLists const* branchIDLists() const;
 
       ThinnedAssociationsHelper const* thinnedAssociationsHelper() const;
       
       const ModuleDescription& moduleDescription() const {
         return moduleDescription_;
       }
+      
+      //Output modules always need writeRun and writeLumi to be called
+      bool wantsGlobalRuns() const {return true;}
+      bool wantsGlobalLuminosityBlocks() const {return true;}
+
+      virtual bool wantsStreamRuns() const =0;
+      virtual bool wantsStreamLuminosityBlocks() const =0;
+
     protected:
       
       ModuleDescription const& description() const;
@@ -201,7 +209,9 @@ namespace edm {
       //------------------------------------------------------------------
       // private member functions
       //------------------------------------------------------------------
-      
+
+      void updateBranchIDListsWithKeptAliases();
+
       void doWriteRun(RunPrincipal const& rp, ModuleCallingContext const*);
       void doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp, ModuleCallingContext const*);
       void doOpenFile(FileBlock const& fb);
@@ -217,6 +227,8 @@ namespace edm {
       
       void registerProductsAndCallbacks(OutputModuleBase const*, ProductRegistry const*) {}
 
+      bool needToRunSelection() const;
+      std::vector<ProductResolverIndexAndSkipBit> productsUsedBySelection() const;
       bool prePrefetchSelection(StreamID id, EventPrincipal const&, ModuleCallingContext const*);
       
       // Do the end-of-file tasks; this is only called internally, after
@@ -236,6 +248,8 @@ namespace edm {
       virtual bool isFileOpen() const { return true; }
       
       virtual void preallocStreams(unsigned int){}
+      virtual void preallocLumis(unsigned int){}
+      virtual void preallocate(PreallocationConfiguration const&){}
       virtual void doBeginStream_(StreamID){}
       virtual void doEndStream_(StreamID){}
       virtual void doStreamBeginRun_(StreamID, RunForOutput const&, EventSetup const&){}
@@ -255,7 +269,10 @@ namespace edm {
       virtual void doEndLuminosityBlockSummary_(LuminosityBlockForOutput const&, EventSetup const&){}
       virtual void doRespondToOpenInputFile_(FileBlock const&) {}
       virtual void doRespondToCloseInputFile_(FileBlock const&) {}
-      
+
+      bool hasAcquire() const { return false; }
+      bool hasAccumulator() const { return false; }
+
       void keepThisBranch(BranchDescription const& desc,
                           std::map<BranchID, BranchDescription const*>& trueBranchIDToKeptBranchDesc,
                           std::set<BranchID>& keptProductsInEvent);

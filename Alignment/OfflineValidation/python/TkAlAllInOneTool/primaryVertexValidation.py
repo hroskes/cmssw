@@ -12,16 +12,18 @@ class PrimaryVertexValidation(GenericValidationData_CTSR, ValidationWithPlots):
     resultBaseName  = "PrimaryVertexValidation"
     outputBaseName  = "PrimaryVertexValidation"
     defaults = {
-                "pvvalidationreference": ("/store/caf/user/musich/Alignment/TkAlPrimaryVertexValidation/Reference/PrimaryVertexValidation_test_pvvalidation_upgrade2017_design_mc_48bins.root"),
-                "doBPix":"True",
-                "doFPix":"True"
-               }
+        # N.B.: the reference needs to be updated each time the format of the output is changed
+        "pvvalidationreference": ("/store/group/alca_trackeralign/validation/PVValidation/Reference/PrimaryVertexValidation_phaseIMC92X_upgrade2017_Ideal.root"),
+        "doBPix":"True",
+        "doFPix":"True",
+        "forceBeamSpot":"False",
+        }
     mandatories = {"isda","ismc","runboundary","trackcollection","vertexcollection","lumilist","ptCut","etaCut","runControl","numberOfBins"}
     valType = "primaryvertex"
     def __init__(self, valName, alignment, config):
         super(PrimaryVertexValidation, self).__init__(valName, alignment, config)
 
-        for name in "doBPix", "doFPix":
+        for name in "doBPix", "doFPix", "forceBeamSpot":
             self.general[name] = pythonboolstring(self.general[name], name)
 
         if self.general["pvvalidationreference"].startswith("/store"):
@@ -46,6 +48,10 @@ class PrimaryVertexValidation(GenericValidationData_CTSR, ValidationWithPlots):
     @property
     def use_d0cut(self):
         return False
+
+    @property
+    def isPVValidation(self):
+        return True
 
     @property
     def ProcessName(self):

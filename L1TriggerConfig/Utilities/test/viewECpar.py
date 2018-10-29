@@ -1,3 +1,4 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("tester")
@@ -32,7 +33,7 @@ else :
     elif "sqlite" in options.db :
         sourceDB = options.db
     else :
-        print "Unknown input DB: ", options.db, " should be static/prod/prep/sqlite:..."
+        print("Unknown input DB: ", options.db, " should be static/prod/prep/sqlite:...")
         exit(0)
 
     from CondCore.CondDB.CondDB_cfi import CondDB
@@ -41,8 +42,8 @@ else :
        CondDB,
        toGet   = cms.VPSet(
             cms.PSet(
-                 record = cms.string('L1TMuonEndcapParamsRcd'),
-                 tag = cms.string("L1TMuonEndCapParams_Stage2v0_hlt")
+                 record = cms.string('L1TMuonEndCapParamsRcd'),
+                 tag = cms.string("L1TMuonEndCapParams_Stage2v1_hlt")
             )
        )
     )
@@ -51,7 +52,7 @@ else :
 process.source = cms.Source("EmptySource", firstRun = cms.untracked.uint32(options.run))
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 
-process.l1ecv = cms.EDAnalyzer("L1TMuonEndcapViewer")
+process.l1ecv = cms.EDAnalyzer("L1TMuonEndCapParamsViewer")
 
 process.p = cms.Path(process.l1ecv)
 

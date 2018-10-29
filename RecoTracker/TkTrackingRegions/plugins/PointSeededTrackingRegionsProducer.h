@@ -4,6 +4,7 @@
 
 #include "RecoTracker/TkTrackingRegions/interface/TrackingRegionProducer.h"
 #include "RecoTracker/TkTrackingRegions/interface/RectangularEtaPhiTrackingRegion.h"
+#include "RecoTracker/MeasurementDet/interface/MeasurementTrackerEvent.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -104,7 +105,7 @@ public:
     }
   }
   
-  virtual ~PointSeededTrackingRegionsProducer() {}
+  ~PointSeededTrackingRegionsProducer() override {}
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
@@ -148,7 +149,7 @@ public:
 
     
 
-  virtual std::vector<std::unique_ptr<TrackingRegion> > regions(const edm::Event& e, const edm::EventSetup& es) const override
+  std::vector<std::unique_ptr<TrackingRegion> > regions(const edm::Event& e, const edm::EventSetup& es) const override
   {
     std::vector<std::unique_ptr<TrackingRegion> > result;
 

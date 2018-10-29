@@ -19,7 +19,6 @@
 // user include files
 #include "FWCore/Framework/interface/EventSetupProvider.h"
 #include "FWCore/Framework/interface/EventSetupRecordProvider.h"
-#include "FWCore/Framework/interface/EventSetupRecordProviderFactoryManager.h"
 #include "FWCore/Framework/interface/EventSetupRecord.h"
 #include "FWCore/Framework/interface/DataProxyProvider.h"
 #include "FWCore/Framework/interface/EventSetupRecordIntervalFinder.h"
@@ -61,13 +60,15 @@ namespace edm {
 //
 // constructors and destructor
 //
-EventSetupProvider::EventSetupProvider(unsigned subProcessIndex, const PreferredProviderInfo* iInfo) :
-eventSetup_(),
+EventSetupProvider::EventSetupProvider(ActivityRegistry* activityRegistry,
+                                       unsigned subProcessIndex,
+                                       const PreferredProviderInfo* iInfo) :
+eventSetup_(activityRegistry),
 providers_(),
 knownRecordsSupplier_( std::make_unique<KnownRecordsSupplierImpl>(providers_)),
 mustFinishConfiguration_(true),
 subProcessIndex_(subProcessIndex),
-preferredProviderInfo_((0!=iInfo) ? (new PreferredProviderInfo(*iInfo)): 0),
+preferredProviderInfo_((nullptr!=iInfo) ? (new PreferredProviderInfo(*iInfo)): nullptr),
 finders_(new std::vector<std::shared_ptr<EventSetupRecordIntervalFinder> >() ),
 dataProviders_(new std::vector<std::shared_ptr<DataProxyProvider> >() ),
 referencedDataKeys_(new std::map<EventSetupRecordKey, std::map<DataKey, ComponentDescription const*> >),
@@ -114,7 +115,7 @@ EventSetupProvider::insert(const EventSetupRecordKey& iKey, std::unique_ptr<Even
 void 
 EventSetupProvider::add(std::shared_ptr<DataProxyProvider> iProvider)
 {
-   assert(iProvider.get() != 0);
+   assert(iProvider.get() != nullptr);
    dataProviders_->push_back(iProvider);
 }
 
@@ -132,7 +133,7 @@ EventSetupProvider::replaceExisting(std::shared_ptr<DataProxyProvider> dataProxy
 void 
 EventSetupProvider::add(std::shared_ptr<EventSetupRecordIntervalFinder> iFinder)
 {
-   assert(iFinder.get() != 0);
+   assert(iFinder.get() != nullptr);
    finders_->push_back(iFinder);
 }
 
@@ -201,7 +202,7 @@ RecordToPreferred determinePreferred(const EventSetupProvider::PreferredProvider
 {
    using namespace edm::eventsetup;
    RecordToPreferred returnValue;
-   if(0 != iInfo){
+   if(nullptr != iInfo){
       for(EventSetupProvider::PreferredProviderInfo::const_iterator itInfo = iInfo->begin(),
           itInfoEnd = iInfo->end();
           itInfo != itInfoEnd;
@@ -296,7 +297,8 @@ EventSetupProvider::finishConfiguration()
          Providers::iterator itFound = providers_.find(*itKey);
          if(providers_.end() == itFound) {
             //create a provider for this record
-            insert(*itKey, EventSetupRecordProviderFactoryManager::instance().makeRecordProvider(*itKey));
+            insert(*itKey,
+                   std::make_unique<EventSetupRecordProvider>(*itKey) );
             itFound = providers_.find(*itKey);
          }
          itFound->second->addFinder(*itFinder);
@@ -331,7 +333,7 @@ EventSetupProvider::finishConfiguration()
          Providers::iterator itFound = providers_.find(*itKey);
          if(providers_.end() == itFound) {
             //create a provider for this record
-            insert(*itKey, EventSetupRecordProviderFactoryManager::instance().makeRecordProvider(*itKey));
+            insert(*itKey, std::make_unique<EventSetupRecordProvider>(*itKey));
             itFound = providers_.find(*itKey);
          }
          itFound->second->add(*itProvider);
@@ -358,7 +360,7 @@ EventSetupProvider::finishConfiguration()
       itProvider->second->usePreferred(*preferredInfo);
       
       std::set<EventSetupRecordKey> records = itProvider->second->dependentRecords();
-      if(records.size() != 0) {
+      if(!records.empty()) {
          std::string missingRecords;
          std::vector<std::shared_ptr<EventSetupRecordProvider> > depProviders;
          depProviders.reserve(records.size());
@@ -370,7 +372,7 @@ EventSetupProvider::finishConfiguration()
             Providers::iterator itFound = providers_.find(*itRecord);
             if(itFound == providers_.end()) {
                foundAllProviders = false;
-               if(missingRecords.size() == 0) {
+               if(missingRecords.empty()) {
                  missingRecords = itRecord->name();
                } else {
                  missingRecords += ", ";
@@ -732,19 +734,23 @@ EventSetupProvider::clearInitializationData() {
 }
 
 void
-EventSetupProvider::addRecordToEventSetup(EventSetupRecord& iRecord) {
+EventSetupProvider::addRecordToEventSetup(EventSetupRecordImpl& iRecord) {
    iRecord.setEventSetup(&eventSetup_);
    eventSetup_.add(iRecord);
 }
-      
+     
+void
+EventSetupProvider::insert(std::unique_ptr<EventSetupRecordProvider> iRecordProvider) {
+   auto key =iRecordProvider->key();
+   insert( key, std::move(iRecordProvider));
+}
+
 //
 // const member functions
 //
 EventSetup const&
 EventSetupProvider::eventSetupForInstance(const IOVSyncValue& iValue)
 {
-   eventSetup_.setIOVSyncValue(iValue);
-
    eventSetup_.clear();
 
    // In a cmsRun job this does nothing because the EventSetupsController
@@ -781,6 +787,17 @@ EventSetupProvider::proxyProviderDescriptions() const
    return descriptions;
 }
 
+bool
+EventSetupProvider::isWithinValidityInterval(IOVSyncValue const& iSync) const {
+  for( auto const& provider: providers_) {
+    auto const& iov =provider.second->validityInterval();
+    if( (iov != ValidityInterval::invalidInterval()) and
+        (not provider.second->validityInterval().validFor(iSync)) ) {
+      return false;
+    }
+  }
+  return true;
+}
 //
 // static member functions
 //

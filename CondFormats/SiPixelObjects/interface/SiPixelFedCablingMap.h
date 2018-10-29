@@ -29,21 +29,23 @@ public:
 
   void initializeRocs();
 
-  virtual ~SiPixelFedCablingMap() {}
+  ~SiPixelFedCablingMap() override {}
 
 #ifdef NO_DICT
   std::unique_ptr<SiPixelFedCablingTree> cablingTree() const; 
 #endif
 
-  virtual std::string version() const override { return theVersion; }
+  std::string version() const override { return theVersion; }
 
-  virtual const sipixelobjects::PixelROC* findItem(
-      const sipixelobjects::CablingPathToDetUnit & path) const override;
+  const sipixelobjects::PixelROC* findItem(
+      const sipixelobjects::CablingPathToDetUnit & path) const final;
 
-  virtual std::vector<sipixelobjects::CablingPathToDetUnit> pathToDetUnit(uint32_t rawDetId) const override;
+  std::vector<sipixelobjects::CablingPathToDetUnit> pathToDetUnit(uint32_t rawDetId) const final;
 
-  std::unordered_map<uint32_t, unsigned int> det2fedMap() const override;
-  std::map< uint32_t,std::vector<sipixelobjects::CablingPathToDetUnit> > det2PathMap() const override;
+  bool pathToDetUnitHasDetUnit(uint32_t rawDetId, unsigned int fedId) const final;
+
+  std::unordered_map<uint32_t, unsigned int> det2fedMap() const final;
+  std::map< uint32_t,std::vector<sipixelobjects::CablingPathToDetUnit> > det2PathMap() const final;
 
 
   std::vector<unsigned int> fedIds() const;

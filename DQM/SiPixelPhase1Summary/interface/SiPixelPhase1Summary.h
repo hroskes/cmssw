@@ -44,13 +44,13 @@
  class SiPixelPhase1Summary : public DQMEDHarvester {
     public:
        explicit SiPixelPhase1Summary(const edm::ParameterSet& conf);
-       ~SiPixelPhase1Summary();
+       ~SiPixelPhase1Summary() override;
 
        //       virtual void analyze(const edm::Event&, const edm::EventSetup&);
        //void dqmBeginRun(const edm::Run&, edm::EventSetup const&) ;
        //virtual void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
  protected:
-       void beginRun(edm::Run const& run, edm::EventSetup const& eSetup);
+       void beginRun(edm::Run const& run, edm::EventSetup const& eSetup) override;
 
        void dqmEndLuminosityBlock(DQMStore::IBooker & iBooker, DQMStore::IGetter & iGetter, edm::LuminosityBlock const& lumiSeg, edm::EventSetup const& c) override;
        //(edm::LuminosityBlock const&, edm::EventSetup const&) override;
@@ -68,6 +68,7 @@
        bool firstLumi;
 
        std::map<std::string,MonitorElement*> summaryMap_;
+       MonitorElement * deadROCSummary;
        MonitorElement * reportSummary; //Float value of the average of the ins in the grand summary
 
        std::map<std::string,std::string> summaryPlotName_;
@@ -75,6 +76,9 @@
        //The dead and innefficient roc trend plot
        std::map<trendPlots,MonitorElement*>  deadROCTrends_;
        std::map<trendPlots,MonitorElement*> ineffROCTrends_;
+
+       //Error thresholds for the dead ROC plots
+       std::vector<double> deadRocThresholds_;
 
        //book the summary plots
        void bookSummaries(DQMStore::IBooker & iBooker);

@@ -40,13 +40,13 @@
 class WriteL1TriggerObjectsTxt : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
    public:
       explicit WriteL1TriggerObjectsTxt(const edm::ParameterSet&);
-      ~WriteL1TriggerObjectsTxt();
+      ~WriteL1TriggerObjectsTxt() override;
 
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 
    private:
-      virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+      void analyze(const edm::Event&, const edm::EventSetup&) override;
 
       std::string tagName_;
 };
@@ -85,7 +85,7 @@ WriteL1TriggerObjectsTxt::analyze(const edm::Event& iEvent, const edm::EventSetu
        
 	for (auto i : {0,1,2,3}){
 	    gain += calibrations.LUTrespcorrgain(i);
-	    ped += calibrations.pedestal(i);
+	    ped += calibrations.effpedestal(i);
 	}
 
 	gain /= 4.;
