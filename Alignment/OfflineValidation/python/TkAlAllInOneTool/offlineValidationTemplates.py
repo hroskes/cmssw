@@ -131,7 +131,7 @@ void TkAlExtendedOfflineValidation()
   
   glob_t path;
   string eosdir = .oO[eosdir]Oo.;
-  string a = string("/eos/cms/store/caf/user/") + std::getenv("USER") + string("/AlignmentValidation/2018/")+eosdir+string(/*_sorted.root");
+  string a = string("root://eoscms//eos/cms/store/group/alca_trackeralign/AlignmentValidation/.oO[eosdir]Oo./*_sorted.root");
   glob(a.data(), 0, NULL, &path);
   vector<string> GC_files2;
 
@@ -143,21 +143,7 @@ void TkAlExtendedOfflineValidation()
         for (auto moduleid : moduleids3) {
                 p.residual_by_moduleID(moduleid);
         }
-
-
-
   }
-
-
-
-  } 
-  
-
-
-
-
-  
-
 }
 
 
