@@ -24,6 +24,7 @@
 #include "DataFormats/Provenance/interface/ThinnedAssociationsHelper.h"
 #include "FWCore/Framework/interface/EventForOutput.h"
 #include "FWCore/Framework/interface/EventPrincipal.h"
+#include "FWCore/Framework/interface/insertSelectedProcesses.h"
 #include "FWCore/Framework/interface/LuminosityBlockForOutput.h"
 #include "FWCore/Framework/interface/RunForOutput.h"
 #include "FWCore/Framework/interface/OutputModuleDescription.h"
@@ -99,6 +100,7 @@ namespace edm {
       std::map<BranchID, BranchDescription const*> trueBranchIDToKeptBranchDesc;
       std::vector<BranchDescription const*> associationDescriptions;
       std::set<BranchID> keptProductsInEvent;
+      std::set<std::string> processesWithSelectedMergeableRunProducts;
 
       for(auto const& it : preg.productList()) {
         BranchDescription const& desc = it.second;
@@ -111,12 +113,16 @@ namespace edm {
           associationDescriptions.push_back(&desc);
         } else if(selected(desc)) {
           keepThisBranch(desc, trueBranchIDToKeptBranchDesc, keptProductsInEvent);
+          insertSelectedProcesses(desc,
+                                  processesWithSelectedMergeableRunProducts);
         } else {
           // otherwise, output nothing,
           // and mark the fact that there is a newly dropped branch of this type.
           hasNewlyDroppedBranch_[desc.branchType()] = true;
         }
       }
+
+      setProcessesWithSelectedMergeableRunProducts(processesWithSelectedMergeableRunProducts);
 
       thinnedAssociationsHelper.selectAssociationProducts(associationDescriptions,
                                                           keptProductsInEvent,
@@ -270,7 +276,7 @@ namespace edm {
     OutputModuleBase::doBeginRun(RunPrincipal const& rp,
                                  EventSetup const&,
                                  ModuleCallingContext const* mcc) {
-      RunForOutput r(rp, moduleDescription_, mcc);
+      RunForOutput r(rp, moduleDescription_, mcc, false);
       r.setConsumer(this);
       doBeginRun_(r);
       return true;
@@ -280,7 +286,7 @@ namespace edm {
     OutputModuleBase::doEndRun(RunPrincipal const& rp,
                                EventSetup const&,
                                ModuleCallingContext const* mcc) {
-      RunForOutput r(rp, moduleDescription_, mcc);
+      RunForOutput r(rp, moduleDescription_, mcc, true);
       r.setConsumer(this);
       doEndRun_(r);
       return true;
@@ -288,8 +294,9 @@ namespace edm {
     
     void
     OutputModuleBase::doWriteRun(RunPrincipal const& rp,
-                                 ModuleCallingContext const* mcc) {
-      RunForOutput r(rp, moduleDescription_, mcc);
+                                 ModuleCallingContext const* mcc,
+                                 MergeableRunProductMetadata const* mrpm) {
+      RunForOutput r(rp, moduleDescription_, mcc, true, mrpm);
       r.setConsumer(this);
       writeRun(r);
     }
@@ -298,7 +305,7 @@ namespace edm {
     OutputModuleBase::doBeginLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                              EventSetup const&,
                                              ModuleCallingContext const* mcc) {
-      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc, false);
       lb.setConsumer(this);
       doBeginLuminosityBlock_(lb);
       return true;
@@ -308,7 +315,7 @@ namespace edm {
     OutputModuleBase::doEndLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                            EventSetup const&,
                                            ModuleCallingContext const* mcc) {
-      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc, true);
       lb.setConsumer(this);
       doEndLuminosityBlock_(lb);
 
@@ -317,7 +324,7 @@ namespace edm {
     
     void OutputModuleBase::doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                                   ModuleCallingContext const* mcc) {
-      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+      LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc, true);
       lb.setConsumer(this);
       writeLuminosityBlock(lb);
     }

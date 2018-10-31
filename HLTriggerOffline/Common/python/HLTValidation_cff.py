@@ -50,7 +50,7 @@ hltvalidationWithMC    = cms.Sequence(
     HLTMuonVal
     +HLTTauVal
     +egammaValidationSequence
-    +topHLTriggerOfflineDQM
+    +topHLTriggerOfflineDQM ## why is this here ?!?! (it is DQM !)
     +topHLTriggerValidation
     +heavyFlavorValidationSequence
     +HLTJetMETValSeq
@@ -83,7 +83,10 @@ fastSim.toReplaceWith(hltassociation, hltassociation.copyAndExclude([
 ]))
 
 from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
-pp_on_XeXe_2017.toReplaceWith(hltvalidation, hltvalidation.copyAndExclude([HiggsValidationSequence]))
+from Configuration.Eras.Modifier_pp_on_AA_2018_cff import pp_on_AA_2018
+for e in [pp_on_XeXe_2017, pp_on_AA_2018]:
+    e.toReplaceWith(hltvalidation, hltvalidation.copyAndExclude([HiggsValidationSequence]))
+
 
 hltvalidation_preprod = cms.Sequence(
   HLTTauVal

@@ -79,10 +79,9 @@ namespace sistrip {
   static const uint8_t PACKET_CODE_PROC_RAW8_BOTBOT = 0xCA;
   static const uint8_t PACKET_CODE_PROC_RAW8_TOPBOT = 0xB2;
   static const uint8_t PACKET_CODE_ZERO_SUPPRESSED = 0xEA;
-  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED_LITE10 = 0x8A;
-  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED_LITE8 = 0xEA;
-  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED_LITE8_BOTBOT = 0xCA;
-  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED_LITE8_TOPBOT = 0xAA;
+  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED10 = 0x8A;
+  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED8_BOTBOT = 0xCA;
+  static const uint8_t PACKET_CODE_ZERO_SUPPRESSED8_TOPBOT = 0xAA;
 
   //enum values are values which appear in buffer. DO NOT CHANGE!
   //see http://cmsdoc.cern.ch/cms/TRIDAS/horizontal/RUWG/DAQ_IF_guide/DAQ_IF_guide.html
@@ -151,6 +150,7 @@ namespace sistrip {
   FEDBufferFormat fedBufferFormatFromString(const std::string& bufferFormatString);
   FEDHeaderType fedHeaderTypeFromString(const std::string& headerTypeString);
   FEDReadoutMode fedReadoutModeFromString(const std::string& readoutModeString);
+  uint8_t packetCodeFromString(const std::string& packetCodeString, FEDReadoutMode mode);
   FEDDAQEventType fedDAQEventTypeFromString(const std::string& daqEventTypeString);
 
   //
@@ -407,11 +407,11 @@ namespace sistrip {
     {
     public:
       //factory function: allocates new FEDFEHeader derrivative of appropriate type
-      static std::auto_ptr<FEDFEHeader> newFEHeader(const FEDHeaderType headerType, const uint8_t* headerBuffer);
+      static std::unique_ptr<FEDFEHeader> newFEHeader(const FEDHeaderType headerType, const uint8_t* headerBuffer);
       //used by digi2Raw
-      static std::auto_ptr<FEDFEHeader> newFEHeader(const FEDHeaderType headerType);
+      static std::unique_ptr<FEDFEHeader> newFEHeader(const FEDHeaderType headerType);
       //create a buffer to use with digi2Raw
-      static std::auto_ptr<FEDFEHeader> newFEFakeHeader(const FEDHeaderType headerType);
+      static std::unique_ptr<FEDFEHeader> newFEFakeHeader(const FEDHeaderType headerType);
       virtual ~FEDFEHeader();
       //the length of the header
       virtual size_t lengthInBytes() const = 0;
@@ -1011,39 +1011,39 @@ namespace sistrip {
 
   //FEDFEHeader
 
-  inline std::auto_ptr<FEDFEHeader> FEDFEHeader::newFEHeader(const FEDHeaderType headerType, const uint8_t* headerBuffer)
+  inline std::unique_ptr<FEDFEHeader> FEDFEHeader::newFEHeader(const FEDHeaderType headerType, const uint8_t* headerBuffer)
     {
       switch (headerType) {
       case HEADER_TYPE_FULL_DEBUG:
-        return std::auto_ptr<FEDFEHeader>(new FEDFullDebugHeader(headerBuffer));
+        return std::unique_ptr<FEDFEHeader>(new FEDFullDebugHeader(headerBuffer));
       case HEADER_TYPE_APV_ERROR:
-        return std::auto_ptr<FEDFEHeader>(new FEDAPVErrorHeader(headerBuffer));
+        return std::unique_ptr<FEDFEHeader>(new FEDAPVErrorHeader(headerBuffer));
       default:
-        return std::auto_ptr<FEDFEHeader>();
+        return std::unique_ptr<FEDFEHeader>();
       }
     }
   
-  inline std::auto_ptr<FEDFEHeader> FEDFEHeader::newFEHeader(const FEDHeaderType headerType)
+  inline std::unique_ptr<FEDFEHeader> FEDFEHeader::newFEHeader(const FEDHeaderType headerType)
     {
       switch (headerType) {
       case HEADER_TYPE_FULL_DEBUG:
-        return std::auto_ptr<FEDFEHeader>(new FEDFullDebugHeader());
+        return std::unique_ptr<FEDFEHeader>(new FEDFullDebugHeader());
       case HEADER_TYPE_APV_ERROR:
-        return std::auto_ptr<FEDFEHeader>(new FEDAPVErrorHeader());
+        return std::unique_ptr<FEDFEHeader>(new FEDAPVErrorHeader());
       default:
-        return std::auto_ptr<FEDFEHeader>();
+        return std::unique_ptr<FEDFEHeader>();
       }
     }
   
-  inline std::auto_ptr<FEDFEHeader> FEDFEHeader::newFEFakeHeader(const FEDHeaderType headerType)
+  inline std::unique_ptr<FEDFEHeader> FEDFEHeader::newFEFakeHeader(const FEDHeaderType headerType)
     {
       switch (headerType) {
       case HEADER_TYPE_FULL_DEBUG:
-        return std::auto_ptr<FEDFEHeader>(new FEDFullDebugHeader);
+        return std::unique_ptr<FEDFEHeader>(new FEDFullDebugHeader);
       case HEADER_TYPE_APV_ERROR:
-        return std::auto_ptr<FEDFEHeader>(new FEDAPVErrorHeader);
+        return std::unique_ptr<FEDFEHeader>(new FEDAPVErrorHeader);
       default:
-        return std::auto_ptr<FEDFEHeader>();
+        return std::unique_ptr<FEDFEHeader>();
       }
     }
   
@@ -1492,16 +1492,13 @@ namespace sistrip {
         case READOUT_MODE_PROC_RAW:
           return PACKET_CODE_PROC_RAW;
         case READOUT_MODE_ZERO_SUPPRESSED:
-          return PACKET_CODE_ZERO_SUPPRESSED;
+          return channel(internalFEDChannelNum).packetCode();
         case READOUT_MODE_ZERO_SUPPRESSED_LITE10:
         case READOUT_MODE_ZERO_SUPPRESSED_LITE10_CMOVERRIDE:
-          return PACKET_CODE_ZERO_SUPPRESSED_LITE10;
         case READOUT_MODE_ZERO_SUPPRESSED_LITE8_BOTBOT:
         case READOUT_MODE_ZERO_SUPPRESSED_LITE8_BOTBOT_CMOVERRIDE:
-          return PACKET_CODE_ZERO_SUPPRESSED_LITE8_BOTBOT;
         case READOUT_MODE_ZERO_SUPPRESSED_LITE8_TOPBOT:
         case READOUT_MODE_ZERO_SUPPRESSED_LITE8_TOPBOT_CMOVERRIDE:
-          return PACKET_CODE_ZERO_SUPPRESSED_LITE8_TOPBOT;
         case READOUT_MODE_ZERO_SUPPRESSED_LITE8:
         case READOUT_MODE_ZERO_SUPPRESSED_LITE8_CMOVERRIDE:
         case READOUT_MODE_PREMIX_RAW:

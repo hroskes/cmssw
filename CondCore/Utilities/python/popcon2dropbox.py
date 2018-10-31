@@ -1,3 +1,4 @@
+from __future__ import print_function
 import subprocess
 import json
 import netrc
@@ -8,13 +9,9 @@ import shutil
 import logging
 from datetime import datetime
 
-dbName = 'popcon'
-dbFileName = '%s.db' %dbName
-dbFileForDropBox = dbFileName
-dbLogFile = '%s_log.db' %dbName
 errorInImportFileFolder = 'import_errors'
-dateformatForFolder = "%y-%m-%d-%H-%M-%S"
-dateformatForLabel = "%y-%m-%d %H:%M:%S"
+dateformatForFolder = "%Y-%m-%d-%H-%M-%S"
+dateformatForLabel = "%Y-%m-%d %H:%M:%S"
 
 auth_path_key = 'COND_AUTH_PATH'
 
@@ -32,7 +29,8 @@ consoleHandler = logging.StreamHandler(sys.stdout)
 consoleHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
 
-def checkFile():
+def checkFile( dbName ):
+    dbFileName = '%s.db' %dbName
     # check if the expected input file is there... 
     # exit code < 0 => error
     # exit code = 0 => skip
@@ -58,7 +56,7 @@ def checkFile():
        logger.error('Check on input data failed: %s' %str(e))
        return -2
 
-def saveFileForImportErrors( datef, withMetadata=False ):
+def saveFileForImportErrors( datef, dbName, withMetadata=False ):
     # save a copy of the files in case of upload failure...
     leafFolderName = datef.strftime(dateformatForFolder)
     fileFolder = os.path.join( errorInImportFileFolder, leafFolderName)
@@ -75,7 +73,7 @@ def saveFileForImportErrors( datef, withMetadata=False ):
             shutil.copy2(df, metadataDestFile)
     logger.error("Upload failed. Data file and metadata saved in folder '%s'" %os.path.abspath(fileFolder))
     
-def upload( args ):
+def upload( args, dbName ):
     destDb = args.destDb
     destTag = args.destTag
     comment = args.comment
@@ -111,17 +109,18 @@ def upload( args ):
     try:
        pipe = subprocess.Popen( uploadCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
        stdout = pipe.communicate()[0]
-       print stdout
+       print(stdout)
        retCode = pipe.returncode
        if retCode != 0:
-           saveFileForImportErrors( datef, True )
+           saveFileForImportErrors( datef, dbName, True )
        ret |= retCode
     except Exception as e:
        ret |= 1
        logger.error(str(e))
     return ret
 
-def copy( args ):
+def copy( args, dbName ):
+    dbFileName = '%s.db' %dbName
     destDb = args.destDb
     destTag = args.destTag
     comment = args.comment
@@ -131,8 +130,11 @@ def copy( args ):
     if destDb.lower() in destMap.keys():
         destDb = destMap[destDb.lower()]
     else:
-        logger.error( 'Destination connection %s is not supported.' %destDb )
-        return 
+        if destDb.startswith('sqlite'):
+            destDb = destDb.split(':')[1]
+        else:
+            logger.error( 'Destination connection %s is not supported.' %destDb )
+            return 
     # run the copy
     note = '"Importing data with O2O execution"'
     commandOptions = '--force --yes --db %s copy %s %s --destdb %s --synchronize --note %s' %(dbFileName,destTag,destTag,destDb,note)
@@ -141,10 +143,10 @@ def copy( args ):
     try:
         pipe = subprocess.Popen( copyCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
         stdout = pipe.communicate()[0]
-        print stdout
+        print(stdout)
         retCode = pipe.returncode
         if retCode != 0:
-            saveFileForImportErrors( datef )
+            saveFileForImportErrors( datef, dbName )
         ret = retCode
     except Exception as e:
         ret = 1
@@ -152,6 +154,10 @@ def copy( args ):
     return ret
 
 def run( args ):
+    
+    dbName = datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S-%f')
+    dbFileName = '%s.db' %dbName
+
     if args.auth is not None and not args.auth=='':
         if auth_path_key in os.environ:
             logger.warning("Cannot set authentication path to %s in the environment, since it is already set." %args.auth)
@@ -164,23 +170,24 @@ def run( args ):
     if os.path.exists( '%s.txt' %dbName ):
        os.remove( '%s.txt' %dbName )
     command = 'cmsRun %s ' %args.job_file
+    command += ' targetFile=%s' %dbFileName
     command += ' destinationDatabase=%s' %args.destDb
     command += ' destinationTag=%s' %args.destTag
     command += ' 2>&1'
     pipe = subprocess.Popen( command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
     stdout = pipe.communicate()[0]
     retCode = pipe.returncode
-    print stdout
+    print(stdout)
     logger.info('PopCon Analyzer return code is: %s' %retCode )
     if retCode!=0:
        logger.error( 'O2O job failed. Skipping upload.' )
        return retCode
 
-    ret = checkFile()
-    if ret < 0:
-        return ret
-    elif ret == 0:
-        return 0
-    if args.copy:
-        return copy( args )
-    return upload( args )
+    ret = checkFile( dbName )
+    if ret > 0:
+        if args.copy:
+            ret = copy( args, dbName )
+        else:
+            ret = upload( args, dbName )
+    os.remove( '%s.db' %dbName )
+    return ret

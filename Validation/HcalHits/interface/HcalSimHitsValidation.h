@@ -49,7 +49,7 @@ public:
   void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const & ) override;
 
   void analyze(edm::Event const& ev, edm::EventSetup const& c) override;
-  virtual void endJob() ;
+  void endJob() override;
 
 private:
   
@@ -109,6 +109,9 @@ private:
   // counter
   int nevtot;
 
+  // sampling factors
+  double hf1_;
+  double hf2_;
 };
 
 #endif

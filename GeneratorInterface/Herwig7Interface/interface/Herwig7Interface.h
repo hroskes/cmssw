@@ -19,12 +19,22 @@ Marco A. Harrendorf
 
 #include <ThePEG/Repository/EventGenerator.h>
 #include <ThePEG/EventRecord/Event.h>
+#include <ThePEG/Vectors/HepMCTraits.h>
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "GeneratorInterface/Herwig7Interface/interface/RandomEngineGlue.h"
-#include "GeneratorInterface/Herwig7Interface/interface/HepMCTemplate.h"
 #include "GeneratorInterface/Herwig7Interface/interface/HerwigUIProvider.h"
+
+namespace ThePEG {
+
+  template<> struct HepMCTraits<HepMC::GenEvent> :
+                public HepMCTraitsBase<
+    HepMC::GenEvent, HepMC::GenParticle,
+    HepMC::GenVertex, HepMC::Polarization,
+    HepMC::PdfInfo> {};
+
+}
 
 namespace CLHEP {
   class HepRandomEngine;
@@ -46,14 +56,14 @@ class Herwig7Interface {
 	bool initGenerator();
 	void flushRandomNumberGenerator();
 
-	static std::auto_ptr<HepMC::GenEvent>
+	static std::unique_ptr<HepMC::GenEvent>
 				convert(const ThePEG::EventPtr &event);
 
 	static double pthat(const ThePEG::EventPtr &event);
 
 	
 
-	std::auto_ptr<HepMC::IO_BaseClass>	iobc_;
+	std::unique_ptr<HepMC::IO_BaseClass>	iobc_;
 
 	// HerwigUi contains settings piped to Herwig7
 	Herwig::HerwigUIProvider* HwUI_;

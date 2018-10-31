@@ -24,7 +24,7 @@
 #include<iostream>
 
 HFShower::HFShower(const std::string & name, const DDCompactView & cpv, 
-		   edm::ParameterSet const & p, int chk) : cherenkov(nullptr),
+                   edm::ParameterSet const & p, int chk) : cherenkov(nullptr),
                                                            fibre(nullptr),
                                                            chkFibre(chk) {
 
@@ -32,7 +32,7 @@ HFShower::HFShower(const std::string & name, const DDCompactView & cpv,
   applyFidCut            = m_HF.getParameter<bool>("ApplyFiducialCut");
   probMax                = m_HF.getParameter<double>("ProbMax");
 
-  edm::LogInfo("HFShower") << "HFShower:: Maximum probability cut off " 
+  edm::LogVerbatim("HFShower") << "HFShower:: Maximum probability cut off " 
                            << probMax << " Check flag " << chkFibre;
 
   cherenkov = new HFCherenkov(m_HF);
@@ -51,7 +51,7 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, double weight
 
   double edep    = weight*(aStep->GetTotalEnergyDeposit());
 #ifdef DebugLog
-  edm::LogInfo("HFShower") << "HFShower::getHits: energy " << aStep->GetTotalEnergyDeposit() << " weight " << weight << " edep " << edep;
+  edm::LogVerbatim("HFShower") << "HFShower::getHits: energy " << aStep->GetTotalEnergyDeposit() << " weight " << weight << " edep " << edep;
 #endif
   double stepl   = 0.;
 
@@ -59,7 +59,7 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, double weight
     stepl = aStep->GetStepLength();
   if ((edep == 0.) || (stepl == 0.)) {
 #ifdef DebugLog
-    edm::LogInfo("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
+    edm::LogVerbatim("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
 #endif
     return hits;
   }
@@ -97,13 +97,13 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, double weight
       ok = false;
     } else if (npmt > 24) { // a short fibre
       if (zv > gpar[0]) {
-	depth = 2; 
+        depth = 2; 
       } else {
         ok = false;
       }
     }
 #ifdef DebugLog
-    edm::LogInfo("HFShower") << "HFShower: npmt " << npmt 
+    edm::LogVerbatim("HFShower") << "HFShower: npmt " << npmt 
                              << " zv " << std::abs(globalPos.z()) 
                              << ":" << gpar[4] << ":" << zv << ":" 
                              << gpar[0] << " ok " << ok << " depth " << depth;
@@ -123,11 +123,11 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, double weight
   double time     = fibre->tShift(localPos, depth, chkFibre);
 
 #ifdef DebugLog
-  edm::LogInfo("HFShower") << "HFShower::getHits: in " << name << " Z " 
-			   << zCoor << "(" << globalPos.z() << ") " << zFibre 
-			   << " Trans " << translation << " Time " << tSlice  
-			   << " " << time << "\n                  Direction " 
-			   << momentumDir << " Local " << localMom;
+  edm::LogVerbatim("HFShower") << "HFShower::getHits: in " << name << " Z " 
+                           << zCoor << "(" << globalPos.z() << ") " << zFibre 
+                           << " Trans " << translation << " Time " << tSlice  
+                           << " " << time << "\n                  Direction " 
+                           << momentumDir << " Local " << localMom;
 #endif 
   // Here npe should be 0 if there is no fiber (@@ M.K.)
   int npe = 1;
@@ -145,43 +145,43 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, double weight
       double r1  = G4UniformRand();
       double r2  = G4UniformRand();
 #ifdef DebugLog
-      edm::LogInfo("HFShower") << "HFShower::getHits: " << i << " attenuation "
-			       << r1 <<":" << exp(-p*zFibre) << " r2 " << r2 
-			       << ":" << probMax << " Survive: " 
-			       << (r1 <= exp(-p*zFibre) && r2 <= probMax);
+      edm::LogVerbatim("HFShower") << "HFShower::getHits: " << i << " attenuation "
+                               << r1 <<":" << exp(-p*zFibre) << " r2 " << r2 
+                               << ":" << probMax << " Survive: " 
+                               << (r1 <= exp(-p*zFibre) && r2 <= probMax);
 #endif
       if (applyFidCut || chkFibre < 0 || (r1 <= exp(-p*zFibre) && r2 <= probMax)) {
-	hit.depth      = depth;
-	hit.time       = tSlice+time;
-	if (!applyFidCut) {
-	  hit.wavelength = wavelength[i]; // Tmp
-	  hit.momentum   = momz[i]; // Tmp
-	} else {
-	  hit.wavelength = 300.; // Tmp
-	  hit.momentum   = 1.; // Tmp
-	}
-	hit.position   = globalPos;
-	hits.push_back(hit);
-	nHit++;
+        hit.depth      = depth;
+        hit.time       = tSlice+time;
+        if (!applyFidCut) {
+          hit.wavelength = wavelength[i]; // Tmp
+          hit.momentum   = momz[i]; // Tmp
+        } else {
+          hit.wavelength = 300.; // Tmp
+          hit.momentum   = 1.; // Tmp
+        }
+        hit.position   = globalPos;
+        hits.push_back(hit);
+        nHit++;
       }
     }
   }
 
 #ifdef DebugLog
-  edm::LogInfo("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
+  edm::LogVerbatim("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
   for (int i=0; i<nHit; ++i)
-    edm::LogInfo("HFShower") << "HFShower::Hit " << i << " WaveLength " 
-			     << hits[i].wavelength << " Time " << hits[i].time
-			     << " Momentum " << hits[i].momentum <<" Position "
-			     << hits[i].position;
+    edm::LogVerbatim("HFShower") << "HFShower::Hit " << i << " WaveLength " 
+                             << hits[i].wavelength << " Time " << hits[i].time
+                             << " Momentum " << hits[i].momentum <<" Position "
+                             << hits[i].position;
 #endif
   return hits;
 
 } 
 
 std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep,
-					     bool forLibraryProducer,
-					     double zoffset) {
+                                             bool forLibraryProducer,
+                                             double zoffset) {
 
   std::vector<HFShower::Hit> hits;
   int    nHit    = 0;
@@ -193,7 +193,7 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep,
     stepl = aStep->GetStepLength();
   if ((edep == 0.) || (stepl == 0.)) {
 #ifdef DebugLog
-    edm::LogInfo("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
+    edm::LogVerbatim("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
 #endif
     return hits;
   }
@@ -232,13 +232,13 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep,
       ok = false;
     } else if (npmt > 24) { // a short fibre
       if (zv > gpar[0]) {
-	depth = 2; 
+        depth = 2; 
       } else {
         ok = false;
       }
     }
 #ifdef DebugLog
-    edm::LogInfo("HFShower") << "HFShower: npmt " << npmt 
+    edm::LogVerbatim("HFShower") << "HFShower: npmt " << npmt 
                              << " zv " << std::abs(globalPos.z()) 
                              << ":" << gpar[4] << ":" << zv << ":" 
                              << gpar[0] << " ok " << ok << " depth " << depth;
@@ -258,11 +258,11 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep,
   double time     = fibre->tShift(localPos, depth, chkFibre);
 
 #ifdef DebugLog
-  edm::LogInfo("HFShower") << "HFShower::getHits: in " << name << " Z " <<zCoor
-			   << "(" << globalPos.z() <<") " << zFibre <<" Trans "
-			   << translation << " Time " << tSlice  << " " << time
-			   << "\n                  Direction " << momentumDir 
-			   << " Local " << localMom;
+  edm::LogVerbatim("HFShower") << "HFShower::getHits: in " << name << " Z " <<zCoor
+                           << "(" << globalPos.z() <<") " << zFibre <<" Trans "
+                           << translation << " Time " << tSlice  << " " << time
+                           << "\n                  Direction " << momentumDir 
+                           << " Local " << localMom;
 #endif 
   // Here npe should be 0 if there is no fiber (@@ M.K.)
   int npe = 1;
@@ -280,35 +280,35 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep,
       double r1  = G4UniformRand();
       double r2  = G4UniformRand();
 #ifdef DebugLog
-      edm::LogInfo("HFShower") << "HFShower::getHits: " << i << " attenuation "
-			       << r1 << ":" << exp(-p*zFibre) << " r2 " << r2 
-			       << ":" << probMax << " Survive: " 
-			       << (r1 <= exp(-p*zFibre) && r2 <= probMax);
+      edm::LogVerbatim("HFShower") << "HFShower::getHits: " << i << " attenuation "
+                               << r1 << ":" << exp(-p*zFibre) << " r2 " << r2 
+                               << ":" << probMax << " Survive: " 
+                               << (r1 <= exp(-p*zFibre) && r2 <= probMax);
 #endif
       if (applyFidCut || chkFibre < 0 || (r1 <= exp(-p*zFibre) && r2 <= probMax)) {
-	hit.depth      = depth;
-	hit.time       = tSlice+time;
-	if (!applyFidCut) {
-	  hit.wavelength = wavelength[i]; // Tmp
-	  hit.momentum   = momz[i]; // Tmp
-	} else {
-	  hit.wavelength = 300.; // Tmp
-	  hit.momentum   = 1.; // Tmp
-	}
-	hit.position   = globalPos;
-	hits.push_back(hit);
-	nHit++;
+        hit.depth      = depth;
+        hit.time       = tSlice+time;
+        if (!applyFidCut) {
+          hit.wavelength = wavelength[i]; // Tmp
+          hit.momentum   = momz[i]; // Tmp
+        } else {
+          hit.wavelength = 300.; // Tmp
+          hit.momentum   = 1.; // Tmp
+        }
+        hit.position   = globalPos;
+        hits.push_back(hit);
+        nHit++;
       }
     }
   }
 
 #ifdef DebugLog
-  edm::LogInfo("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
+  edm::LogVerbatim("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
   for (int i=0; i<nHit; ++i)
-    edm::LogInfo("HFShower") << "HFShower::Hit " << i << " WaveLength " 
-			     << hits[i].wavelength << " Time " << hits[i].time
-			     << " Momentum " << hits[i].momentum <<" Position "
-			     << hits[i].position;
+    edm::LogVerbatim("HFShower") << "HFShower::Hit " << i << " WaveLength " 
+                             << hits[i].wavelength << " Time " << hits[i].time
+                             << " Momentum " << hits[i].momentum <<" Position "
+                             << hits[i].position;
 #endif
   return hits;
 
@@ -325,7 +325,7 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, bool forLibra
     stepl = aStep->GetStepLength();
   if ((edep == 0.) || (stepl == 0.)) {
 #ifdef DebugLog
-    edm::LogInfo("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
+    edm::LogVerbatim("HFShower") << "HFShower::getHits: Number of Hits " << nHit;
 #endif
     return hits;
   }
@@ -363,13 +363,13 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, bool forLibra
       ok = false;
     } else if (npmt > 24) { // a short fibre
       if (zv > gpar[0]) {
-	depth = 2; 
+        depth = 2; 
       } else {
         ok = false;
       }
     }
 #ifdef DebugLog
-    edm::LogInfo("HFShower") << "HFShower:getHits(SL): npmt " << npmt 
+    edm::LogVerbatim("HFShower") << "HFShower:getHits(SL): npmt " << npmt 
                              << " zv " << std::abs(globalPos.z()) 
                              << ":" << gpar[4] << ":" << zv << ":" 
                              << gpar[0] << " ok " << ok << " depth " << depth;
@@ -389,11 +389,11 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, bool forLibra
   double time     = fibre->tShift(localPos, depth, chkFibre);
 
 #ifdef DebugLog
-  edm::LogInfo("HFShower") << "HFShower::getHits(SL): in " << name << " Z " 
-			   << zCoor << "(" << globalPos.z() << ") " << zFibre 
-			   << " Trans " << translation << " Time " << tSlice  
-			   << " " << time << "\n                  Direction " 
-			   << momentumDir << " Local " << localMom;
+  edm::LogVerbatim("HFShower") << "HFShower::getHits(SL): in " << name << " Z " 
+                           << zCoor << "(" << globalPos.z() << ") " << zFibre 
+                           << " Trans " << translation << " Time " << tSlice  
+                           << " " << time << "\n                  Direction " 
+                           << momentumDir << " Local " << localMom;
 #endif
   // npe should be 0
   int npe = 0;
@@ -415,7 +415,7 @@ std::vector<HFShower::Hit> HFShower::getHits(const G4Step * aStep, bool forLibra
 
 std::vector<double> HFShower::getDDDArray(const std::string & str, 
                                           const DDsvalues_type & sv, 
-					  int & nmin) {
+                                          int & nmin) {
 #ifdef DebugLog
   LogDebug("HFShower") << "HFShower:getDDDArray called for " << str 
                        << " with nMin " << nmin;
@@ -438,8 +438,7 @@ std::vector<double> HFShower::getDDDArray(const std::string & str,
       if (nval < 2) {
         edm::LogError("HFShower") << "HFShower : # of " << str << " bins " << nval
                                   << " < 2 ==> illegal" << " (nmin=" << nmin << ")";
-        throw cms::Exception("Unknown", "HFShower")
-	  << "nval < 2 for array " << str << "\n";
+        throw cms::Exception("Unknown", "HFShower") << "nval < 2 for array " << str;
       }
     }
     nmin = nval;
@@ -451,14 +450,9 @@ std::vector<double> HFShower::getDDDArray(const std::string & str,
   }
 }
 
-void HFShower::initRun(G4ParticleTable *, HcalDDDSimConstants* hcons) {
+void HFShower::initRun(const HcalDDDSimConstants* hcons) {
 
   //Special Geometry parameters
-  gpar      = hcons->getGparHF();
-  edm::LogInfo("HFShower") << "HFShower: " << gpar.size() << " gpar (cm)";
-  for (unsigned int ig=0; ig<gpar.size(); ig++)
-    edm::LogInfo("HFShower") << "HFShower: gpar[" << ig << "] = "
-                             << gpar[ig]/cm << " cm";
-
-  if (fibre) fibre->initRun(hcons);
+  gpar = hcons->getGparHF();
+  if (fibre) { fibre->initRun(hcons); }
 }

@@ -1,7 +1,12 @@
 import FWCore.ParameterSet.Config as cms
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+from DQM.HcalTasks.LEDCalibrationChannels import ledCalibrationChannels
 
-ledTask = cms.EDAnalyzer(
+ledTask = DQMEDAnalyzer(
 	"LEDTask",
+
+	# Externals
+	ledCalibrationChannels = ledCalibrationChannels,
 	
 	#	standard parameters
 	name = cms.untracked.string("LEDTask"),
@@ -16,7 +21,8 @@ ledTask = cms.EDAnalyzer(
 	tagHBHE = cms.untracked.InputTag("hcalDigis"),
 	tagHO = cms.untracked.InputTag("hcalDigis"),
 	tagHF = cms.untracked.InputTag("hcalDigis"),
-	tagRaw = cms.untracked.InputTag('hltHcalCalibrationRaw')
+	tagRaw = cms.untracked.InputTag('hltHcalCalibrationRaw'),
+
 )
 
 

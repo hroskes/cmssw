@@ -1,25 +1,19 @@
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process("L1TStage2EmulatorDQM", eras.Run2_2017)
+process = cms.Process("L1TStage2EmulatorDQM", eras.Run2_2018)
 
 #--------------------------------------------------
 # Event Source and Condition
 
 # Live Online DQM in P5
 process.load("DQM.Integration.config.inputsource_cfi")
-process.load("DQM.Integration.config.FrontierCondition_GT_cfi")
-# Due to the GT override in the above include, we have trouble with
-# conflicting CaloParams from stage1 and stage2.  This workaround
-# can go away once either the es_prefer is removed from DQM or the
-# new L1TCaloStage2ParamsRcd is integrated into CMSSW.
-if 'es_prefer_GlobalTag' in process.__dict__:
-    process.__dict__.pop('es_prefer_GlobalTag')
-    process._Process__esprefers.pop('es_prefer_GlobalTag')
 
 # Testing in lxplus
 #process.load("DQM.Integration.config.fileinputsource_cfi")
-#process.load("DQM.Integration.config.FrontierCondition_GT_Offline_cfi") 
+
+# Required to load Global Tag
+process.load("DQM.Integration.config.FrontierCondition_GT_cfi")
 
 # required for EMTF emulator
 process.load('Configuration.StandardSequences.MagneticField_cff')
@@ -116,15 +110,18 @@ process.l1tStage2EmulatorMonitorClientPath = cms.Path(process.l1tStage2EmulatorM
 
 # Heavy-Ion run
 if (process.runType.getRunType() == process.runType.hi_run):
+    process.onlineMetaDataDigis.onlineMetaDataInputLabel = cms.InputTag("rawDataRepacker")
+    process.onlineMetaDataRawToDigi.onlineMetaDataInputLabel = cms.InputTag("rawDataRepacker")
     process.castorDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.ctppsDiamondRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
-    process.ctppsPixelDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.ctppsPixelDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.ecalDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.ecalPreshowerDigis.sourceTag = cms.InputTag("rawDataRepacker")
     process.hcalDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.muonCSCDigis.InputObjects = cms.InputTag("rawDataRepacker")
     process.muonDTDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.muonRPCDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.muonGEMDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.scalersRawToDigi.scalersInputTag = cms.InputTag("rawDataRepacker")
     process.siPixelDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.siStripDigis.ProductLabel = cms.InputTag("rawDataRepacker")
@@ -132,17 +129,22 @@ if (process.runType.getRunType() == process.runType.hi_run):
     process.tcdsRawToDigi.InputLabel = cms.InputTag("rawDataRepacker")
     process.totemRPRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
     process.totemTriggerRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
+    process.totemTimingRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
     process.csctfDigis.producer = cms.InputTag("rawDataRepacker")
     process.dttfDigis.DTTF_FED_Source = cms.InputTag("rawDataRepacker")
     process.gctDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.gtDigis.DaqGtInputTag = cms.InputTag("rawDataRepacker")
     process.twinMuxStage2Digis.DTTM7_FED_Source = cms.InputTag("rawDataRepacker")
+    process.RPCTwinMuxRawToDigi.inputTag = cms.InputTag("rawDataRepacker")
     process.bmtfDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.omtfStage2Digis.inputLabel = cms.InputTag("rawDataRepacker")
     process.emtfStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.gmtStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.caloLayer1Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.caloStage1Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.caloStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.simHcalTriggerPrimitiveDigis.InputTagFEDRaw = cms.InputTag("rawDataRepacker")
+    process.l1tdeStage2CaloLayer1.fedRawDataLabel = cms.InputTag("rawDataRepacker")
     process.gtStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.selfFatEventFilter.rawInput = cms.InputTag("rawDataRepacker")
 

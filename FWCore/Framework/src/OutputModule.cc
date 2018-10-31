@@ -13,6 +13,7 @@
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "FWCore/Framework/interface/EventForOutput.h"
 #include "FWCore/Framework/interface/EventPrincipal.h"
+#include "FWCore/Framework/interface/insertSelectedProcesses.h"
 #include "FWCore/Framework/interface/LuminosityBlockForOutput.h"
 #include "FWCore/Framework/interface/OutputModuleDescription.h"
 #include "FWCore/Framework/interface/RunForOutput.h"
@@ -95,6 +96,7 @@ namespace edm {
     std::map<BranchID, BranchDescription const*> trueBranchIDToKeptBranchDesc;
     std::vector<BranchDescription const*> associationDescriptions;
     std::set<BranchID> keptProductsInEvent;
+    std::set<std::string> processesWithSelectedMergeableRunProducts;
 
     for(auto const& it : preg.productList()) {
       BranchDescription const& desc = it.second;
@@ -107,12 +109,16 @@ namespace edm {
         associationDescriptions.push_back(&desc);
       } else if(selected(desc)) {
         keepThisBranch(desc, trueBranchIDToKeptBranchDesc, keptProductsInEvent);
+        insertSelectedProcesses(desc,
+                                processesWithSelectedMergeableRunProducts);
       } else {
         // otherwise, output nothing,
         // and mark the fact that there is a newly dropped branch of this type.
         hasNewlyDroppedBranch_[desc.branchType()] = true;
       }
     }
+
+    setProcessesWithSelectedMergeableRunProducts(processesWithSelectedMergeableRunProducts);
 
     thinnedAssociationsHelper.selectAssociationProducts(associationDescriptions,
                                                         keptProductsInEvent,
@@ -290,7 +296,7 @@ namespace edm {
                            EventSetup const&,
                            ModuleCallingContext const* mcc) {
     FDEBUG(2) << "beginRun called\n";
-    RunForOutput r(rp, moduleDescription_, mcc);
+    RunForOutput r(rp, moduleDescription_, mcc,false);
     r.setConsumer(this);
     beginRun(r);
     return true;
@@ -301,7 +307,7 @@ namespace edm {
                          EventSetup const&,
                          ModuleCallingContext const* mcc) {
     FDEBUG(2) << "endRun called\n";
-    RunForOutput r(rp, moduleDescription_, mcc);
+    RunForOutput r(rp, moduleDescription_, mcc,true);
     r.setConsumer(this);
     endRun(r);
     return true;
@@ -309,9 +315,10 @@ namespace edm {
 
   void
   OutputModule::doWriteRun(RunPrincipal const& rp,
-                           ModuleCallingContext const* mcc) {
+                           ModuleCallingContext const* mcc,
+                           MergeableRunProductMetadata const* mrpm) {
     FDEBUG(2) << "writeRun called\n";
-    RunForOutput r(rp, moduleDescription_, mcc);
+    RunForOutput r(rp, moduleDescription_, mcc,true, mrpm);
     r.setConsumer(this);
     writeRun(r);
   }
@@ -321,7 +328,7 @@ namespace edm {
                                        EventSetup const&,
                                        ModuleCallingContext const* mcc) {
     FDEBUG(2) << "beginLuminosityBlock called\n";
-    LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+    LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc,false);
     lb.setConsumer(this);
     beginLuminosityBlock(lb);
     return true;
@@ -332,7 +339,7 @@ namespace edm {
                                      EventSetup const&,
                                      ModuleCallingContext const* mcc) {
     FDEBUG(2) << "endLuminosityBlock called\n";
-    LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+    LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc,true);
     lb.setConsumer(this);
     endLuminosityBlock(lb);
     return true;
@@ -341,7 +348,7 @@ namespace edm {
   void OutputModule::doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp,
                                             ModuleCallingContext const* mcc) {
     FDEBUG(2) << "writeLuminosityBlock called\n";
-    LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc);
+    LuminosityBlockForOutput lb(lbp, moduleDescription_, mcc,true);
     lb.setConsumer(this);
     writeLuminosityBlock(lb);
   }

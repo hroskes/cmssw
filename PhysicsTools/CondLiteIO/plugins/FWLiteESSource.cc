@@ -75,7 +75,7 @@ namespace  {
       m_type(iTypeID),
       m_record(iRecord){}
       
-      const void* getImpl(const edm::eventsetup::EventSetupRecord&, const edm::eventsetup::DataKey& iKey) override {
+      const void* getImpl(const edm::eventsetup::EventSetupRecordImpl&, const edm::eventsetup::DataKey& iKey) override {
          assert(iKey.type() == m_type);
          
          FWLiteESGenericHandle h(m_type);
@@ -127,7 +127,7 @@ private:
    void delaySettingRecords() override;
    
    // ---------- member data --------------------------------
-   std::auto_ptr<TFile> m_file;
+   std::unique_ptr<TFile> m_file;
    fwlite::EventSetup m_es;
    std::map<edm::eventsetup::EventSetupRecordKey, fwlite::RecordID> m_keyToID;
    

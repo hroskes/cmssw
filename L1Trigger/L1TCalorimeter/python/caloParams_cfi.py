@@ -67,6 +67,9 @@ caloParams = cms.ESProducer(
     egIsoMaxEtaAbsForIsoSum    = cms.uint32(27),
     egBypassEGVetos            = cms.uint32(0),
     egBypassExtHOverE          = cms.uint32(1),
+    egBypassShape              = cms.uint32(0),
+    egBypassECALFG             = cms.uint32(0),
+    egBypassHoE                = cms.uint32(0),
 
     # Tau
     tauRegionMask                 = cms.int32(0),
@@ -130,6 +133,8 @@ caloParams = cms.ESProducer(
 
 
     # HI
+    etSumCentralityLower =   cms.vdouble(0,200,400,600,800, 1000,1200,1400),
+    etSumCentralityUpper = cms.vdouble(200,400,600,800,1000,1200,1400,1600),
     centralityNodeVersion = cms.int32(1),
     centralityRegionMask = cms.int32(0),
     minimumBiasThresholds = cms.vint32(0, 0, 0, 0),

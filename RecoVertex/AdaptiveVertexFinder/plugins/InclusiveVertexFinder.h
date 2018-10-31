@@ -121,8 +121,8 @@ class TemplatedInclusiveVertexFinder : public edm::stream::EDProducer<> {
 	double 					fitterRatio;
 	bool 					useVertexFitter;
 	bool 					useVertexReco;
-	std::auto_ptr<VertexReconstructor>	vtxReco;
-	std::auto_ptr<TracksClusteringFromDisplacedSeed>	clusterizer;
+	std::unique_ptr<VertexReconstructor>	vtxReco;
+	std::unique_ptr<TracksClusteringFromDisplacedSeed>	clusterizer;
 
 };
 template <class InputContainer, class VTX>
@@ -255,8 +255,10 @@ void TemplatedInclusiveVertexFinder<InputContainer,VTX>::produce(edm::Event &eve
 		}
 		
 		// for each transient vertex state determine if a time can be measured and fill covariance
-		for(auto& vtx : vertices) {
-		  svhelper::updateVertexTime(vtx);
+		if( pv.covariance(3,3) > 0. ) {
+		  for(auto& vtx : vertices) {		  
+		    svhelper::updateVertexTime(vtx);
+		  }
 		}
 
 		for(std::vector<TransientVertex>::const_iterator v = vertices.begin();
@@ -285,11 +287,13 @@ void TemplatedInclusiveVertexFinder<InputContainer,VTX>::produce(edm::Event &eve
 #endif
                         }
 			GlobalPoint sv((*v).position().x(),(*v).position().y(),(*v).position().z());
-			float vscal = dir.unit().dot((sv-ppv).unit()) ;
-			//                        std::cout << "Vscal: " <<  vscal << std::endl;
-			if(dlen.significance() > vertexMinDLenSig  && vscal > vertexMinAngleCosine &&  v->normalisedChiSquared() < 10 && dlen2.significance() > vertexMinDLen2DSig)
+			float vscal = dir.unit().dot((sv-ppv).unit());
+			if(dlen.significance() > vertexMinDLenSig  &&
+			   ( (vertexMinAngleCosine > 0) ? (vscal > vertexMinAngleCosine) : (vscal < vertexMinAngleCosine) )
+			   &&  v->normalisedChiSquared() < 10 && dlen2.significance() > vertexMinDLen2DSig)
 			{	 
 				recoVertices->push_back(*v);
+
 #ifdef VTXDEBUG
 	                        std::cout << "ADDED" << std::endl;
 #endif

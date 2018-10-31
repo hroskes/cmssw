@@ -14,7 +14,14 @@ peripheralPbPb.toModify(trackerClusterCheck,
                         )
 from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
 pp_on_XeXe_2017.toModify(trackerClusterCheck,
-                         doClusterCheck=True, #FIXMETOO
-                         cut = "strip < 1000000 && pixel < 100000 && (strip < 50000 + 10*pixel) && (pixel < 5000 + strip/2.)",
-                         MaxNumberOfPixelClusters = 100000
-                         )
+               doClusterCheck=True, #FIXMETOO
+               cut = "strip < 1000000 && pixel < 100000 && (strip < 50000 + 10*pixel) && (pixel < 5000 + strip/2.)",
+               MaxNumberOfPixelClusters = 100000
+               )
+
+from Configuration.Eras.Modifier_pp_on_AA_2018_cff import pp_on_AA_2018
+pp_on_AA_2018.toModify(trackerClusterCheck,
+               doClusterCheck=True, 
+               cut = "strip < 1000000 && pixel < 150000 && (strip < 50000 + 10*pixel) && (pixel < 5000 + strip/2.)",
+               MaxNumberOfPixelClusters = 150000
+               )

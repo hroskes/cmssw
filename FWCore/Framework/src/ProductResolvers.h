@@ -23,6 +23,7 @@ a set of related EDProducts. This is the storage unit of such information.
 #include <string>
 
 namespace edm {
+  class MergeableRunProductMetadata;
   class ProductProvenanceRetriever;
   class DelayedReader;
   class ModuleCallingContext;
@@ -62,6 +63,7 @@ namespace edm {
     //Handle the boilerplate code needed for resolveProduct_
     template <bool callResolver, typename FUNC>
     Resolution resolveProductImpl( FUNC resolver) const;
+    void setMergeableRunProductMetadataInProductData(MergeableRunProductMetadata const*);
 
   private:
 
@@ -70,9 +72,9 @@ namespace edm {
     ProductData const& getProductData() const {return productData_;}
     virtual bool isFromCurrentProcess() const = 0;
     // merges the product with the pre-existing product
-    void mergeProduct(std::unique_ptr<WrapperBase> edp) const;
+    void mergeProduct(std::unique_ptr<WrapperBase> edp, MergeableRunProductMetadata const*) const;
 
-    void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod) const final;
+    void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod, MergeableRunProductMetadata const* mergeableRunProductMetadata) const final;
     bool productUnavailable_() const final;
     bool productResolved_() const final;
     bool productWasDeleted_() const final;
@@ -107,17 +109,20 @@ namespace edm {
 
 
       Resolution resolveProduct_(Principal const& principal,
-                                         bool skipCurrentProcess,
-                                         SharedResourcesAcquirer* sra,
-                                         ModuleCallingContext const* mcc) const override;
-     void prefetchAsync_(WaitingTask* waitTask,
-                                 Principal const& principal,
                                  bool skipCurrentProcess,
                                  SharedResourcesAcquirer* sra,
                                  ModuleCallingContext const* mcc) const override;
+     void prefetchAsync_(WaitingTask* waitTask,
+                         Principal const& principal,
+                         bool skipCurrentProcess,
+                         ServiceToken const& token,
+                         SharedResourcesAcquirer* sra,
+                         ModuleCallingContext const* mcc) const override;
       void putProduct_(std::unique_ptr<WrapperBase> edp) const override;
 
-      void retrieveAndMerge_(Principal const& principal) const override;
+      void retrieveAndMerge_(Principal const& principal, MergeableRunProductMetadata const* mergeableRunProductMetadata) const override;
+
+      void setMergeableRunProductMetadata_(MergeableRunProductMetadata const*) override;
 
       bool unscheduledWasNotRun_() const final {return false;}
 
@@ -133,8 +138,6 @@ namespace edm {
   class ProducedProductResolver : public DataManagingProductResolver {
     public:
       ProducedProductResolver(std::shared_ptr<BranchDescription const> bd, ProductStatus iDefaultStatus) : DataManagingProductResolver(bd, iDefaultStatus) {assert(bd->produced());}
-
-      void resetFailedFromThisProcess() override;
 
     protected:
       void putProduct_(std::unique_ptr<WrapperBase> edp) const override;
@@ -157,6 +160,7 @@ namespace edm {
      void prefetchAsync_(WaitingTask* waitTask,
                                  Principal const& principal,
                                  bool skipCurrentProcess,
+                         ServiceToken const& token,
                                  SharedResourcesAcquirer* sra,
                                  ModuleCallingContext const* mcc) const override;
     bool unscheduledWasNotRun_() const override {return false;}
@@ -185,10 +189,11 @@ namespace edm {
                                          SharedResourcesAcquirer* sra,
                                          ModuleCallingContext const* mcc) const override;
        void prefetchAsync_(WaitingTask* waitTask,
-                                   Principal const& principal,
-                                   bool skipCurrentProcess,
-                                   SharedResourcesAcquirer* sra,
-                                   ModuleCallingContext const* mcc) const override;
+                           Principal const& principal,
+                           bool skipCurrentProcess,
+                           ServiceToken const& token,
+                           SharedResourcesAcquirer* sra,
+                           ModuleCallingContext const* mcc) const override;
       bool unscheduledWasNotRun_() const override {return status() == ProductStatus::ResolveNotRun;}
 
       void resetProductData_(bool deleteEarly) override;
@@ -210,16 +215,17 @@ namespace edm {
 
     private:
       Resolution resolveProduct_(Principal const& principal,
-                                         bool skipCurrentProcess,
-                                         SharedResourcesAcquirer* sra,
-                                         ModuleCallingContext const* mcc) const override {
+                                 bool skipCurrentProcess,
+                                 SharedResourcesAcquirer* sra,
+                                 ModuleCallingContext const* mcc) const override {
         return realProduct_.resolveProduct(principal, skipCurrentProcess, sra, mcc);}
        void prefetchAsync_(WaitingTask* waitTask,
-                                   Principal const& principal,
-                                   bool skipCurrentProcess,
-                                   SharedResourcesAcquirer* sra,
-                                   ModuleCallingContext const* mcc) const override {
-        realProduct_.prefetchAsync(waitTask, principal, skipCurrentProcess, sra, mcc);
+                           Principal const& principal,
+                           bool skipCurrentProcess,
+                           ServiceToken const& token,
+                           SharedResourcesAcquirer* sra,
+                           ModuleCallingContext const* mcc) const override {
+        realProduct_.prefetchAsync(waitTask, principal, skipCurrentProcess, token, sra, mcc);
       }
       bool unscheduledWasNotRun_() const override {return realProduct_.unscheduledWasNotRun();}
       bool productUnavailable_() const override {return realProduct_.productUnavailable();}
@@ -231,7 +237,7 @@ namespace edm {
       }
 
       void putProduct_(std::unique_ptr<WrapperBase> edp) const override;
-      void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod) const final;
+      void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod, MergeableRunProductMetadata const* mergeableRunProductMetadata) const final;
       BranchDescription const& branchDescription_() const override {return *bd_;}
       void resetBranchDescription_(std::shared_ptr<BranchDescription const> bd) override {bd_ = bd;}
       Provenance const* provenance_() const final { return realProduct_.provenance(); }
@@ -259,19 +265,20 @@ namespace edm {
 
   private:
     Resolution resolveProduct_(Principal const& principal,
-                                       bool skipCurrentProcess,
-                                       SharedResourcesAcquirer* sra,
-                                       ModuleCallingContext const* mcc) const override {
+                               bool skipCurrentProcess,
+                               SharedResourcesAcquirer* sra,
+                               ModuleCallingContext const* mcc) const override {
       skipCurrentProcess = false;
       return realProduct_->resolveProduct(*parentPrincipal_, skipCurrentProcess, sra, mcc);
     }
      void prefetchAsync_(WaitingTask* waitTask,
-                                 Principal const& principal,
-                                 bool skipCurrentProcess,
-                                 SharedResourcesAcquirer* sra,
-                                 ModuleCallingContext const* mcc) const override {
+                         Principal const& principal,
+                         bool skipCurrentProcess,
+                         ServiceToken const& token,
+                         SharedResourcesAcquirer* sra,
+                         ModuleCallingContext const* mcc) const override {
       skipCurrentProcess = false;
-      realProduct_->prefetchAsync( waitTask, *parentPrincipal_, skipCurrentProcess, sra, mcc);
+      realProduct_->prefetchAsync( waitTask, *parentPrincipal_, skipCurrentProcess, token, sra, mcc);
     }
     bool unscheduledWasNotRun_() const override {
       if (realProduct_) return realProduct_->unscheduledWasNotRun();
@@ -287,7 +294,7 @@ namespace edm {
     }
 
     void putProduct_(std::unique_ptr<WrapperBase> edp) const override;
-    void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod) const final;
+    void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod, MergeableRunProductMetadata const* mergeableRunProductMetadata) const final;
     BranchDescription const& branchDescription_() const override {return *bd_;}
     void resetBranchDescription_(std::shared_ptr<BranchDescription const> bd) override {bd_ = bd;}
     Provenance const* provenance_() const final {return realProduct_->provenance();
@@ -310,7 +317,7 @@ namespace edm {
     public:
       typedef ProducedProductResolver::ProductStatus ProductStatus;
       NoProcessProductResolver(std::vector<ProductResolverIndex> const& matchingHolders,
-                             std::vector<bool> const& ambiguous);
+                             std::vector<bool> const& ambiguous, bool madeAtEnd);
 
     void connectTo(ProductResolverBase const& iOther, Principal const*) final ;
 
@@ -332,14 +339,15 @@ namespace edm {
     private:
       unsigned int unsetIndexValue() const;
       Resolution resolveProduct_(Principal const& principal,
-                                         bool skipCurrentProcess,
-                                         SharedResourcesAcquirer* sra,
-                                         ModuleCallingContext const* mcc) const override;
+                                 bool skipCurrentProcess,
+                                 SharedResourcesAcquirer* sra,
+                                 ModuleCallingContext const* mcc) const override;
        void prefetchAsync_(WaitingTask* waitTask,
-                                   Principal const& principal,
-                                   bool skipCurrentProcess,
-                                   SharedResourcesAcquirer* sra,
-                                   ModuleCallingContext const* mcc) const override;
+                           Principal const& principal,
+                           bool skipCurrentProcess,
+                           ServiceToken const& token,
+                           SharedResourcesAcquirer* sra,
+                           ModuleCallingContext const* mcc) const override;
       bool unscheduledWasNotRun_() const override;
       bool productUnavailable_() const override;
       bool productWasDeleted_() const override;
@@ -347,7 +355,7 @@ namespace edm {
       bool productWasFetchedAndIsValid_(bool iSkipCurrentProcess) const override;
 
       void putProduct_(std::unique_ptr<WrapperBase> edp) const override;
-      void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod) const final;
+      void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod, MergeableRunProductMetadata const* mergeableRunProductMetadata) const final;
       BranchDescription const& branchDescription_() const override;
       void resetBranchDescription_(std::shared_ptr<BranchDescription const> bd) override;
       Provenance const* provenance_() const override;
@@ -375,7 +383,7 @@ namespace edm {
       mutable std::atomic<unsigned int> lastSkipCurrentCheckIndex_;
       mutable std::atomic<bool> prefetchRequested_;
       mutable std::atomic<bool> skippingPrefetchRequested_;
-      mutable std::atomic<bool> recheckedAtEnd_;
+      const bool madeAtEnd_;
   };
 
   class SingleChoiceNoProcessProductResolver : public ProductResolverBase {
@@ -388,14 +396,15 @@ namespace edm {
 
   private:
     Resolution resolveProduct_(Principal const& principal,
-                                       bool skipCurrentProcess,
-                                       SharedResourcesAcquirer* sra,
-                                       ModuleCallingContext const* mcc) const override;
+                               bool skipCurrentProcess,
+                               SharedResourcesAcquirer* sra,
+                               ModuleCallingContext const* mcc) const override;
      void prefetchAsync_(WaitingTask* waitTask,
-                                 Principal const& principal,
-                                 bool skipCurrentProcess,
-                                 SharedResourcesAcquirer* sra,
-                                 ModuleCallingContext const* mcc) const override;
+                         Principal const& principal,
+                         bool skipCurrentProcess,
+                         ServiceToken const& token,
+                         SharedResourcesAcquirer* sra,
+                         ModuleCallingContext const* mcc) const override;
     bool unscheduledWasNotRun_() const override;
     bool productUnavailable_() const override;
     bool productWasDeleted_() const override;
@@ -403,7 +412,7 @@ namespace edm {
     bool productWasFetchedAndIsValid_(bool iSkipCurrentProcess) const override;
 
     void putProduct_(std::unique_ptr<WrapperBase> edp) const override;
-    void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod) const final;
+    void putOrMergeProduct_(std::unique_ptr<WrapperBase> prod, MergeableRunProductMetadata const* mergeableRunProductMetadata) const final;
     BranchDescription const& branchDescription_() const override;
     void resetBranchDescription_(std::shared_ptr<BranchDescription const> bd) override;
     Provenance const* provenance_() const override;

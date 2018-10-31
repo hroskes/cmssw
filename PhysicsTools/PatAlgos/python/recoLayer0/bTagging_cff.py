@@ -28,7 +28,7 @@ supportedBtagInfos = [
     # C-Tagging tag infos
   , 'pfInclusiveSecondaryVertexFinderCvsLTagInfos'
   , 'pfInclusiveSecondaryVertexFinderNegativeCvsLTagInfos'
-    # DeepFlavour	
+    # DeepCSV
   , 'pfDeepCSVTagInfos'
   , 'pfDeepCSVNegativeTagInfos'
   , 'pfDeepCSVPositiveTagInfos'
@@ -38,6 +38,13 @@ supportedBtagInfos = [
   , 'pfDeepCMVAPositiveTagInfos'
     # TopTagInfos (unrelated to b tagging)
   , 'caTopTagInfos'
+    # DeepFlavour tag infos
+  , 'pfDeepFlavourTagInfos'
+  , 'pfNegativeDeepFlavourTagInfos'
+    # DeepDoubleB tag infos
+  , 'pfDeepDoubleBTagInfos'
+    # DeepBoostedJet tag infos
+  , 'pfDeepBoostedJetTagInfos'
   ]
 # extend for "internal use" in PAT/MINIAOD (renaming)
 supportedBtagInfos.append( 'caTopTagInfosPAT' )
@@ -170,16 +177,44 @@ supportedBtagDiscr = {
   , 'pfPositiveDeepCMVAJetTags:probcc'                     : [["pfDeepCMVAPositiveTagInfos"], ["pfImpactParameterTagInfos","softPFMuonsTagInfos","softPFElectronsTagInfos","pfInclusiveSecondaryVertexFinderTagInfos"]]    
     # ChargeTagging
   , 'pfChargeBJetTags'                                      : [["pfImpactParameterTagInfos", "pfInclusiveSecondaryVertexFinderTagInfos", "softPFMuonsTagInfos", "softPFElectronsTagInfos"]]
-  }
+  , 'pfDeepFlavourJetTags:probb'                            : [["pfDeepFlavourTagInfos"], ['pfDeepCSVTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderTagInfos']]
+  , 'pfDeepFlavourJetTags:probbb'                           : [["pfDeepFlavourTagInfos"], ['pfDeepCSVTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderTagInfos']]
+  , 'pfDeepFlavourJetTags:problepb'                         : [["pfDeepFlavourTagInfos"], ['pfDeepCSVTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderTagInfos']]
+  , 'pfDeepFlavourJetTags:probc'                            : [["pfDeepFlavourTagInfos"], ['pfDeepCSVTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderTagInfos']]
+  , 'pfDeepFlavourJetTags:probuds'                          : [["pfDeepFlavourTagInfos"], ['pfDeepCSVTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderTagInfos']]
+  , 'pfDeepFlavourJetTags:probg'                            : [["pfDeepFlavourTagInfos"], ['pfDeepCSVTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderTagInfos']]
+  , 'pfNegativeDeepFlavourJetTags:probb'                            : [["pfNegativeDeepFlavourTagInfos"], ['pfDeepCSVNegativeTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderNegativeTagInfos']]
+  , 'pfNegativeDeepFlavourJetTags:probbb'                           : [["pfNegativeDeepFlavourTagInfos"], ['pfDeepCSVNegativeTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderNegativeTagInfos']]
+  , 'pfNegativeDeepFlavourJetTags:problepb'                         : [["pfNegativeDeepFlavourTagInfos"], ['pfDeepCSVNegativeTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderNegativeTagInfos']]
+  , 'pfNegativeDeepFlavourJetTags:probc'                            : [["pfNegativeDeepFlavourTagInfos"], ['pfDeepCSVNegativeTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderNegativeTagInfos']]
+  , 'pfNegativeDeepFlavourJetTags:probuds'                          : [["pfNegativeDeepFlavourTagInfos"], ['pfDeepCSVNegativeTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderNegativeTagInfos']]
+  , 'pfNegativeDeepFlavourJetTags:probg'                            : [["pfNegativeDeepFlavourTagInfos"], ['pfDeepCSVNegativeTagInfos', "pfImpactParameterTagInfos", 'pfInclusiveSecondaryVertexFinderNegativeTagInfos']]
+  , 'pfDeepDoubleBJetTags:probQ'                            : [["pfDeepDoubleBTagInfos"], ['pfBoostedDoubleSVAK8TagInfos', "pfImpactParameterAK8TagInfos", 'pfInclusiveSecondaryVertexFinderAK8TagInfos']]
+  , 'pfDeepDoubleBJetTags:probH'                            : [["pfDeepDoubleBTagInfos"], ['pfBoostedDoubleSVAK8TagInfos', "pfImpactParameterAK8TagInfos", 'pfInclusiveSecondaryVertexFinderAK8TagInfos']]
+}
 
+# meta-taggers are simple arithmetic on top of other taggers, they are stored here
+# such that in case you want them re-run also the parent tagger is re-run as well
 
-#meta-taggers are simple arithmetic on top of other taggers, they are stored here
-#such that in case you want them re-run also the parent tagger is re-run as well
 supportedMetaDiscr = {
    'pfDeepCSVDiscriminatorsJetTags:BvsAll' : ['pfDeepCSVJetTags:probudsg', 'pfDeepCSVJetTags:probb', 'pfDeepCSVJetTags:probc', 'pfDeepCSVJetTags:probbb'],
    'pfDeepCSVDiscriminatorsJetTags:CvsB' : ['pfDeepCSVJetTags:probudsg', 'pfDeepCSVJetTags:probb', 'pfDeepCSVJetTags:probc', 'pfDeepCSVJetTags:probbb'],
    'pfDeepCSVDiscriminatorsJetTags:CvsL' : ['pfDeepCSVJetTags:probudsg', 'pfDeepCSVJetTags:probb', 'pfDeepCSVJetTags:probc', 'pfDeepCSVJetTags:probbb'],
-   'pfDeepCMVADiscriminatorsJetTags:BvsAll' : ['pfDeepCMVAJetTags:probudsg', 'pfDeepCMVAJetTags:probb', 'pfDeepCMVAJetTags:probc', 'pfDeepCMVAJetTags:probbb'],   
-   'pfDeepCMVADiscriminatorsJetTags:CvsB' : ['pfDeepCMVAJetTags:probudsg', 'pfDeepCMVAJetTags:probb', 'pfDeepCMVAJetTags:probc', 'pfDeepCMVAJetTags:probbb'],   
-   'pfDeepCMVADiscriminatorsJetTags:CvsL' : ['pfDeepCMVAJetTags:probudsg', 'pfDeepCMVAJetTags:probb', 'pfDeepCMVAJetTags:probc', 'pfDeepCMVAJetTags:probbb'],   
+   'pfDeepCMVADiscriminatorsJetTags:BvsAll' : ['pfDeepCMVAJetTags:probudsg', 'pfDeepCMVAJetTags:probb', 'pfDeepCMVAJetTags:probc', 'pfDeepCMVAJetTags:probbb'],
+   'pfDeepCMVADiscriminatorsJetTags:CvsB' : ['pfDeepCMVAJetTags:probudsg', 'pfDeepCMVAJetTags:probb', 'pfDeepCMVAJetTags:probc', 'pfDeepCMVAJetTags:probbb'],
+   'pfDeepCMVADiscriminatorsJetTags:CvsL' : ['pfDeepCMVAJetTags:probudsg', 'pfDeepCMVAJetTags:probb', 'pfDeepCMVAJetTags:probc', 'pfDeepCMVAJetTags:probbb'],
 }
+
+# -----------------------------------
+# setup DeepBoostedJet
+from RecoBTag.MXNet.pfDeepBoostedJet_cff import _pfDeepBoostedJetTagsProbs, _pfDeepBoostedJetTagsMetaDiscrs, \
+    _pfMassDecorrelatedDeepBoostedJetTagsProbs, _pfMassDecorrelatedDeepBoostedJetTagsMetaDiscrs
+# update supportedBtagDiscr
+for disc in _pfDeepBoostedJetTagsProbs + _pfMassDecorrelatedDeepBoostedJetTagsProbs:
+    supportedBtagDiscr[disc] = [["pfDeepBoostedJetTagInfos"]]
+# update supportedMetaDiscr
+for disc in _pfDeepBoostedJetTagsMetaDiscrs:
+    supportedMetaDiscr[disc] = _pfDeepBoostedJetTagsProbs
+for disc in _pfMassDecorrelatedDeepBoostedJetTagsMetaDiscrs:
+    supportedMetaDiscr[disc] = _pfMassDecorrelatedDeepBoostedJetTagsProbs
+# -----------------------------------

@@ -32,9 +32,11 @@ output stream.
 #include <vector>
 #include <map>
 #include <atomic>
+#include <set>
 
 namespace edm {
 
+  class MergeableRunProductMetadata;
   class ModuleCallingContext;
   class PreallocationConfiguration;
   class ActivityRegistry;
@@ -85,6 +87,12 @@ namespace edm {
     static bool wantsGlobalLuminosityBlocks() {return true;}
     static bool wantsStreamRuns() {return false;}
     static bool wantsStreamLuminosityBlocks() {return false;};
+
+    SerialTaskQueue* globalRunsQueue() { return &runQueue_;}
+    SerialTaskQueue* globalLuminosityBlocksQueue() { return &luminosityBlockQueue_;}
+    SharedResourcesAcquirer& sharedResourcesAcquirer() {
+      return resourceAcquirer_;
+    }
 
     bool wantAllEvents() const {return wantAllEvents_;}
 
@@ -179,11 +187,13 @@ namespace edm {
     std::map<BranchID, bool> keepAssociation_;
 
     SharedResourcesAcquirer resourceAcquirer_;
+    SerialTaskQueue runQueue_;
+    SerialTaskQueue luminosityBlockQueue_;
 
     //------------------------------------------------------------------
     // private member functions
     //------------------------------------------------------------------
-    void doWriteRun(RunPrincipal const& rp, ModuleCallingContext const* mcc);
+    void doWriteRun(RunPrincipal const& rp, ModuleCallingContext const* mcc, MergeableRunProductMetadata const*);
     void doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp, ModuleCallingContext const* mcc);
     void doOpenFile(FileBlock const& fb);
     void doRespondToOpenInputFile(FileBlock const& fb);
@@ -193,10 +203,6 @@ namespace edm {
 
     std::string workerType() const {return "WorkerT<OutputModule>";}
     
-    SharedResourcesAcquirer& sharedResourcesAcquirer() {
-      return resourceAcquirer_;
-    }
-
     /// Tell the OutputModule that is must end the current file.
     void doCloseFile();
 
@@ -226,7 +232,10 @@ namespace edm {
     virtual void respondToOpenInputFile(FileBlock const&) {}
     virtual void respondToCloseInputFile(FileBlock const&) {}
 
+    virtual void setProcessesWithSelectedMergeableRunProducts(std::set<std::string> const&) {}
+
     bool hasAcquire() const { return false; }
+    bool hasAccumulator() const { return false; }
 
     virtual bool isFileOpen() const { return true; }
 

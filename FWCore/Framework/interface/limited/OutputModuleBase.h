@@ -24,6 +24,7 @@
 #include <map>
 #include <atomic>
 #include <mutex>
+#include <set>
 
 // user include files
 #include "DataFormats/Provenance/interface/BranchID.h"
@@ -44,6 +45,7 @@
 // forward declarations
 namespace edm {
 
+  class MergeableRunProductMetadata;
   class ModuleCallingContext;
   class PreallocationConfiguration;
   class ActivityRegistry;
@@ -218,7 +220,7 @@ namespace edm {
 
       void updateBranchIDListsWithKeptAliases();
 
-      void doWriteRun(RunPrincipal const& rp, ModuleCallingContext const*);
+      void doWriteRun(RunPrincipal const& rp, ModuleCallingContext const*, MergeableRunProductMetadata const*);
       void doWriteLuminosityBlock(LuminosityBlockPrincipal const& lbp, ModuleCallingContext const*);
       void doOpenFile(FileBlock const& fb);
       void doRespondToOpenInputFile(FileBlock const& fb);
@@ -254,6 +256,7 @@ namespace edm {
       virtual bool isFileOpen() const { return true; }
       
       virtual void preallocStreams(unsigned int){}
+      virtual void preallocLumis(unsigned int){}
       virtual void preallocate(PreallocationConfiguration const&){}
       virtual void doBeginStream_(StreamID){}
       virtual void doEndStream_(StreamID){}
@@ -275,7 +278,10 @@ namespace edm {
       virtual void doRespondToOpenInputFile_(FileBlock const&) {}
       virtual void doRespondToCloseInputFile_(FileBlock const&) {}
 
+      virtual void setProcessesWithSelectedMergeableRunProducts(std::set<std::string> const&) {}
+
       bool hasAcquire() const { return false; }
+      bool hasAccumulator() const { return false; }
 
       void keepThisBranch(BranchDescription const& desc,
                           std::map<BranchID, BranchDescription const*>& trueBranchIDToKeptBranchDesc,

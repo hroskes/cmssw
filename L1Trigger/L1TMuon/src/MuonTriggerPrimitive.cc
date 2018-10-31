@@ -4,14 +4,17 @@
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigi.h"
 #include "DataFormats/L1DTTrackFinder/interface/L1MuDTChambPhDigi.h"
 #include "DataFormats/L1DTTrackFinder/interface/L1MuDTChambThDigi.h"
-#include "DataFormats/RPCDigi/interface/RPCDigiL1Link.h"
+#include "DataFormats/RPCDigi/interface/RPCDigi.h"
+#include "DataFormats/L1TMuon/interface/CPPFDigi.h"
 #include "DataFormats/GEMDigi/interface/GEMPadDigi.h"
+#include "DataFormats/GEMDigi/interface/ME0PadDigi.h"
 
 // detector ID types
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
 #include "DataFormats/MuonDetId/interface/GEMDetId.h"
+#include "DataFormats/MuonDetId/interface/ME0DetId.h"
 
 using namespace L1TMuon;
 
@@ -21,11 +24,11 @@ namespace {
 
 //constructors from DT data
 TriggerPrimitive::TriggerPrimitive(const DTChamberId& detid,
-				   const L1MuDTChambPhDigi& digi_phi,
-				   const int segment_number):
+                                   const L1MuDTChambPhDigi& digi_phi,
+                                   const int segment_number):
   _id(detid),
   _subsystem(TriggerPrimitive::kDT) {
-  calculateDTGlobalSector(detid,_globalsector,_subsector);
+  calculateGlobalSector(detid,_globalsector,_subsector);
   // fill in information from theta trigger
   _dt.theta_bti_group = -1;
   _dt.segment_number = segment_number;
@@ -44,11 +47,11 @@ TriggerPrimitive::TriggerPrimitive(const DTChamberId& detid,
 }
 
 TriggerPrimitive::TriggerPrimitive(const DTChamberId& detid,
-				   const L1MuDTChambThDigi& digi_th,
-				   const int theta_bti_group):
+                                   const L1MuDTChambThDigi& digi_th,
+                                   const int theta_bti_group):
   _id(detid),
   _subsystem(TriggerPrimitive::kDT) {
-  calculateDTGlobalSector(detid,_globalsector,_subsector);
+  calculateGlobalSector(detid,_globalsector,_subsector);
   // fill in information from theta trigger
   _dt.theta_bti_group = theta_bti_group;
   _dt.segment_number = digi_th.position(theta_bti_group);
@@ -67,12 +70,12 @@ TriggerPrimitive::TriggerPrimitive(const DTChamberId& detid,
 }
 
 TriggerPrimitive::TriggerPrimitive(const DTChamberId& detid,
-				   const L1MuDTChambPhDigi& digi_phi,
-				   const L1MuDTChambThDigi& digi_th,
-				   const int theta_bti_group):
+                                   const L1MuDTChambPhDigi& digi_phi,
+                                   const L1MuDTChambThDigi& digi_th,
+                                   const int theta_bti_group):
   _id(detid),
   _subsystem(TriggerPrimitive::kDT) {
-  calculateDTGlobalSector(detid,_globalsector,_subsector);
+  calculateGlobalSector(detid,_globalsector,_subsector);
   // fill in information from theta trigger
   _dt.theta_bti_group = theta_bti_group;
   _dt.segment_number = digi_th.position(theta_bti_group);
@@ -92,10 +95,10 @@ TriggerPrimitive::TriggerPrimitive(const DTChamberId& detid,
 
 //constructor from CSC data
 TriggerPrimitive::TriggerPrimitive(const CSCDetId& detid,
-				   const CSCCorrelatedLCTDigi& digi):
+                                   const CSCCorrelatedLCTDigi& digi):
   _id(detid),
   _subsystem(TriggerPrimitive::kCSC) {
-  calculateCSCGlobalSector(detid,_globalsector,_subsector);
+  calculateGlobalSector(detid,_globalsector,_subsector);
   _csc.trknmb  = digi.getTrknmb();
   _csc.valid   = digi.isValid();
   _csc.quality = digi.getQuality();
@@ -114,23 +117,68 @@ TriggerPrimitive::TriggerPrimitive(const CSCDetId& detid,
     _id = CSCDetId(detid.endcap(), detid.station(), 4, detid.chamber(), detid.layer());
     _csc.strip = digi.getStrip() - 128;
   }
+
+  CSCCorrelatedLCTDigi digi_clone = digi; // Necessary to get around const qualifier
+  CSCALCTDigi alct = digi_clone.getALCT();
+  CSCCLCTDigi clct = digi_clone.getCLCT();
+  _csc.alct_quality = alct.getQuality();
+  _csc.clct_quality = clct.getQuality();
 }
 
-
 // constructor from RPC data
+TriggerPrimitive::TriggerPrimitive(const RPCDetId& detid,
+                                   const RPCDigi& digi):
+  _id(detid),
+  _subsystem(TriggerPrimitive::kRPC) {
+  calculateGlobalSector(detid,_globalsector,_subsector);
+  _rpc.strip = digi.strip();
+  _rpc.strip_low = digi.strip();
+  _rpc.strip_hi = digi.strip();
+  _rpc.phi_int = 0;
+  _rpc.theta_int = 0;
+  _rpc.emtf_sector = 0;
+  _rpc.layer = detid.layer();
+  _rpc.bx = digi.bx();
+  _rpc.valid = 1;
+  _rpc.time = digi.time();
+}
+
 TriggerPrimitive::TriggerPrimitive(const RPCDetId& detid,
                                    const unsigned strip,
                                    const unsigned layer,
                                    const int bx):
   _id(detid),
   _subsystem(TriggerPrimitive::kRPC) {
-  calculateRPCGlobalSector(detid,_globalsector,_subsector);
+  calculateGlobalSector(detid,_globalsector,_subsector);
   _rpc.strip = strip;
   _rpc.strip_low = strip;
   _rpc.strip_hi = strip;
+  _rpc.phi_int = 0;
+  _rpc.theta_int = 0;
+  _rpc.emtf_sector = 0;
   _rpc.layer = layer;
   _rpc.bx = bx;
   _rpc.valid = 1;
+  _rpc.time = -999999.;
+}
+
+// constructor from CPPF data
+TriggerPrimitive::TriggerPrimitive(const RPCDetId& detid,
+				   const l1t::CPPFDigi& digi):
+  _id(detid),
+  _subsystem(TriggerPrimitive::kRPC) {
+  calculateGlobalSector(detid,_globalsector,_subsector);
+  // In unpacked CPPF digis, the strip number and cluster size are not available, and are set to -99
+  _rpc.strip       = ( digi.first_strip() < 0 ? 0 : digi.first_strip() + (digi.cluster_size() / 2) );
+  _rpc.strip_low   = ( digi.first_strip() < 0 ? 0 : digi.first_strip() );
+  _rpc.strip_hi    = ( digi.first_strip() < 0 ? 0 : digi.first_strip() + digi.cluster_size() - 1 );
+  _rpc.phi_int     = digi.phi_int();
+  _rpc.theta_int   = digi.theta_int();
+  _rpc.emtf_sector = digi.emtf_sector();
+  _rpc.layer       = detid.layer();
+  _rpc.bx          = digi.bx();
+  _rpc.valid       = digi.valid();
+  _rpc.isCPPF      = true;
 }
 
 // constructor from GEM data
@@ -138,11 +186,26 @@ TriggerPrimitive::TriggerPrimitive(const GEMDetId& detid,
                                    const GEMPadDigi& digi):
   _id(detid),
   _subsystem(TriggerPrimitive::kGEM) {
-  calculateGEMGlobalSector(detid,_globalsector,_subsector);
+  calculateGlobalSector(detid,_globalsector,_subsector);
   _gem.pad = digi.pad();
   _gem.pad_low = digi.pad();
   _gem.pad_hi = digi.pad();
   _gem.bx = digi.bx();
+  _gem.bend = 0;
+  _gem.isME0 = false;
+}
+
+TriggerPrimitive::TriggerPrimitive(const ME0DetId& detid,
+                                   const ME0PadDigi& digi):
+  _id(detid),
+  _subsystem(TriggerPrimitive::kGEM) {
+  calculateGlobalSector(detid,_globalsector,_subsector);
+  _gem.pad = digi.pad();
+  _gem.pad_low = digi.pad();
+  _gem.pad_hi = digi.pad();
+  _gem.bx = digi.bx();
+  _gem.bend = 0;
+  _gem.isME0 = true;
 }
 
 TriggerPrimitive::TriggerPrimitive(const TriggerPrimitive& tp):
@@ -205,13 +268,20 @@ bool TriggerPrimitive::operator==(const TriggerPrimitive& tp) const {
            this->_rpc.strip == tp._rpc.strip &&
            this->_rpc.strip_low == tp._rpc.strip_low &&
            this->_rpc.strip_hi == tp._rpc.strip_hi &&
+           this->_rpc.phi_int == tp._rpc.phi_int &&
+           this->_rpc.theta_int == tp._rpc.theta_int &&
+           this->_rpc.emtf_sector == tp._rpc.emtf_sector &&
            this->_rpc.layer == tp._rpc.layer &&
            this->_rpc.bx == tp._rpc.bx &&
            this->_rpc.valid == tp._rpc.valid &&
+           //this->_rpc.time == tp._rpc.time &&
+           this->_rpc.isCPPF == tp._rpc.isCPPF &&
            this->_gem.pad == tp._gem.pad &&
            this->_gem.pad_low == tp._gem.pad_low &&
            this->_gem.pad_hi == tp._gem.pad_hi &&
            this->_gem.bx == tp._gem.bx &&
+           this->_gem.bend == tp._gem.bend &&
+           this->_gem.isME0 == tp._gem.isME0 &&
            this->_id == tp._id &&
            this->_subsystem == tp._subsystem &&
            this->_globalsector == tp._globalsector &&
@@ -290,39 +360,11 @@ const int TriggerPrimitive::getPattern() const {
   return -1;
 }
 
-void TriggerPrimitive::calculateDTGlobalSector(const DTChamberId& chid,
-                                               unsigned& global_sector,
-                                               unsigned& subsector ) {
-  global_sector = 0;
-  subsector = 0;
-}
-
-void TriggerPrimitive::calculateCSCGlobalSector(const CSCDetId& chid,
-                                                unsigned& global_sector,
-                                                unsigned& subsector ) {
-  global_sector = 0;
-  subsector = 0;
-}
-
-void TriggerPrimitive::calculateRPCGlobalSector(const RPCDetId& chid,
-                                                unsigned& global_sector,
-                                                unsigned& subsector ) {
-  global_sector = 0;
-  subsector = 0;
-}
-
-void TriggerPrimitive::calculateGEMGlobalSector(const GEMDetId& chid,
-                                                unsigned& global_sector,
-                                                unsigned& subsector ) {
-  global_sector = 0;
-  subsector = 0;
-}
-
 void TriggerPrimitive::print(std::ostream& out) const {
   unsigned idx = (unsigned) _subsystem;
   out << subsystem_names[idx] << " Trigger Primitive" << std::endl;
-  out << "eta: " << _eta << " phi: " << _phi
-      << " bend: " << _theta << std::endl;
+  out << "eta: " << _eta << " phi: " << _phi << " rho: " << _rho
+      << " theta: " << _theta << std::endl;
   switch(_subsystem) {
   case kDT:
     out << detId<DTChamberId>() << std::endl;
@@ -358,15 +400,25 @@ void TriggerPrimitive::print(std::ostream& out) const {
     out << "Strip         : " << _rpc.strip << std::endl;
     out << "Strip Low     : " << _rpc.strip_low << std::endl;
     out << "Strip High    : " << _rpc.strip_hi << std::endl;
+    out << "Integer phi   : " << _rpc.phi_int << std::endl;
+    out << "Integer theta : " << _rpc.theta_int << std::endl;
+    out << "EMTF sector   : " << _rpc.emtf_sector << std::endl;
     out << "Layer         : " << _rpc.layer << std::endl;
     out << "Valid         : " << _rpc.valid << std::endl;
-    break;
+    out << "Time          : " << _rpc.time << std::endl;
+    out << "IsCPPF        : " << _rpc.isCPPF << std::endl;
+   break;
   case kGEM:
-    out << detId<GEMDetId>() << std::endl;
+    if (!_gem.isME0)
+      out << detId<GEMDetId>() << std::endl;
+    else
+      out << detId<ME0DetId>() << std::endl;
     out << "Local BX      : " << _gem.bx << std::endl;
     out << "Pad           : " << _gem.pad << std::endl;
     out << "Pad Low       : " << _gem.pad_low << std::endl;
     out << "Pad High      : " << _gem.pad_hi << std::endl;
+    out << "Packed Bend   : " << _gem.bend << std::endl;
+    out << "Is ME0        : " << _gem.isME0 << std::endl;
     break;
   default:
     throw cms::Exception("Invalid Subsytem")

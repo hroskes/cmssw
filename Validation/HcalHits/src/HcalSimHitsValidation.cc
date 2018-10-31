@@ -13,6 +13,10 @@ HcalSimHitsValidation::HcalSimHitsValidation(edm::ParameterSet const& conf) {
   hcalHits_ = conf.getUntrackedParameter<std::string>("HcalHitCollection","HcalHits");
   ebHits_ = conf.getUntrackedParameter<std::string>("EBHitCollection","EcalHitsEB");
   eeHits_ = conf.getUntrackedParameter<std::string>("EEHitCollection","EcalHitsEE");
+  
+  // import sampling factors
+  hf1_ = conf.getParameter<double>("hf1");
+  hf2_ = conf.getParameter<double>("hf2");
 
   tok_evt_ = consumes<edm::HepMCProduct>(edm::InputTag("generatorSmeared"));
   tok_hcal_ = consumes<edm::PCaloHitContainer>(edm::InputTag(g4Label_,hcalHits_));
@@ -124,23 +128,23 @@ void HcalSimHitsValidation::bookHistograms(DQMStore::IBooker &ib, edm::Run const
        if(depth == 0){ sprintf  (histo, "emean_vs_ieta_HB" ); }
        else {          sprintf  (histo, "emean_vs_ieta_HB%d", depth ); }
 
-       emean_vs_ieta_HB.push_back( ib.bookProfile(histo, histo, ieta_bins_HB, ieta_min_HB, ieta_max_HB, 2010, -10., 2000., "s") );
+       emean_vs_ieta_HB.push_back( ib.bookProfile(histo, histo, ieta_bins_HB, ieta_min_HB, ieta_max_HB, -10., 2000., " ") );
     }
     for(int depth = 0; depth <= maxDepthHE_; depth++){
        if(depth == 0){ sprintf  (histo, "emean_vs_ieta_HE" ); }
        else {          sprintf  (histo, "emean_vs_ieta_HE%d", depth ); }
 
-       emean_vs_ieta_HE.push_back( ib.bookProfile(histo, histo, ieta_bins_HE, ieta_min_HE, ieta_max_HE, 2010, -10., 2000., "s") );
+       emean_vs_ieta_HE.push_back( ib.bookProfile(histo, histo, ieta_bins_HE, ieta_min_HE, ieta_max_HE, -10., 2000., " ") );
     }
 
        sprintf  (histo, "emean_vs_ieta_HO" ); 
-       emean_vs_ieta_HO =  ib.bookProfile(histo, histo, ieta_bins_HO, ieta_min_HO, ieta_max_HO, 2010, -10., 2000., "s");
+       emean_vs_ieta_HO =  ib.bookProfile(histo, histo, ieta_bins_HO, ieta_min_HO, ieta_max_HO, -10., 2000., " ");
 
     for(int depth = 0; depth <= maxDepthHF_; depth++){
        if(depth == 0){ sprintf  (histo, "emean_vs_ieta_HF" ); }
        else {          sprintf  (histo, "emean_vs_ieta_HF%d", depth ); }
 
-       emean_vs_ieta_HF.push_back( ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, 2010, -10., 2000., "s") );
+       emean_vs_ieta_HF.push_back( ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, -10., 2000., " ") );
     }
 
     //Occupancy vs. iEta TH1Fs
@@ -195,13 +199,13 @@ void HcalSimHitsValidation::bookHistograms(DQMStore::IBooker &ib, edm::Run const
 
     //Energy in Cone
     sprintf (histo, "HcalSimHitTask_En_simhits_cone_profile_vs_ieta_all_depths");
-    meEnConeEtaProfile = ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, 210, -10., 200.);  
+    meEnConeEtaProfile = ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, -10., 200., " ");  
     
     sprintf (histo, "HcalSimHitTask_En_simhits_cone_profile_vs_ieta_all_depths_E");
-    meEnConeEtaProfile_E = ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, 210, -10., 200.);  
+    meEnConeEtaProfile_E = ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, -10., 200., " ");  
       
     sprintf (histo, "HcalSimHitTask_En_simhits_cone_profile_vs_ieta_all_depths_EH");
-    meEnConeEtaProfile_EH = ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, 210, -10., 200.);  
+    meEnConeEtaProfile_EH = ib.bookProfile(histo, histo, ieta_bins_HF, ieta_min_HF, ieta_max_HF, -10., 200., " ");  
     
 
 }
@@ -213,8 +217,7 @@ void HcalSimHitsValidation::endJob() {
 
   for (int i = 1; i <= occupancy_vs_ieta_HB[0]->getNbinsX(); i++){
 
-    int ieta = i - 42;        // -41 -1, 0 40 
-    if(ieta >=0 ) ieta +=1;   // -41 -1, 1 41  - to make it detector-like
+    int ieta = i - 43;        // -41 -1, 1 41 
 
     float phi_factor;
 
@@ -290,8 +293,8 @@ void HcalSimHitsValidation::analyze(edm::Event const& ev, edm::EventSetup const&
   //Approximate calibration constants
   const float calib_HB = 120.;
   const float calib_HE = 190.;
-  const float calib_HF1 = 1.0/0.383;
-  const float calib_HF2 = 1.0/0.368;
+  const float calib_HF1 = hf1_;//1.0/0.383;
+  const float calib_HF2 = hf2_;//1.0/0.368;
   
   edm::Handle<PCaloHitContainer> hcalHits;
   ev.getByToken(tok_hcal_,hcalHits);
@@ -427,9 +430,7 @@ void HcalSimHitsValidation::analyze(edm::Event const& ev, edm::EventSetup const&
   }
   } // eeHits_
 
-  if (ietaMax != 0){            //If ietaMax == 0, there were no good HCAL SimHits 
-    if (ietaMax > 0) ietaMax--; //Account for lack of ieta = 0
-    
+  if (ietaMax != 0){            //If ietaMax == 0, there were no good HCAL SimHits     
     meEnConeEtaProfile       ->Fill(double(ietaMax), HcalCone);    
     meEnConeEtaProfile_E     ->Fill(double(ietaMax), EcalCone);
     meEnConeEtaProfile_EH    ->Fill(double(ietaMax), HcalCone+EcalCone); 

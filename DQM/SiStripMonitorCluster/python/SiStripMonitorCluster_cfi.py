@@ -1,7 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 
 # SiStripMonitorCluster
-SiStripMonitorCluster = cms.EDAnalyzer("SiStripMonitorCluster",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+SiStripMonitorCluster = DQMEDAnalyzer('SiStripMonitorCluster',
     ClusterProducerStrip = cms.InputTag('siStripClusters'),
     ClusterProducerPix = cms.InputTag('siPixelClusters'),
 
@@ -311,9 +312,9 @@ SiStripMonitorCluster = cms.EDAnalyzer("SiStripMonitorCluster",
         ),
 
      TProfNClustersFED = cms.PSet(
-         Nbinsx          = cms.int32(500),
-         xmax           = cms.double(500),
-         xmin           = cms.double(0),
+         Nbinsx          = cms.int32(440),
+         xmax           = cms.double(489.5),
+         xmin           = cms.double(49.5),
          Nbinsy = cms.int32(200),
          ymin = cms.double(-0.5),
          ymax = cms.double(199999.5),

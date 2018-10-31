@@ -2,6 +2,7 @@
 
 namespace hcaldqm
 {
+	using namespace constants;
 	DQClient::DQClient(std::string const& name, std::string const& taskname,
 		edm::ParameterSet const& ps) :
 		DQModule(ps),_taskname(taskname), _maxProcessedLS(0)
@@ -54,13 +55,10 @@ namespace hcaldqm
 			}
 
 			//	get FEDs registered @cDAQ
-			edm::eventsetup::EventSetupRecordKey recordKey(
-				edm::eventsetup::EventSetupRecordKey::TypeTag::findType(
-					"RunInfoRcd"));
-			if (es.find(recordKey))
+                        if (auto runInfoRec = es.tryToGet<RunInfoRcd>())
 			{
 				edm::ESHandle<RunInfo> ri;
-				es.get<RunInfoRcd>().get(ri);
+                                runInfoRec->get(ri);
 				std::vector<int> vfeds=ri->m_fed_in;
 				for (std::vector<int>::const_iterator it=vfeds.begin();
 					it!=vfeds.end(); ++it)

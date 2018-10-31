@@ -11,7 +11,7 @@
  * The output is up to two Correlated LCTs.
  *
  * It can be run in either a test mode, where the arguments are a collection
- * of wire times and arrays of halfstrip and distrip times, or
+ * of wire times and arrays of halfstrip times, or
  * for general use, with wire digi and comparator digi collections as
  * arguments.  In the latter mode, the wire & strip info is passed on the
  * LCTProcessors, where it is decoded and converted into a convenient form.
@@ -54,20 +54,15 @@ class CSCMotherboard
   /** Default destructor. */
   virtual ~CSCMotherboard() = default;
 
-  /** Test version of run function. */
-  void run(const std::vector<int> w_time[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_WIRES],
-	   const std::vector<int> hs_times[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS],
-	   const std::vector<int> ds_times[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS]);
-
   /** Run function for normal usage.  Runs cathode and anode LCT processors,
       takes results and correlates into CorrelatedLCT. */
   void run(const CSCWireDigiCollection* wiredc, const CSCComparatorDigiCollection* compdc);
 
   /** Returns vector of correlated LCTs in the read-out time window, if any. */
-  std::vector<CSCCorrelatedLCTDigi> readoutLCTs();
+  std::vector<CSCCorrelatedLCTDigi> readoutLCTs() const;
 
   /** Returns vector of all found correlated LCTs, if any. */
-  std::vector<CSCCorrelatedLCTDigi> getLCTs();
+  std::vector<CSCCorrelatedLCTDigi> getLCTs() const;
 
   /** Clears correlated LCT and passes clear signal on to cathode and anode
       LCT processors. */
@@ -87,6 +82,9 @@ class CSCMotherboard
  // VK: change to protected, to allow inheritance
  protected:
 
+  // helper function to return ALCT with correct central BX
+  CSCALCTDigi getBXShiftedALCT(const CSCALCTDigi&) const;
+
   /** Verbosity level: 0: no print (default).
    *                   1: print LCTs found. */
   int infoV;
@@ -101,12 +99,6 @@ class CSCMotherboard
 
   const CSCGeometry* csc_g;
 
-  /** Flag for MTCC data. */
-  bool isMTCC;
-
-  /** Flag for new (2007) version of TMB firmware. */
-  bool isTMB07;
-
   /** Flag for SLHC studies. */
   bool isSLHC;
 
@@ -115,17 +107,23 @@ class CSCMotherboard
   unsigned int alct_trig_enable, clct_trig_enable, match_trig_enable;
   unsigned int match_trig_window_size, tmb_l1a_window_size;
 
-  /** Central BX */
-  int lct_central_bx;
-
   /** SLHC: whether to not reuse ALCTs that were used by previous matching CLCTs */
   bool drop_used_alcts;
+
+  /** SLHC: whether to not reuse CLCTs that were used by previous matching ALCTs */
+  bool drop_used_clcts;
 
   /** SLHC: separate handle for early time bins */
   int early_tbins;
 
   /** SLHC: whether to readout only the earliest two LCTs in readout window */
   bool readout_earliest_2;
+
+  /** if true: use regular CLCT-to-ALCT matching in TMB
+      if false: do ALCT-to-CLCT matching */
+  bool clct_to_alct;
+
+  unsigned int alctClctOffset;
 
   /** Default values of configuration parameters. */
   static const unsigned int def_mpc_block_me1a;
@@ -142,12 +140,21 @@ class CSCMotherboard
   /** Make sure that the parameter values are within the allowed range. */
   void checkConfigParameters();
 
-  void correlateLCTs(CSCALCTDigi& bestALCT, CSCALCTDigi& secondALCT,
-                     CSCCLCTDigi& bestCLCT, CSCCLCTDigi& secondCLCT);
+  void correlateLCTs(const CSCALCTDigi& bestALCT, const CSCALCTDigi& secondALCT,
+                     const CSCCLCTDigi& bestCLCT, const CSCCLCTDigi& secondCLCT,
+                     int type);
+
+  // This method calculates all the TMB words and then passes them to the
+  // constructor of correlated LCTs.
   CSCCorrelatedLCTDigi constructLCTs(const CSCALCTDigi& aLCT,
                                      const CSCCLCTDigi& cLCT,
-                                     int type) const;
+                                     int type, int trknmb) const;
+
+  // CLCT pattern number: encodes the pattern number itself and
+  // whether the pattern consists of half-strips or di-strips.
   unsigned int encodePattern(const int ptn, const int highPt) const;
+
+  // 4-bit LCT quality number.Made by TMB lookup tables and used for MPC sorting.
   unsigned int findQuality(const CSCALCTDigi& aLCT, const CSCCLCTDigi& cLCT) const;
 
   enum LCT_Quality{

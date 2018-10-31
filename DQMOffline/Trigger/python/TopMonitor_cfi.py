@@ -70,6 +70,7 @@ hltTOPmonitoring.histoPSet.MHTPSet = cms.PSet(
 
 
 hltTOPmonitoring.enablePhotonPlot = cms.bool(False)
+hltTOPmonitoring.enableMETplot = cms.bool(False)
 
 #MET and HT binning
 hltTOPmonitoring.histoPSet.metBinning = cms.vdouble(0,20,40,60,80,100,125,150,175,200)
@@ -100,6 +101,8 @@ hltTOPmonitoring.histoPSet.phiBinning2D = cms.vdouble(-3.1416,-1.8849,-0.6283,0.
 hltTOPmonitoring.met       = cms.InputTag("pfMetEI") # pfMet
 hltTOPmonitoring.jets      = cms.InputTag("ak4PFJetsCHS") # ak4PFJets, ak4PFJetsCHS, pfJetsEI
 hltTOPmonitoring.electrons = cms.InputTag("gedGsfElectrons") # while pfIsolatedElectronsEI are reco::PFCandidate !
+hltTOPmonitoring.elecID    = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Fall17-94X-V1-tight") #Electron ID
+
 hltTOPmonitoring.muons     = cms.InputTag("muons") # while pfIsolatedMuonsEI are reco::PFCandidate !
 hltTOPmonitoring.photons   = cms.InputTag("photons") #reco::Photon 
 #Suvankar

@@ -1,7 +1,8 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process("BeamMonitor", eras.Run2_2017)
+process = cms.Process("BeamMonitor", eras.Run2_2018)
 
 #----------------------------------------------                                                                                                                                    
 # Switch to change between firstStep and Pixel
@@ -131,7 +132,6 @@ process.pixelTracksCutClassifier = cms.EDProducer( "TrackCutClassifier",
       minLayers = cms.vint32( 0, 2, 3 )
     ),
     ignoreVertices = cms.bool( True ),
-    GBRForestFileName = cms.string( "" )
 )
 process.pixelTracksHP = cms.EDProducer( "TrackCollectionFilterCloner",
     minQuality = cms.string( "highPurity" ),
@@ -262,7 +262,7 @@ if (process.runType.getRunType() == process.runType.pp_run or process.runType.ge
     process.runType.getRunType() == process.runType.cosmic_run or process.runType.getRunType() == process.runType.cosmic_run_stage1 or 
     process.runType.getRunType() == process.runType.hpu_run):
 
-    print "[beam_dqm_sourceclient-live_cfg]:: Running pp"
+    print("[beam_dqm_sourceclient-live_cfg]:: Running pp")
 
     process.castorDigis.InputLabel = cms.InputTag("rawDataCollector")
     process.csctfDigis.producer = cms.InputTag("rawDataCollector")
@@ -290,7 +290,7 @@ if (process.runType.getRunType() == process.runType.pp_run or process.runType.ge
   
 
     if (runFirstStepTrk): # for first Step Tracking
-        print "[beam_dqm_sourceclient-live_cfg]:: firstStepTracking"
+        print("[beam_dqm_sourceclient-live_cfg]:: firstStepTracking")
         # Import TrackerLocalReco sequence
         process.load('RecoLocalTracker.Configuration.RecoLocalTracker_cff')
         # Import MeasurementTrackerEvents used during patter recognition
@@ -331,7 +331,7 @@ if (process.runType.getRunType() == process.runType.pp_run or process.runType.ge
                                                      process.InitialStepPreSplitting
                                                      )
     else: # pixel tracking
-        print "[beam_dqm_sourceclient-live_cfg]:: pixelTracking"
+        print("[beam_dqm_sourceclient-live_cfg]:: pixelTracking")
 
 
         #pixel  track/vertices reco
@@ -382,7 +382,7 @@ if (process.runType.getRunType() == process.runType.pp_run or process.runType.ge
 #--------------------------------------------------
 if (process.runType.getRunType() == process.runType.hi_run):
 
-    print "beam_dqm_sourceclient-live_cfg:Running HI"
+    print("beam_dqm_sourceclient-live_cfg:Running HI")
     process.castorDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.csctfDigis.producer = cms.InputTag("rawDataRepacker")
     process.dttfDigis.DTTF_FED_Source = cms.InputTag("rawDataRepacker")

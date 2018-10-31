@@ -2,19 +2,21 @@
 // Usage:
 // .L CalibSort.C+g (for the tree "CalibTree")
 //  CalibSort c1(fname, dirname, prefix, flag, mipCut);
-//  c1.Loop();
+//  c1.Loop("events.txt");
 //  findDuplicate(infile, outfile, debug)
 //
 // .L CalibSort.C+g (for the tree "EventInfo")
 //  CalibSortEvent c2(fname, dirname, prefix, append);
 //  c2.Loop();
-//  findDuplicatEvent(infile, outfile, debug)
+//  findDuplicateEvent(infile, outfile, debug)
 //
 //  This will prepare a list of dupliate entries from combined data sets
 //
 //   where:
 // 
-//   fname   (std::string)     = file name of the input ROOT tree
+//   fname   (const char*)     = file name of the input ROOT tree
+//                               or name of the file containing a list of
+//                               file names of input ROOT trees
 //   dirname (std::string)     = name of the directory where Tree resides
 //                               (default "HcalIsoTrkAnalyzer")
 //   prefix (std::string)      = String to be added to the name
@@ -49,11 +51,14 @@
 #include <TPaveText.h>
 
 #include <algorithm>
-#include <vector>
-#include <string>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "CalibCorr.C"
 
 struct record {
   record(int ser=0, int ent=0, int r=0, int ev=0, int ie=0, double p=0) :
@@ -89,19 +94,20 @@ struct recordEventLess {
 
 class CalibSort {
 public :
-  CalibSort(std::string fname, std::string dirname="HcalIsoTrkAnalyzer",
-	    std::string prefix="", int flag=0, double mipCut=2.0);
+  CalibSort(const char* fname, std::string dirname="HcalIsoTrkAnalyzer",
+	    std::string prefix="", bool allEvent=false, int flag=0, 
+	    double mipCut=2.0);
   virtual ~CalibSort();
   virtual Int_t              Cut(Long64_t entry);
   virtual Int_t              GetEntry(Long64_t entry);
   virtual Long64_t           LoadTree(Long64_t entry);
-  virtual void               Init(TTree *tree);
-  virtual void               Loop();
+  virtual void               Init(TChain*);
+  virtual void               Loop(const char*);
   virtual Bool_t             Notify();
   virtual void               Show(Long64_t entry = -1);
 private:
 
-  TTree                     *fChain;  //!pointer to the analyzed TTree or TChain
+  TChain                    *fChain;  //!pointer to the analyzed TTree or TChain
   Int_t                      fCurrent; //!current Tree number in a TChain
 
   // Declaration of leaf types
@@ -185,23 +191,28 @@ private:
   TBranch                   *b_t_HitEnergies3;  //!
 
   std::string               fname_, dirnm_, prefix_;
+  bool                      allEvent_;
   int                       flag_;
   double                    mipCut_;
 };
 
-CalibSort::CalibSort(std::string fname, std::string dirnm, std::string prefix,
-		     int flag, double mipCut) : fname_(fname), dirnm_(dirnm), 
-						prefix_(prefix), flag_(flag),
-						mipCut_(mipCut) {
-  // if parameter tree is not specified (or zero), connect the file
-  // used to generate this class and read the Tree
-  TFile      *file = new TFile(fname.c_str());
-  TDirectory *dir  = (TDirectory*)file->FindObjectAny(dirnm.c_str());
-  std::cout << fname << " file " << file << " " << dirnm << " " << dir 
+CalibSort::CalibSort(const char* fname, std::string dirnm, 
+		     std::string prefix, bool allEvent, int flag, 
+		     double mipCut) : fname_(fname), dirnm_(dirnm), 
+				      prefix_(prefix), allEvent_(allEvent),
+				      flag_(flag), mipCut_(mipCut) {
+  char treeName[400];
+  sprintf (treeName, "%s/CalibTree", dirnm.c_str());
+  TChain    *chain = new TChain(treeName);
+  std::cout << "Create a chain for " << treeName << " from " << fname
 	    << std::endl;
-  TTree      *tree = (TTree*)dir->Get("CalibTree");
-  std::cout << "CalibTree " << tree << std::endl;
-  Init(tree);
+  if (!fillChain(chain,fname)) {
+    std::cout << "*****No valid tree chain can be obtained*****" << std::endl;
+  } else {
+    std::cout << "Proceed with a tree chain with " << chain->GetEntries()
+	      << " entries" << std::endl;
+    Init(chain);
+  }
 }
 
 CalibSort::~CalibSort() {
@@ -229,7 +240,7 @@ Long64_t CalibSort::LoadTree(Long64_t entry) {
   return centry;
 }
 
-void CalibSort::Init(TTree *tree) {
+void CalibSort::Init(TChain *tree) {
   // The Init() function is called when the selector needs to initialize
   // a new tree or chain. Typically here the branch addresses and branch
   // pointers of the tree will be set.
@@ -318,7 +329,7 @@ Int_t CalibSort::Cut(Long64_t) {
   return 1;
 }
 
-void CalibSort::Loop() {
+void CalibSort::Loop(const char* outFile) {
   //   In a ROOT session, you can do:
   //      Root > .L CalibSort.C
   //      Root > CalibSort t
@@ -346,14 +357,15 @@ void CalibSort::Loop() {
 
   std::ofstream fileout;
   if ((flag_%10)==1) {
-    fileout.open("events.txt", std::ofstream::out);
-    std::cout << "Opens events.txt in output mode\n";
+    fileout.open(outFile, std::ofstream::out);
+    std::cout << "Opens " << outFile << " in output mode" << std::endl;
   } else {
-    fileout.open("events.txt", std::ofstream::app);
-    std::cout << "Opens events.txt in append mode\n";
+    fileout.open(outFile, std::ofstream::app);
+    std::cout << "Opens " << outFile << " in append mode" << std::endl;
   }
-  fileout << "Input file: " << fname_ << " Directory: " << dirnm_ 
-	  << " Prefix: " << prefix_ << "\n";
+  if (!allEvent_)
+    fileout << "Input file: " << fname_ << " Directory: " << dirnm_ 
+	    << " Prefix: " << prefix_ << std::endl;
   Int_t runLow(99999999), runHigh(0);
   Long64_t nbytes(0), nb(0), good(0);
   Long64_t nentries = fChain->GetEntriesFast();
@@ -370,21 +382,22 @@ void CalibSort::Loop() {
       std::cout << "Entry " << jentry << " p " << t_p << " Cuts " << t_qltyFlag
 		<< "|" << t_selectTk << "|" << (t_hmaxNearP < cut) << "|" 
 		<< (t_eMipDR < mipCut_) << std::endl;
-    if (t_qltyFlag && t_selectTk && (t_hmaxNearP<cut) && (t_eMipDR<mipCut_)) {
+    if ((t_qltyFlag && t_selectTk && (t_hmaxNearP<cut) && (t_eMipDR<mipCut_)) ||
+	allEvent_) {
       good++;
       fileout << good << " " << jentry << " " << t_Run  << " " << t_Event 
 	      << " " << t_ieta << " " << t_p << std::endl;
     }
   }
   fileout.close();
-  std::cout << "Writes " << good << " events in the file events.txt from "
-	    << nentries << " entries in run range " << runLow << ":"
- 	    << runHigh << std::endl;
+  std::cout << "Writes " << good << " events in the file " << outFile 
+	    << " from " << nentries << " entries in run range " << runLow 
+	    << ":" << runHigh << std::endl;
 }
 
 class CalibSortEvent {
 public :
-  TTree                     *fChain;   //!pointer to the analyzed TTree/TChain
+  TChain                    *fChain;   //!pointer to the analyzed TTree/TChain
   Int_t                      fCurrent; //!current Tree number in a TChain
 
   // Declaration of leaf types
@@ -421,13 +434,13 @@ public :
   TBranch                   *b_t_ietaGood;      //!
   TBranch                   *b_t_trackType;     //!
 
-  CalibSortEvent(std::string fname, std::string dirname, std::string prefix="",
+  CalibSortEvent(const char* fname, std::string dirname, std::string prefix="",
 		 bool append=false);
   virtual ~CalibSortEvent();
   virtual Int_t    Cut(Long64_t entry);
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);
-  virtual void     Init(TTree *tree);
+  virtual void     Init(TChain *tree);
   virtual void     Loop();
   virtual Bool_t   Notify();
   virtual void     Show(Long64_t entry = -1);
@@ -437,16 +450,22 @@ private:
   bool             append_;
 };
 
-CalibSortEvent::CalibSortEvent(std::string fname, std::string dirnm,
+CalibSortEvent::CalibSortEvent(const char* fname, std::string dirnm,
 			       std::string prefix, bool append) :
   fname_(fname), dirnm_(dirnm), prefix_(prefix), append_(append) {
 
-  TFile      *file = new TFile(fname.c_str());
-  TDirectory *dir  = (TDirectory*)file->FindObjectAny(dirnm.c_str());
-  std::cout << fname << " file " << file << " " << dirnm << " " << dir << "\n";
-  TTree      *tree = (TTree*)dir->Get("EventInfo");
-  std::cout << "CalibSortEvent " << tree << std::endl;
-  Init(tree);
+  char treeName[400];
+  sprintf (treeName, "%s/EventInfo", dirnm.c_str());
+  TChain    *chain = new TChain(treeName);
+  std::cout << "Create a chain for " << treeName << " from " << fname
+	    << std::endl;
+  if (!fillChain(chain,fname)) {
+    std::cout << "*****No valid tree chain can be obtained*****" << std::endl;
+  } else {
+    std::cout << "Proceed with a tree chain with " << chain->GetEntries()
+	      << " entries" << std::endl;
+    Init(chain);
+  }
 }
 
 CalibSortEvent::~CalibSortEvent() {
@@ -474,7 +493,7 @@ Long64_t CalibSortEvent::LoadTree(Long64_t entry) {
   return centry;
 }
 
-void CalibSortEvent::Init(TTree *tree) {
+void CalibSortEvent::Init(TChain *tree) {
   // The Init() function is called when the selector needs to initialize
   // a new tree or chain. Typically here the branch addresses and branch
   // pointers of the tree will be set.
@@ -565,13 +584,13 @@ void CalibSortEvent::Loop() {
   std::ofstream fileout;
   if (!append_) {
     fileout.open("runevents.txt", std::ofstream::out);
-    std::cout << "Opens runevents.txt in output mode\n";
+    std::cout << "Opens runevents.txt in output mode" << std::endl;
   } else {
     fileout.open("runevents.txt", std::ofstream::app);
-    std::cout << "Opens runevents.txt in append mode\n";
+    std::cout << "Opens runevents.txt in append mode" << std::endl;
   }
   fileout << "Input file: " << fname_ << " Directory: " << dirnm_ 
-	  << " Prefix: " << prefix_ << "\n";
+	  << " Prefix: " << prefix_ << std::endl;
   UInt_t   runLow(99999999), runHigh(0);
   Long64_t nbytes(0), nb(0), good(0);
   Long64_t nentries = fChain->GetEntriesFast();
@@ -609,13 +628,44 @@ void readRecords(std::string fname, std::vector<record>& records, bool debug) {
     }
     infile.close();
   }
-  std::cout << "Reads " << records.size() << " records from " << fname << "\n";
+  std::cout << "Reads " << records.size() << " records from " << fname 
+	    << std::endl;
   if (debug) {
     for (unsigned int k=0; k<records.size(); ++k) {
       if (k%100 == 0) 
 	std::cout << "[" << records[k].serial_ << ":" << records[k].entry_ 
 		  << "] " << records[k].run_ << ":" << records[k].event_ << " "
 		  << records[k].ieta_ << " " << records[k].p_  << std::endl;
+    }
+  }
+}
+
+void readMap(std::string fname, std::map<std::pair<int,int>,int>& records, 
+	     bool debug) {
+  records.clear();
+  ifstream infile (fname.c_str());
+  if (!infile.is_open()) {
+    std::cout << "Cannot open " << fname << std::endl;
+  } else {
+    while (1) {
+      int ser, ent, r, ev, ie;
+      double p;
+      infile >> ser >> ent >> r >> ev >> ie >> p;
+      if (!infile.good()) break;
+      std::pair<int,int> key(r,ev);
+      if (records.find(key) == records.end()) records[key] = ent;
+    }
+    infile.close();
+  }
+  std::cout << "Reads " << records.size() << " records from " << fname 
+	    << std::endl;
+  if (debug) {
+    unsigned k(0);
+    for (std::map<std::pair<int,int>,int>::iterator itr=records.begin();
+	 itr != records.end(); ++itr,++k) {
+      if (k%100 == 0) 
+	std::cout << "[" << k << "] " << itr->second << ":" 
+		  << (itr->first).first << ":" << (itr->first).second << "\n";
     }
   }
 }
@@ -650,7 +700,7 @@ void duplicate (std::string fname, std::vector<record>& records, bool debug) {
 	records[k-1]= records[k];
 	records[k]  = swap;
       }
-      if (debug)
+      if (debug) {
 	std::cout << "Serial " << records[k-1].serial_ << ":"  
 		  << records[k].serial_ << " Entry "  
 		  << records[k-1].entry_ << ":" << records[k].entry_ << " Run "
@@ -658,6 +708,7 @@ void duplicate (std::string fname, std::vector<record>& records, bool debug) {
 		  << records[k-1].event_ << " " << records[k].event_ << " Eta "
 		  << records[k-1].ieta_ << " " << records[k].ieta_ << " p "
 		  << records[k-1].p_ << ":" << records[k].p_ << std::endl;
+      }
       file << records[k].entry_ << std::endl;
       duplicate++;
       if (records[k].p_ >= 40.0 && records[k].p_ <= 60.0) dupl40++;
@@ -676,6 +727,34 @@ void findDuplicate(std::string infile, std::string outfile, bool debug=false) {
   duplicate(outfile, records, debug);
 }
 
+void findCommon(std::string infile1, std::string infile2, std::string infile3,
+		std::string outfile, bool debug=false) {
+  std::map<std::pair<int,int>,int> map1, map2, map3;
+  readMap(infile1,map1,debug);
+  readMap(infile2,map2,debug);
+  readMap(infile3,map3,debug);
+  bool check3 = (map3.size() > 0);
+  std::ofstream file;
+  file.open(outfile.c_str(), std::ofstream::out);
+  unsigned int k(0), good(0);
+  for (std::map<std::pair<int,int>,int>::iterator itr=map1.begin();
+       itr != map1.end(); ++itr, ++k) {
+    std::pair<int,int> key = itr->first;
+    bool ok = (map2.find(key) != map2.end());
+    if (ok && check3) ok = (map3.find(key) != map3.end());
+    if (debug && k%100 == 0) 
+      std::cout << "[" << k << "] Run " << key.first << " Event " << key.second
+		<< " Flag " << ok << std::endl;
+    if (ok) {
+      ++good;
+      file << key.first << "   " << key.second << std::endl;
+    }
+  }
+  file.close();
+  std::cout << "Total # of common events " << good << " written to o/p file "
+	    << outfile << std::endl;
+}
+
 void readRecordEvents(std::string fname, std::vector<recordEvent>& records,
 		      bool debug) {
   records.clear();
@@ -692,7 +771,8 @@ void readRecordEvents(std::string fname, std::vector<recordEvent>& records,
     }
     infile.close();
   }
-  std::cout << "Reads " << records.size() << " records from " << fname << "\n";
+  std::cout << "Reads " << records.size() << " records from " << fname
+	    << std::endl;
   if (debug) {
     for (unsigned int k=0; k<records.size(); ++k) {
       if (k%100 == 0) 
@@ -731,13 +811,14 @@ void duplicateEvent(std::string fname, std::vector<recordEvent>& records,
 	records[k-1]= records[k];
 	records[k]  = swap;
       }
-      if (debug)
+      if (debug) {
 	std::cout << "Serial " << records[k-1].serial_ << ":"  
 		  << records[k].serial_ << " Entry "  
 		  << records[k-1].entry_ << ":" << records[k].entry_ << " Run "
 		  << records[k-1].run_ << ":"  << records[k].run_ << " Event "
 		  << records[k-1].event_ << " " << records[k].event_
 		  << std::endl;
+      }
       file << records[k].entry_ << std::endl;
       duplicate++;
     }

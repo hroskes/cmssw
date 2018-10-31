@@ -640,8 +640,8 @@ void TemplatedSecondaryVertexProducer<IPTI,VTX>::produce(edm::Event &event,
 	}
 	// ------------------------------------ SV clustering END ----------------------------------------------
 
-	std::auto_ptr<ConfigurableVertexReconstructor> vertexReco;
-	std::auto_ptr<GhostTrackVertexFinder> vertexRecoGT;
+	std::unique_ptr<ConfigurableVertexReconstructor> vertexReco;
+	std::unique_ptr<GhostTrackVertexFinder> vertexRecoGT;
 	if (useGhostTrack)
 		vertexRecoGT.reset(new GhostTrackVertexFinder(
 			vtxRecoPSet.getParameter<double>("maxFitChi2"),
@@ -706,7 +706,7 @@ void TemplatedSecondaryVertexProducer<IPTI,VTX>::produce(edm::Event &event,
 
 		std::vector<TransientTrack> fitTracks;
 		std::vector<GhostTrackState> gtStates;
-		std::auto_ptr<GhostTrackPrediction> gtPred;
+		std::unique_ptr<GhostTrackPrediction> gtPred;
 		if (useGhostTrack)
 			gtPred.reset(new GhostTrackPrediction(
 						*iterJets->ghostTrack()));
@@ -753,7 +753,7 @@ void TemplatedSecondaryVertexProducer<IPTI,VTX>::produce(edm::Event &event,
 			}
 		}
 
-		std::auto_ptr<GhostTrack> ghostTrack;
+		std::unique_ptr<GhostTrack> ghostTrack;
 		if (useGhostTrack)
 			ghostTrack.reset(new GhostTrack(
 				GhostTrackPrediction(
@@ -860,9 +860,10 @@ void TemplatedSecondaryVertexProducer<IPTI,VTX>::produce(edm::Event &event,
 		  else {
 		      for(size_t iExtSv = 0; iExtSv < extSecVertex->size(); iExtSv++){
 			 const VTX & extVertex = (*extSecVertex)[iExtSv];
-			 if( Geom::deltaR2( ( position(extVertex) - pv.position() ), jetDir ) > extSVDeltaRToJet*extSVDeltaRToJet || extVertex.p4().M() < 0.3 )
+			 if( Geom::deltaR2( ( position(extVertex) - pv.position() ), (extSVDeltaRToJet > 0) ? jetDir : -jetDir ) > extSVDeltaRToJet*extSVDeltaRToJet || extVertex.p4().M() < 0.3 )
 			   continue;
 			 extAssoCollection.push_back( extVertex );
+			
 		      }
 		  }
 		  // build combined SV information and filter
@@ -1021,7 +1022,7 @@ void TemplatedSecondaryVertexProducer<IPTI,VTX>::matchReclusteredJets(const edm:
                                                                       std::vector<int>& matchedIndices,
                                                                       const std::string& jetType)
 {
-   std::string type = ( jetType!="" ? jetType + " " : jetType );
+   std::string type = ( !jetType.empty() ? jetType + " " : jetType );
 
    std::vector<bool> matchedLocks(reclusteredJets.size(),false);
 

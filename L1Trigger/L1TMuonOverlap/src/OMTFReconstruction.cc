@@ -6,13 +6,13 @@
 #include "CondFormats/DataRecord/interface/L1TMuonOverlapParamsRcd.h"
 #include "CondFormats/L1TObjects/interface/L1TMuonOverlapParams.h"
 
-#include "L1Trigger/L1TMuonOverlap/plugins/L1TMuonOverlapTrackProducer.h"
 #include "L1Trigger/L1TMuonOverlap/interface/OMTFProcessor.h"
 #include "L1Trigger/L1TMuonOverlap/interface/OMTFinput.h"
 #include "L1Trigger/L1TMuonOverlap/interface/OMTFReconstruction.h"
 #include "L1Trigger/L1TMuonOverlap/interface/OMTFConfiguration.h"
 #include "L1Trigger/L1TMuonOverlap/interface/XMLConfigWriter.h"
 #include "L1Trigger/L1TMuonOverlap/interface/OmtfName.h"
+#include "L1Trigger/L1TMuonOverlap/interface/GhostBusterPreferRefDt.h"
 
 #include "L1Trigger/RPCTrigger/interface/RPCConst.h"
 
@@ -25,7 +25,9 @@ OMTFReconstruction::OMTFReconstruction(const edm::ParameterSet& theConfig) :
 
   dumpResultToXML = m_Config.getParameter<bool>("dumpResultToXML");
   dumpDetailedResultToXML = m_Config.getParameter<bool>("dumpDetailedResultToXML");
-  m_Config.getParameter<std::string>("XMLDumpFileName");  
+  //m_Config.getParameter<std::string>("XMLDumpFileName");  
+  bxMin = m_Config.exists("bxMin") ? m_Config.getParameter<int>("bxMin") : 0;
+  bxMax = m_Config.exists("bxMax") ? m_Config.getParameter<int>("bxMax") : 0;
 }
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
@@ -71,7 +73,18 @@ void OMTFReconstruction::beginRun(edm::Run const& run, edm::EventSetup const& iS
 
   m_OMTFConfig->configure(omtfParams);
   m_OMTF->configure(m_OMTFConfig, omtfParams);
-  m_GhostBuster.setNphiBins(m_OMTFConfig->nPhiBins());
+  //m_GhostBuster.setNphiBins(m_OMTFConfig->nPhiBins());
+
+  if (m_OMTFConfig->fwVersion() >= 5) {
+//  if(m_Config.exists("ghostBusterType") ) {
+//    if(m_Config.getParameter<std::string>("ghostBusterType") == "GhostBusterPreferRefDt")
+    	m_GhostBuster.reset(new GhostBusterPreferRefDt(m_OMTFConfig) );
+  }
+  else {
+	  m_GhostBuster.reset(new GhostBuster() );
+  }
+
+  m_Sorter.initialize(m_OMTFConfig);
   m_Sorter.setNphiBins(m_OMTFConfig->nPhiBins());
 
   m_InputMaker.initialize(iSetup, m_OMTFConfig);
@@ -90,17 +103,21 @@ std::unique_ptr<l1t::RegionalMuonCandBxCollection> OMTFReconstruction::reconstru
 
   if(dumpResultToXML) aTopElement = m_Writer->writeEventHeader(iEvent.id().event());
 
-  // NOTE: assuming all is for bx 0
-  int bx = 0;
-  std::unique_ptr<l1t::RegionalMuonCandBxCollection> candidates(new l1t::RegionalMuonCandBxCollection);
+  std::unique_ptr<l1t::RegionalMuonCandBxCollection> candidates(new l1t::RegionalMuonCandBxCollection );
+  candidates->setBXRange(bxMin, bxMax);
 
   ///The order is important: first put omtf_pos candidates, then omtf_neg.
-  for(unsigned int iProcessor=0; iProcessor<m_OMTFConfig->nProcessors(); ++iProcessor)
-    getProcessorCandidates(iProcessor, l1t::tftype::omtf_pos, bx, *candidates);
+  for(int bx = bxMin; bx<= bxMax; bx++) {
 
-  for(unsigned int iProcessor=0; iProcessor<m_OMTFConfig->nProcessors(); ++iProcessor)
-    getProcessorCandidates(iProcessor, l1t::tftype::omtf_neg, bx, *candidates);
+    for(unsigned int iProcessor=0; iProcessor<m_OMTFConfig->nProcessors(); ++iProcessor)
+      getProcessorCandidates(iProcessor, l1t::tftype::omtf_pos, bx, *candidates);
+
+    for(unsigned int iProcessor=0; iProcessor<m_OMTFConfig->nProcessors(); ++iProcessor)
+      getProcessorCandidates(iProcessor, l1t::tftype::omtf_neg, bx, *candidates);
     
+    edm::LogInfo("OMTFReconstruction") <<"OMTF:  Number of candidates in BX="<<bx<<": "<<candidates->size(bx) << std::endl;;
+  }
+
   return candidates;
 }
 
@@ -129,7 +146,7 @@ void OMTFReconstruction::getProcessorCandidates(unsigned int iProcessor, l1t::tf
                 dtThDigis.product(),
                 cscDigis.product(),
                 rpcDigis.product(),
-                iProcessor, mtfType);
+                iProcessor, mtfType, bx);
   int flag = m_InputMaker.getFlag();
   
   const std::vector<OMTFProcessor::resultsMap> & results = m_OMTF->processInput(iProcessor,input);
@@ -139,10 +156,10 @@ void OMTFReconstruction::getProcessorCandidates(unsigned int iProcessor, l1t::tf
   m_Sorter.sortRefHitResults(results, algoCandidates);  
 
   // perform GB 
-  m_GhostBuster.select(algoCandidates); 
-
+  std::vector<AlgoMuon> gbCandidates =  m_GhostBuster->select(algoCandidates);
+  
   // fill RegionalMuonCand colleciton
-  std::vector<l1t::RegionalMuonCand> candMuons = m_Sorter.candidates(iProcessor, mtfType, algoCandidates);
+  std::vector<l1t::RegionalMuonCand> candMuons = m_Sorter.candidates(iProcessor, mtfType, gbCandidates);
 
   //fill outgoing collection
   for (auto & candMuon :  candMuons) {
@@ -151,7 +168,7 @@ void OMTFReconstruction::getProcessorCandidates(unsigned int iProcessor, l1t::tf
   }
   
   //dump to XML
-  writeResultToXML(iProcessor, mtfType,  input, results, candMuons);
+  if(bx==0)writeResultToXML(iProcessor, mtfType,  input, results, candMuons);
 }
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////

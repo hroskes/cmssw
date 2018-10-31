@@ -47,6 +47,7 @@ namespace edm {
   class InputFile;
   class ProvenanceReaderBase;
   class ProvenanceAdaptor;
+  class StoredMergeableRunProductMetadata;
   class RunHelperBase;
   class ThinnedAssociationsHelper;
 
@@ -202,7 +203,7 @@ namespace edm {
     bool skipEntries(unsigned int& offset) {return eventTree_.skipEntries(offset);}
     bool skipEvents(int& offset);
     bool goToEvent(EventID const& eventID);
-    bool nextEventEntry() {return eventTree_.next();}
+    bool nextEventEntry() {return eventTree_.nextWithCache();}
     IndexIntoFile::EntryType getNextItemType(RunNumber_t& run, LuminosityBlockNumber_t& lumi, EventNumber_t& event);
     std::shared_ptr<BranchIDListHelper const> branchIDListHelper() const {return get_underlying_safe(branchIDListHelper_);}
     std::shared_ptr<BranchIDListHelper>& branchIDListHelper() {return get_underlying_safe(branchIDListHelper_);}
@@ -264,6 +265,7 @@ namespace edm {
     IndexIntoFile::IndexIntoFileItr indexIntoFileBegin_;
     IndexIntoFile::IndexIntoFileItr indexIntoFileEnd_;
     IndexIntoFile::IndexIntoFileItr indexIntoFileIter_;
+    edm::propagate_const<std::unique_ptr<StoredMergeableRunProductMetadata>> storedMergeableRunProductMetadata_;
     std::vector<EventProcessHistoryID> eventProcessHistoryIDs_;  // backward compatibility
     std::vector<EventProcessHistoryID>::const_iterator eventProcessHistoryIter_; // backward compatibility
     edm::propagate_const<std::shared_ptr<RunAuxiliary>> savedRunAuxiliary_;
@@ -298,6 +300,7 @@ namespace edm {
     std::vector<ParentageID> parentageIDLookup_;
     edm::propagate_const<std::unique_ptr<DaqProvenanceHelper>> daqProvenanceHelper_;
     edm::propagate_const<TClass*> edProductClass_;
+    InputType inputType_;
   }; // class RootFile
 
 }

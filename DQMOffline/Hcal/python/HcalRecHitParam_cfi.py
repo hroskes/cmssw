@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
-hcalRecHitsAnalyzer = cms.EDAnalyzer("HcalRecHitsAnalyzer",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+hcalRecHitsAnalyzer = DQMEDAnalyzer('HcalRecHitsAnalyzer',
     TopFolderName             = cms.string('HcalRecHitsD/HcalRecHitTask'),
 #    outputFile                = cms.untracked.string('HcalRecHitValidationRelVal.root'),
     outputFile                = cms.untracked.string(''),
@@ -22,3 +23,4 @@ from Configuration.Eras.Modifier_run2_HEPlan1_2017_cff import run2_HEPlan1_2017
 run2_HEPlan1_2017.toModify(hcalRecHitsAnalyzer,
       hep17 = cms.untracked.bool(True)
 )
+

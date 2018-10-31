@@ -18,7 +18,12 @@ TriggerOutputBranches::updateTriggerNames(TTree & tree, const edm::TriggerNames 
    {
        existing.idx=-1;// reset all triggers as not found
        for(unsigned int j=0;j<newNames.size();j++) {
-          if(newNames[j]==existing.name) existing.idx=j;
+	 std::string name=newNames[j]; // no const & as it will be modified below!
+	 std::size_t vfound = name.rfind("_v");
+	 if (vfound!=std::string::npos){
+           name.replace(vfound,name.size()-vfound,"");
+	 }
+	 if(name==existing.name) existing.idx=j;
        }
    }
    // Find new ones
@@ -33,7 +38,7 @@ TriggerOutputBranches::updateTriggerNames(TTree & tree, const edm::TriggerNames 
            for(auto & existing : m_triggerBranches) {if(name==existing.name) found=true;}
            if(!found){
                 NamedBranchPtr nb(name,"Trigger/flag bit"); //FIXME: If the title can be updated we can use it to list the versions _v* that were seen in this file
-                uint8_t backFillValue=-1;
+                uint8_t backFillValue=0;
                 nb.branch= tree.Branch(nb.name.c_str(), &backFillValue, (name + "/O").c_str()); 
                 nb.branch->SetTitle(nb.title.c_str());
                 nb.idx=j;

@@ -53,6 +53,49 @@ Photon60_DisplacedIdL_PFJet350MinPFJet15_monitoring.FolderName = cms.string('HLT
 Photon60_DisplacedIdL_PFJet350MinPFJet15_monitoring.denGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Photon60_R9Id90_CaloIdL_IsoL_v*","HLT_PFHT350MinPFJet15_v*")
 Photon60_DisplacedIdL_PFJet350MinPFJet15_monitoring.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Photon60_R9Id90_CaloIdL_IsoL_DisplacedIdL_PFHT350MinPFJet15_v*")
 
+from DQMOffline.Trigger.ObjMonitor_cfi import hltobjmonitoring
+
+Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50_monitoring = hltobjmonitoring.clone(
+#    FolderName = 'HLT/Photon/Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50/',
+    FolderName = 'HLT/EXO/Photon/Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50/',
+    denGenericTriggerEventPSet = hltobjmonitoring.numGenericTriggerEventPSet.clone(
+        hltPaths = ["HLT_Photon50_R9Id90_HE10_IsoM_v*"]
+    ),
+    numGenericTriggerEventPSet = hltobjmonitoring.numGenericTriggerEventPSet.clone(
+        hltPaths = ["HLT_Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50_v*"]
+    ),
+    phoSelection = 'pt > 80 & abs(eta) < 1.44',
+    nphotons = 1,
+    jetSelection = "pt > 30 & abs(eta) < 5.0",
+    jetId = "tight",
+    njets = 2,
+    doHTHistos = False
+)
+Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50_monitoring.histoPSet.mjjBinning = cms.vdouble([20. * x for x in range(30)])
+Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50_monitoring.histoPSet.metPSet = cms.PSet(
+    nbins = cms.uint32(20),
+    xmin = cms.double(-0.5),
+    xmax = cms.double(200.)
+)
+
+Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_monitoring = hltobjmonitoring.clone(
+#    FolderName = 'HLT/Photon/Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3/',
+    FolderName = 'HLT/EXO/Photon/Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3/',
+    denGenericTriggerEventPSet = hltobjmonitoring.numGenericTriggerEventPSet.clone(
+        hltPaths = ["HLT_Photon75_R9Id90_HE10_IsoM_v*"]
+    ),
+    numGenericTriggerEventPSet = hltobjmonitoring.numGenericTriggerEventPSet.clone(
+        hltPaths = ["HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v*"]
+    ),
+    phoSelection = 'pt > 80 & abs(eta) < 1.44',
+    nphotons = 1,
+    jetSelection = "pt > 30 & abs(eta) < 5.0",
+    jetId = "tight",
+    njets = 2,
+    doMETHistos = False,
+    doHTHistos = False
+)
+Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_monitoring.histoPSet.mjjBinning = cms.vdouble([20. * x for x in range(30)])
 
 exoHLTPhotonmonitoring = cms.Sequence(
     SinglePhoton300_monitoring
@@ -65,7 +108,8 @@ exoHLTPhotonmonitoring = cms.Sequence(
     + SinglePhoton90_R9Id90_HE10_IsoM_monitoring
     + SinglePhoton120_R9Id90_HE10_IsoM_monitoring
     + SinglePhoton165_R9Id90_HE10_IsoM_monitoring
-    
+    + Photon50_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_PFMET50_monitoring
+    + Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_monitoring
 )
 
 
@@ -110,14 +154,16 @@ DiphotonMass55EBnoPV_monitoring.photonSelection = cms.string("(pt > 20 && abs(et
 DiphotonMass55EBnoPV_monitoring.histoPSet.massBinning = cms.vdouble(50.,51.,52.,53.,54.,55.,56.,57.,58.,59.,60.,61.,62.,63.,64.,65.,66.,67.,68.,69.,70.,75.,80.,90.,110.,150.)
 
 DiphotonMass55NewAND_monitoring = hltPhotonmonitoring.clone()
-DiphotonMass55NewAND_monitoring.FolderName = cms.string('HLT/Photon/diphotonMass55NewAND/')
+#DiphotonMass55NewAND_monitoring.FolderName = cms.string('HLT/Photon/diphotonMass55NewAND/')
+DiphotonMass55NewAND_monitoring.FolderName = cms.string('HLT/HIG/DiPhoton/diphotonMass55NewAND/')
 DiphotonMass55NewAND_monitoring.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Diphoton30_18_PVrealAND_R9Id_AND_IsoCaloId_AND_HE_R9Id_PixelVeto_Mass55_v*")
 DiphotonMass55NewAND_monitoring.nphotons = cms.uint32(2)
 DiphotonMass55NewAND_monitoring.photonSelection = cms.string("(pt > 20 && abs(eta)<1.4442 && hadTowOverEm<0.12 && full5x5_sigmaIetaIeta()<0.015 && full5x5_r9>.5)||(pt > 20 && abs(eta)<2.5 && abs(eta)>1.5556 && hadTowOverEm<0.12 && full5x5_sigmaIetaIeta()<0.035 && full5x5_r9>.8)")
 DiphotonMass55NewAND_monitoring.histoPSet.massBinning = cms.vdouble(50.,51.,52.,53.,54.,55.,56.,57.,58.,59.,60.,61.,62.,63.,64.,65.,66.,67.,68.,69.,70.,75.,80.,90.,110.,150.)
 
 DiphotonMass55NewANDnoPV_monitoring = hltPhotonmonitoring.clone()
-DiphotonMass55NewANDnoPV_monitoring.FolderName = cms.string('HLT/Photon/diphotonMass55NewANDnoPV/')
+#DiphotonMass55NewANDnoPV_monitoring.FolderName = cms.string('HLT/Photon/diphotonMass55NewANDnoPV/')
+DiphotonMass55NewANDnoPV_monitoring.FolderName = cms.string('HLT/HIG/DiPhoton/diphotonMass55NewANDnoPV/')
 DiphotonMass55NewANDnoPV_monitoring.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Diphoton30_18_PVrealAND_R9Id_AND_IsoCaloId_AND_HE_R9Id_NoPixelVeto_Mass55_v*")
 DiphotonMass55NewANDnoPV_monitoring.nphotons = cms.uint32(2)
 DiphotonMass55NewANDnoPV_monitoring.photonSelection = cms.string("(pt > 20 && abs(eta)<1.4442 && hadTowOverEm<0.12 && full5x5_sigmaIetaIeta()<0.015 && full5x5_r9>.5)||(pt > 20 && abs(eta)<2.5 && abs(eta)>1.5556 && hadTowOverEm<0.12 && full5x5_sigmaIetaIeta()<0.035 && full5x5_r9>.8)")

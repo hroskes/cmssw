@@ -165,7 +165,9 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       for(int depth = 1; depth <= maxDepthAll_; depth++){
         sprintf  (histo, "emap_depth%d",depth );
         emap.push_back( ibooker.book2D(histo, histo, ieta_bins_, ieta_min_, ieta_max_, iphi_bins_, iphi_min_, iphi_max_) );
-      } 
+      }
+      sprintf(histo, "emap_HO");
+      emap_HO = ibooker.book2D(histo, histo, ieta_bins_, ieta_min_, ieta_max_, iphi_bins_, iphi_min_, iphi_max_); 
 
       //The mean energy histos are drawn, but not the RMS or emean seq
       
@@ -269,29 +271,29 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
 
       //All status word histos except HF67 are drawn
       sprintf (histo, "HcalRecHitTask_RecHit_StatusWord_HB" ) ;
-      RecHit_StatusWord_HB = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_StatusWord_HB = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
       
       sprintf (histo, "HcalRecHitTask_RecHit_StatusWord_HE" ) ;
-      RecHit_StatusWord_HE = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_StatusWord_HE = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
 
       sprintf (histo, "HcalRecHitTask_RecHit_StatusWord_HF" ) ;
-      RecHit_StatusWord_HF = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_StatusWord_HF = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
 
       sprintf (histo, "HcalRecHitTask_RecHit_StatusWord_HO" ) ;
-      RecHit_StatusWord_HO = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_StatusWord_HO = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
 
       //Aux status word histos
       sprintf (histo, "HcalRecHitTask_RecHit_Aux_StatusWord_HB" ) ;
-      RecHit_Aux_StatusWord_HB = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_Aux_StatusWord_HB = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
       
       sprintf (histo, "HcalRecHitTask_RecHit_Aux_StatusWord_HE" ) ;
-      RecHit_Aux_StatusWord_HE = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_Aux_StatusWord_HE = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
 
       sprintf (histo, "HcalRecHitTask_RecHit_Aux_StatusWord_HF" ) ;
-      RecHit_Aux_StatusWord_HF = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_Aux_StatusWord_HF = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
 
       sprintf (histo, "HcalRecHitTask_RecHit_Aux_StatusWord_HO" ) ;
-      RecHit_Aux_StatusWord_HO = ibooker.book1D(histo, histo, 32 , -0.5, 31.5); 
+      RecHit_Aux_StatusWord_HO = ibooker.book1DD(histo, histo, 32 , -0.5, 31.5); 
 
     }  // end-of (subdet_ =! 6)
 
@@ -323,16 +325,16 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       //Only severity level, energy of rechits and overall HB timing histos are drawn  
 
       sprintf(histo, "HcalRecHitTask_severityLevel_HB");
-      sevLvl_HB = ibooker.book1D(histo, histo, 25, -0.5, 24.5); 
+      sevLvl_HB = ibooker.book1DD(histo, histo, 25, -0.5, 24.5); 
 
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_HB" ) ;
-      meRecHitsEnergyHB = ibooker.book1D(histo, histo, 2010 , -10. , 2000.); 
+      meRecHitsEnergyHB = ibooker.book1DD(histo, histo, 2010 , -10. , 2000.); 
       
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_M0_HB" ) ;
-      meRecHitsEnergyHBM0 = ibooker.book1D(histo, histo, 2010 , -10. , 2000.); 
+      meRecHitsEnergyHBM0 = ibooker.book1DD(histo, histo, 2010 , -10. , 2000.); 
       
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_M3_HB" ) ;
-      meRecHitsEnergyHBM3 = ibooker.book1D(histo, histo, 2010 , -10. , 2000.); 
+      meRecHitsEnergyHBM3 = ibooker.book1DD(histo, histo, 2010 , -10. , 2000.); 
 
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_M2vM0_HB" ) ;
       meRecHitsEnergyM2vM0HB = ibooker.book2D(histo, histo, 42 , -10. , 200., 42, -10., 200.); 
@@ -347,7 +349,7 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       meRecHitsM2Chi2HB = ibooker.book1D(histo, histo, 120 , -2. , 10.); 
       
       sprintf (histo, "HcalRecHitTask_timing_HB" ) ;
-      meTimeHB = ibooker.book1D(histo, histo, 70, -48., 92.); 
+      meTimeHB = ibooker.book1DD(histo, histo, 70, -48., 92.); 
 
       //High, medium and low histograms to reduce RAM usage
       sprintf (histo, "HcalRecHitTask_timing_vs_energy_Low_HB" ) ;
@@ -379,16 +381,16 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
 
       //Only severity level, energy of rechits and overall HB timing histos are drawn  
       sprintf(histo, "HcalRecHitTask_severityLevel_HE");
-      sevLvl_HE = ibooker.book1D(histo, histo, 25, -0.5, 24.5); 
+      sevLvl_HE = ibooker.book1DD(histo, histo, 25, -0.5, 24.5); 
       
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_HE" ) ;
-      meRecHitsEnergyHE = ibooker.book1D(histo, histo, 2010, -10., 2000.);
+      meRecHitsEnergyHE = ibooker.book1DD(histo, histo, 2010, -10., 2000.);
       
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_M0_HE" ) ;
-      meRecHitsEnergyHEM0 = ibooker.book1D(histo, histo, 2010, -10., 2000.);
+      meRecHitsEnergyHEM0 = ibooker.book1DD(histo, histo, 2010, -10., 2000.);
       
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_M3_HE" ) ;
-      meRecHitsEnergyHEM3 = ibooker.book1D(histo, histo, 2010, -10., 2000.);
+      meRecHitsEnergyHEM3 = ibooker.book1DD(histo, histo, 2010, -10., 2000.);
       
       if(hep17_){
          sprintf (histo, "HcalRecHitTask_energy_of_rechits_HEP17" ) ;
@@ -424,7 +426,7 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       meRecHitsM2Chi2HE = ibooker.book1D(histo, histo, 120 , -2. , 10.); 
       
       sprintf (histo, "HcalRecHitTask_timing_HE" ) ;
-      meTimeHE = ibooker.book1D(histo, histo, 70, -48., 92.); 
+      meTimeHE = ibooker.book1DD(histo, histo, 70, -48., 92.); 
       
       sprintf (histo, "HcalRecHitTask_timing_vs_energy_Low_HE" ) ;
       meTE_Low_HE = ibooker.book2D(histo, histo, 80, -5., 75.,  70, -48., 92.);
@@ -449,13 +451,13 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       //Only severity level, energy of rechits and overall HB timing histos are drawn  
 
       sprintf(histo, "HcalRecHitTask_severityLevel_HO");
-      sevLvl_HO = ibooker.book1D(histo, histo, 25, -0.5, 24.5); 
+      sevLvl_HO = ibooker.book1DD(histo, histo, 25, -0.5, 24.5); 
 
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_HO" ) ;
-      meRecHitsEnergyHO = ibooker.book1D(histo, histo, 2010 , -10. , 2000.);
+      meRecHitsEnergyHO = ibooker.book1DD(histo, histo, 2010 , -10. , 2000.);
       
       sprintf (histo, "HcalRecHitTask_timing_HO" ) ;
-      meTimeHO = ibooker.book1D(histo, histo, 70, -48., 92.); 
+      meTimeHO = ibooker.book1DD(histo, histo, 70, -48., 92.); 
       
       sprintf (histo, "HcalRecHitTask_timing_vs_energy_HO" ) ;
       meTE_HO= ibooker.book2D(histo, histo, 60, -5., 55., 70, -48., 92.);
@@ -477,13 +479,13 @@ HcalRecHitsAnalyzer::HcalRecHitsAnalyzer(edm::ParameterSet const& conf)
       //Only severity level, energy of rechits and overall HB timing histos are drawn  
       
       sprintf(histo, "HcalRecHitTask_severityLevel_HF");
-      sevLvl_HF = ibooker.book1D(histo, histo, 25, -0.5, 24.5); 
+      sevLvl_HF = ibooker.book1DD(histo, histo, 25, -0.5, 24.5); 
 
       sprintf (histo, "HcalRecHitTask_energy_of_rechits_HF" ) ;
-      meRecHitsEnergyHF = ibooker.book1D(histo, histo, 2010 , -10. , 2000.); 
+      meRecHitsEnergyHF = ibooker.book1DD(histo, histo, 2010 , -10. , 2000.); 
 
       sprintf (histo, "HcalRecHitTask_timing_HF" ) ;
-      meTimeHF = ibooker.book1D(histo, histo, 70, -48., 92.); 
+      meTimeHF = ibooker.book1DD(histo, histo, 70, -48., 92.); 
       
       sprintf (histo, "HcalRecHitTask_timing_vs_energy_Low_HF" ) ;
       meTE_Low_HF = ibooker.book2D(histo, histo, 100, -5., 195., 70, -48., 92.);
@@ -657,8 +659,8 @@ void HcalRecHitsAnalyzer::analyze(edm::Event const& ev, edm::EventSetup const& c
 	if (ieta2 < 0) ieta2--;
         else ieta2++;
       }
-      if(sub == 3) depth2 = maxDepthAll_ - maxDepthHO_ + depth; //This will use the last depths for HO	
-      emap[depth2-1]->Fill(double(ieta2),double(iphi),en);
+      if(sub == 3) emap_HO->Fill(double(ieta2),double(iphi),en); //HO	
+      else emap[depth2-1]->Fill(double(ieta2),double(iphi),en); // HB+HE+HF
 
       // to distinguish HE and HF
       if( depth == 1 || depth == 2 ) {
@@ -1126,7 +1128,7 @@ double HcalRecHitsAnalyzer::dPhiWsign(double phi1, double phi2) {
 int HcalRecHitsAnalyzer::hcalSevLvl(const CaloRecHit* hit){
 
    HcalDetId id = hit->detid();
-   if (theHcalTopology->withSpecialRBXHBHE() && id.subdet() == HcalEndcap) {
+   if (theHcalTopology->getMergePositionFlag() && id.subdet() == HcalEndcap) {
      id = theHcalTopology->idFront(id);
    }
 

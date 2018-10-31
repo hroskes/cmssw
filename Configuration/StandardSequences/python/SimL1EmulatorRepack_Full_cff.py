@@ -1,3 +1,4 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 
 ## L1REPACK FULL:  Re-Emulate all of L1 and repack into RAW
@@ -7,10 +8,10 @@ from Configuration.Eras.Modifier_stage2L1Trigger_cff import stage2L1Trigger
 from Configuration.Eras.Modifier_stage2L1Trigger_2017_cff import stage2L1Trigger_2017
 
 if not (stage2L1Trigger.isChosen()):
-    print "L1T WARN:  L1REPACK:Full (intended for 2016 data) only supports Stage 2 eras for now."
-    print "L1T WARN:  Use a legacy version of L1REPACK for now."
+    print("L1T WARN:  L1REPACK:Full (intended for 2016 data) only supports Stage 2 eras for now.")
+    print("L1T WARN:  Use a legacy version of L1REPACK for now.")
 else:
-    print "L1T INFO:  L1REPACK:Full (intended for 2016 & 2017 data) will unpack all L1T inputs, re-emulated (Stage-2), and pack uGT, uGMT, and Calo Stage-2 output."
+    print("L1T INFO:  L1REPACK:Full (intended for 2016 & 2017 data) will unpack all L1T inputs, re-emulated (Stage-2), and pack uGT, uGMT, and Calo Stage-2 output.")
 
     # First, Unpack all inputs to L1:
     
@@ -21,6 +22,10 @@ else:
     import EventFilter.DTTFRawToDigi.dttfunpacker_cfi
     unpackDttf = EventFilter.DTTFRawToDigi.dttfunpacker_cfi.dttfunpacker.clone(
         DTTF_FED_Source = cms.InputTag( 'rawDataCollector', processName=cms.InputTag.skipCurrentProcess())) 
+        
+    import EventFilter.L1TRawToDigi.omtfStage2Digis_cfi
+    unpackOmtf = EventFilter.L1TRawToDigi.omtfStage2Digis_cfi.omtfStage2Digis.clone(
+        inputLabel = cms.InputTag( 'rawDataCollector', processName=cms.InputTag.skipCurrentProcess()))    
         
     import EventFilter.L1TRawToDigi.emtfStage2Digis_cfi
     unpackEmtf = EventFilter.L1TRawToDigi.emtfStage2Digis_cfi.emtfStage2Digis.clone(
@@ -86,7 +91,7 @@ else:
 
     # -----------------------------------------------------------
     # change when availalbe simTwinMux and reliable DTTPs, CSCTPs
-    cutlist=['simDtTriggerPrimitiveDigis','simCscTriggerPrimitiveDigis',]
+    cutlist=['simDtTriggerPrimitiveDigis','simCscTriggerPrimitiveDigis']
     for b in cutlist:
         SimL1EmulatorCore.remove(b)
     # -----------------------------------------------------------
@@ -101,7 +106,10 @@ else:
     simOmtfDigis.srcDTTh             = cms.InputTag("unpackBmtf")
     simOmtfDigis.srcCSC              = cms.InputTag("unpackCsctf") 
     if (stage2L1Trigger_2017.isChosen()):
-        simOmtfDigis.srcCSC          = cms.InputTag('unpackEmtf')
+        simOmtfDigis.srcRPC          = cms.InputTag('unpackOmtf')
+        simOmtfDigis.srcCSC          = cms.InputTag('unpackOmtf')
+        simOmtfDigis.srcDTPh         = cms.InputTag('unpackOmtf')
+        simOmtfDigis.srcDTTh         = cms.InputTag('unpackOmtf')
 
     # EMTF
     simEmtfDigis.CSCInput            = cms.InputTag("unpackEmtf") 
@@ -130,7 +138,7 @@ else:
 
 
     
-    SimL1Emulator = cms.Sequence(unpackEcal+unpackHcal+unpackCSC+unpackDT+unpackRPC+unpackRPCTwinMux+unpackTwinMux+unpackEmtf+unpackCsctf+unpackBmtf
+    SimL1Emulator = cms.Sequence(unpackEcal+unpackHcal+unpackCSC+unpackDT+unpackRPC+unpackRPCTwinMux+unpackTwinMux+unpackOmtf+unpackEmtf+unpackCsctf+unpackBmtf
                                  +unpackLayer1
                                  +SimL1EmulatorCore+packCaloStage2
                                  +packGmtStage2+packGtStage2+rawDataCollector)

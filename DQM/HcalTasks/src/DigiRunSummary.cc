@@ -2,12 +2,20 @@
 
 namespace hcaldqm
 {
+	using namespace constants;
+	
 	DigiRunSummary::DigiRunSummary(std::string const& name, 
 		std::string const& taskname, edm::ParameterSet const& ps) :
 		DQClient(name, taskname, ps), _booked(false)
 	{
 		_thresh_unihf = ps.getUntrackedParameter<double>("thresh_unihf",
 			0.2);
+
+		std::vector<uint32_t> vrefDigiSize = ps.getUntrackedParameter<std::vector<uint32_t>>("refDigiSize");
+		_refDigiSize[HcalBarrel]  = vrefDigiSize[0];
+		_refDigiSize[HcalEndcap]  = vrefDigiSize[1];
+		_refDigiSize[HcalOuter]   = vrefDigiSize[2];
+		_refDigiSize[HcalForward] = vrefDigiSize[3];
 	}
 
 	/* virtual */ void DigiRunSummary::beginRun(edm::Run const& r,
@@ -140,7 +148,7 @@ namespace hcaldqm
 			_cOccupancy_depth.fill(did, cOccupancy_depth.getBinContent(did));
 			//	digi size
 			cDigiSize_Crate.getMean(eid)!=
-				constants::DIGISIZE[did.subdet()-1]?
+				_refDigiSize[did.subdet()]?
 				_xDigiSize.get(eid)++:_xDigiSize.get(eid)+=0;
 			cDigiSize_Crate.getRMS(eid)!=0?
 				_xDigiSize.get(eid)++:_xDigiSize.get(eid)+=0;
@@ -152,6 +160,7 @@ namespace hcaldqm
 		vtmpflags[fDigiSize]=flag::Flag("DigiSize");
 		vtmpflags[fNChsHF]=flag::Flag("NChsHF");
 		vtmpflags[fUnknownIds]=flag::Flag("UnknownIds");
+		vtmpflags[fLED]=flag::Flag("LEDMisfire");
 		for (std::vector<uint32_t>::const_iterator it=_vhashCrates.begin();
 			it!=_vhashCrates.end(); ++it)
 		{
@@ -183,6 +192,32 @@ namespace hcaldqm
 			else
 				vtmpflags[fUnknownIds]._state = flag::fGOOD;
 
+			if ((did.subdet() == HcalBarrel) || (did.subdet() == HcalBarrel) || (did.subdet() == HcalBarrel) || (did.subdet() == HcalBarrel)) {
+				std::string ledHistName = _subsystem + "/" + _taskname + "/LED_CUCountvsLS/Subdet/";
+				if (did.subdet() == HcalBarrel) {
+					ledHistName += "HB";
+				} else if (did.subdet() == HcalEndcap) {
+					ledHistName += "HE";
+				} else if (did.subdet() == HcalOuter) {
+					ledHistName += "HO";
+				} else if (did.subdet() == HcalForward) {
+					ledHistName += "HF";
+				}
+				MonitorElement* ledHist = ig.get(ledHistName);
+				if (ledHist) {
+					bool ledSignalPresent = (ledHist->getEntries() > 0);
+					if (ledSignalPresent)
+						vtmpflags[fLED]._state = flag::fBAD;
+					else
+						vtmpflags[fLED]._state = flag::fGOOD;
+				} else {
+					vtmpflags[fLED]._state = flag::fNA;
+				}
+			} else {
+				vtmpflags[fLED]._state = flag::fNA;
+			}
+
+
 			// push all the flags for this crate
 			lssum._vflags.push_back(vtmpflags);
 		}
@@ -210,6 +245,7 @@ namespace hcaldqm
 		vflagsPerLS[fDigiSize]=flag::Flag("DigiSize");
 		vflagsPerLS[fNChsHF]=flag::Flag("NChsHF");
 		vflagsPerLS[fUnknownIds]=flag::Flag("UnknownIds");
+		vflagsPerLS[fLED]=flag::Flag("LEDMisfire");
 		vflagsPerRun[fDigiSize]=flag::Flag("DigiSize");
 		vflagsPerRun[fNChsHF]=flag::Flag("NChsHF");
 		vflagsPerRun[fUniHF-nLSFlags+1]=flag::Flag("UniSlotHF");

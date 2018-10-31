@@ -20,29 +20,6 @@ namespace edm {
     using no_tag = std::false_type; // type indicating FALSE
     using yes_tag = std::true_type; // type indicating TRUE
 
-    // void swap_or_assign(T& a, T& b) will swap if T::swap(T&) is defined and assign otherwise
-    // Definitions for the following struct and function templates are not needed; we only require the declarations.
-    template<typename T, void (T::*)(T&)> struct swap_function;
-    template<typename T> static yes_tag has_swap(swap_function<T, &T::swap>* dummy);
-    template<typename T> static no_tag has_swap(...);
-
-    template<typename T>
-    struct has_swap_function {
-      static constexpr bool value = std::is_same<decltype(has_swap<T>(nullptr)), yes_tag>::value;
-    };
-
-    template<typename T, bool = has_swap_function<T>::value> struct doSwapOrAssign;
-    template<typename T> struct doSwapOrAssign<T, true> {
-      void operator()(T& thisProduct, T& otherProduct) {
-        thisProduct.swap(otherProduct);
-      }
-    };
-    template<typename T> struct doSwapOrAssign<T, false> {
-      void operator()(T& thisProduct, T& otherProduct) {
-        thisProduct = otherProduct;
-      }
-    };
-
     // valueTypeInfo_() will return typeid(T::value_type) if T::value_type is declared and typeid(void) otherwise.
     // Definitions for the following struct and function templates are not needed; we only require the declarations.
     template<typename T> static yes_tag has_value_type(typename T::value_type*);
@@ -162,6 +139,42 @@ namespace edm {
     template<typename T> struct doIsProductEqual<T, false> {
       bool operator()(T const& thisProduct, T const& newProduct) {
         return true; // Should never be called
+      }
+    };
+
+    // bool hasSwap_() will return true if T::swap(T&) is declared and false otherwise
+    // void swapProduct_() will call T::swap(T&) if it is defined otherwise it does nothing
+    // Definitions for the following struct and function templates are not needed; we only require the declarations.
+    template<typename T, void (T::*)(T&)> struct swap_function;
+    template<typename T> static yes_tag has_swap(swap_function<T, &T::swap>* dummy);
+    template<typename T> static no_tag has_swap(...);
+
+    template<typename T>
+    struct has_swap_function {
+      static constexpr bool value =
+      std::is_same<decltype(has_swap<T>(nullptr)), yes_tag>::value;
+    };
+
+    template<typename T, bool = has_swap_function<T>::value> struct getHasSwapFunction;
+    template<typename T> struct getHasSwapFunction<T, true> {
+      bool operator()() {
+        return true;
+      }
+    };
+    template<typename T> struct getHasSwapFunction<T, false> {
+      bool operator()() {
+        return false;
+      }
+    };
+    template<typename T, bool = has_swap_function<T>::value> struct doSwapProduct;
+    template<typename T> struct doSwapProduct<T, true> {
+      void operator()(T& thisProduct, T& newProduct) {
+        thisProduct.swap(newProduct);
+      }
+    };
+    template<typename T> struct doSwapProduct<T, false> {
+      void operator()(T&, T&) {
+        return; // Should never be called
       }
     };
   }

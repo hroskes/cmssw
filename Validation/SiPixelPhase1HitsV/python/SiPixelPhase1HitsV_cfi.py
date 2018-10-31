@@ -124,7 +124,8 @@ SiPixelPhase1HitsConf = cms.VPSet(
   SiPixelPhase1HitsEfficiencyTrack,
 )
 
-SiPixelPhase1HitsAnalyzerV = cms.EDAnalyzer("SiPixelPhase1HitsV",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+SiPixelPhase1HitsAnalyzerV = DQMEDAnalyzer('SiPixelPhase1HitsV',
         pixBarrelLowSrc = cms.InputTag("g4SimHits","TrackerHitsPixelBarrelLowTof"),
         pixBarrelHighSrc = cms.InputTag("g4SimHits","TrackerHitsPixelBarrelHighTof"),
         pixForwardLowSrc = cms.InputTag("g4SimHits","TrackerHitsPixelEndcapLowTof"),
@@ -146,6 +147,8 @@ SiPixelPhase1HitsAnalyzerV = cms.EDAnalyzer("SiPixelPhase1HitsV",
         histograms = SiPixelPhase1HitsConf,
         geometry = SiPixelPhase1Geometry
 )
+from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
+premix_stage2.toModify(SiPixelPhase1HitsAnalyzerV, tpTag = "mixData:MergedTrackTruth")
 
 SiPixelPhase1HitsHarvesterV = DQMEDHarvester("SiPixelPhase1Harvester",
         histograms = SiPixelPhase1HitsConf,

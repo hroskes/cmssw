@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
-digiMon = cms.EDAnalyzer("Phase2TrackerMonitorDigi",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+digiMon = DQMEDAnalyzer('Phase2TrackerMonitorDigi',
     Verbosity = cms.bool(False),
     TopFolderName = cms.string("Ph2TkDigi"),
     PixelPlotFillingFlag = cms.bool(False),
@@ -8,9 +9,9 @@ digiMon = cms.EDAnalyzer("Phase2TrackerMonitorDigi",
     OuterTrackerDigiSource = cms.InputTag("mix", "Tracker"),
     GeometryType = cms.string('idealForDigi'),
     NumberOfDigisPerDetH = cms.PSet(
-           Nbins = cms.int32(200),
+           Nbins = cms.int32(100),
            xmin = cms.double(-0.5),
-           xmax = cms.double(200.5)
+           xmax = cms.double(99.5)
     ),
     DigiOccupancySH = cms.PSet(
            Nbins = cms.int32(51),
@@ -51,9 +52,9 @@ digiMon = cms.EDAnalyzer("Phase2TrackerMonitorDigi",
       xmax   = cms.double(2000.5)
     ),
     NumberOfClustersPerDetH = cms.PSet(
-           Nbins = cms.int32(200),
+           Nbins = cms.int32(100),
            xmin = cms.double(-0.5),
-           xmax = cms.double(200.5)
+           xmax = cms.double(99.5)
     ),
     ClusterWidthH = cms.PSet(
            Nbins = cms.int32(16),

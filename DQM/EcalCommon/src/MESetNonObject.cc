@@ -48,7 +48,7 @@ namespace ecaldqm
   MESetNonObject::clone(std::string const& _path/* = ""*/) const
   {
     std::string path(path_);
-    if(_path != "") path_ = _path;
+    if(!_path.empty()) path_ = _path;
     MESet* copy(new MESetNonObject(*this));
     path_ = path;
     return copy;
@@ -106,7 +106,7 @@ namespace ecaldqm
           double* edges(new double[xaxis_->nbins + 1]);
           std::copy(xaxis_->edges, xaxis_->edges + xaxis_->nbins + 1, edges);
           me = _ibooker.bookProfile(name, name, xaxis_->nbins, edges, ylow, yhigh, "");
-          delete edges;
+          delete[] edges;
         }
         else
           me = _ibooker.bookProfile(name, name, xaxis_->nbins, xaxis_->low, xaxis_->high, ylow, yhigh, "");
@@ -262,6 +262,13 @@ namespace ecaldqm
     if(mes_.empty() || !mes_[0]) return 0.;
 
     return mes_[0]->getBinContent(_bin);
+  }
+
+  double
+  MESetNonObject::getFloatValue() const
+  {
+    if(kind_ == MonitorElement::DQM_KIND_REAL) return mes_[0]->getFloatValue();
+    else return 0.;
   }
 
   double

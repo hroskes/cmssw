@@ -67,6 +67,10 @@ namespace edm {
       virtual bool wantsStreamRuns() const =0;
       virtual bool wantsStreamLuminosityBlocks() const =0;
 
+      void callWhenNewProductsRegistered(std::function<void(BranchDescription const&)> const& func) {
+        callWhenNewProductsRegistered_ = func;
+      }
+
       unsigned int concurrencyLimit() const { return queue_.concurrencyLimit(); }
 
       LimitedTaskQueue& queue() {
@@ -127,6 +131,7 @@ namespace edm {
       
 
       virtual void preallocStreams(unsigned int);
+      virtual void preallocLumis(unsigned int);
       virtual void preallocate(PreallocationConfiguration const&);
       virtual void doBeginStream_(StreamID id);
       virtual void doEndStream_(StreamID id);
@@ -147,6 +152,7 @@ namespace edm {
       virtual void doEndLuminosityBlock_(LuminosityBlock const& lb, EventSetup const& c);
 
       bool hasAcquire() const { return false; }
+      bool hasAccumulator() const { return false; }
 
       void setModuleDescription(ModuleDescription const& md) {
         moduleDescription_ = md;

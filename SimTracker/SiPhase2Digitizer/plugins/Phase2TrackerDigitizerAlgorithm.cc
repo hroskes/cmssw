@@ -57,10 +57,9 @@ using namespace edm;
 using namespace sipixelobjects;
 
 Phase2TrackerDigitizerAlgorithm::Phase2TrackerDigitizerAlgorithm(const edm::ParameterSet& conf_common, 
-								 const edm::ParameterSet& conf_specific, 
-								 CLHEP::HepRandomEngine& eng):
+								 const edm::ParameterSet& conf_specific):
   _signal(),
-  makeDigiSimLinks_(conf_specific.getUntrackedParameter<bool>("makeDigiSimLinks", true)),
+  makeDigiSimLinks_(conf_common.getUntrackedParameter<bool>("makeDigiSimLinks", true)),
   use_ineff_from_db_(conf_specific.getParameter<bool>("Inefficiency_DB")),
   use_module_killing_(conf_specific.getParameter<bool>("KillModules")), // boolean to kill or not modules
   use_deadmodule_DB_(conf_specific.getParameter<bool>("DeadModules_DB")), // boolean to access dead modules from DB
@@ -83,7 +82,11 @@ Phase2TrackerDigitizerAlgorithm::Phase2TrackerDigitizerAlgorithm(const edm::Para
 
   ClusterWidth(conf_specific.getParameter<double>("ClusterWidth")),  // Charge integration spread on the collection plane
 
-  doDigitalReadout(conf_specific.getParameter<bool>("DigitalReadout")),         //  Flag to decide analog or digital readout
+  // Allowed modes of readout which has following values :
+  // 0          ---> Digital or binary readout 
+  // -1         ---> Analog readout, current digitizer (Inner Pixel) (TDR version) with no threshold subtraction
+  // Analog readout with dual slope with the "second" slope being 1/2^(n-1) and threshold subtraction (n = 1, 2, 3,4)
+  thePhase2ReadoutMode(conf_specific.getParameter<int>("Phase2ReadoutMode")), 
 
   // ADC calibration 1adc count(135e.
   // Corresponds to 2adc/kev, 270[e/kev]/135[e/adc](2[adc/kev]
@@ -152,14 +155,9 @@ Phase2TrackerDigitizerAlgorithm::Phase2TrackerDigitizerAlgorithm(const edm::Para
   fluctuate(fluctuateCharge ? new SiG4UniversalFluctuation() : nullptr),
   theNoiser(addNoise ? new GaussianTailNoiseGenerator() : nullptr),
   theSiPixelGainCalibrationService_(use_ineff_from_db_ ? new SiPixelGainCalibrationOfflineSimService(conf_specific) : nullptr),
-  subdetEfficiencies_(conf_specific),
-  flatDistribution_((addNoise || AddPixelInefficiency || fluctuateCharge || addThresholdSmearing) ? new CLHEP::RandFlat(eng, 0., 1.) : nullptr),
-  gaussDistribution_((addNoise || AddPixelInefficiency || fluctuateCharge || addThresholdSmearing) ? new CLHEP::RandGaussQ(eng, 0., theReadoutNoise) : nullptr),
-  // Threshold smearing with gaussian distribution:
-  smearedThreshold_Endcap_(addThresholdSmearing ? new CLHEP::RandGaussQ(eng, theThresholdInE_Endcap , theThresholdSmearing_Endcap) : nullptr),
-  smearedThreshold_Barrel_(addThresholdSmearing ? new CLHEP::RandGaussQ(eng, theThresholdInE_Barrel , theThresholdSmearing_Barrel) : nullptr),
-  rengine_(&eng)
+  subdetEfficiencies_(conf_specific)
 {
+
   LogInfo("Phase2TrackerDigitizerAlgorithm") << "Phase2TrackerDigitizerAlgorithm constructed\n"
 			    << "Configuration parameters:\n"
 			    << "Threshold/Gain = "
@@ -167,7 +165,8 @@ Phase2TrackerDigitizerAlgorithm::Phase2TrackerDigitizerAlgorithm(const edm::Para
 			    << theThresholdInE_Endcap
 			    << "\nthreshold in electron Barrel = "
 			    << theThresholdInE_Barrel
-			    << " " << theElectronPerADC << " " << theAdcFullScale
+			    << " ElectronPerADC " << theElectronPerADC 
+			    << " ADC Scale (in bits) " << theAdcFullScale
 			    << " The delta cut-off is set to " << tMax
 			    << " pix-inefficiency " << AddPixelInefficiency;
 }
@@ -719,13 +718,27 @@ void Phase2TrackerDigitizerAlgorithm::pixel_inefficiency(const SubdetEfficiencie
   // Now loop again over pixels to kill some of them.
   // Loop over hits, amplitude in electrons, channel = coded row,col
   for (auto & s : theSignal) {
-    float rand = flatDistribution_->fire();
+    float rand = rengine_->flat();
     if( rand>subdetEfficiency ) {
       // make amplitude =0
       s.second.set(0.); // reset amplitude,
     }
   } 
 } 
+void Phase2TrackerDigitizerAlgorithm::initializeEvent(CLHEP::HepRandomEngine& eng) {
+  if (addNoise || AddPixelInefficiency || fluctuateCharge || addThresholdSmearing) {
+    
+    gaussDistribution_ = std::make_unique<CLHEP::RandGaussQ>(eng, 0., theReadoutNoise);
+  }
+  // Threshold smearing with gaussian distribution:
+  if (addThresholdSmearing) {
+    smearedThreshold_Endcap_ = std::make_unique<CLHEP::RandGaussQ> (eng, theThresholdInE_Endcap , theThresholdSmearing_Endcap);
+    smearedThreshold_Barrel_ = std::make_unique<CLHEP::RandGaussQ> (eng, theThresholdInE_Barrel , theThresholdSmearing_Barrel);
+  }
+  rengine_ = (&eng);
+  _signal.clear();
+}
+
 // =======================================================================================
 //
 // Set the drift direction accoring to the Bfield in local det-unit frame
@@ -903,6 +916,20 @@ void Phase2TrackerDigitizerAlgorithm::module_killing_DB(uint32_t detID) {
     }
   }
 }
+
+// For premixing
+void Phase2TrackerDigitizerAlgorithm::loadAccumulator(unsigned int detId, const std::map<int, float>& accumulator) {
+  auto& theSignal = _signal[detId];
+  // the input channel is always with PixelDigi definition
+  // if needed, that has to be converted to Phase2TrackerDigi convention
+  for(const auto& elem: accumulator) {
+    auto inserted = theSignal.emplace(elem.first, DigitizerUtility::Amplitude(elem.second, nullptr));
+    if(!inserted.second) {
+      throw cms::Exception("LogicError") << "Signal was already set for DetId " << detId;
+    }
+  }
+}
+
 void Phase2TrackerDigitizerAlgorithm::digitize(const Phase2TrackerGeomDetUnit* pixdet,
 	std::map<int, DigitizerUtility::DigiSimInfo> & digi_map,
 	     const TrackerTopology* tTopo) 
@@ -950,10 +977,9 @@ void Phase2TrackerDigitizerAlgorithm::digitize(const Phase2TrackerGeomDetUnit* p
     //    DigitizerUtility::Amplitude sig_data = s.second;  
     const DigitizerUtility::Amplitude& sig_data = s.second;
     float signalInElectrons  = sig_data.ampl();
-    int adc;
+    unsigned short adc;
     if (signalInElectrons >= theThresholdInE) { // check threshold
-      if (doDigitalReadout) adc = theAdcFullScale;
-      else adc = std::min( int(signalInElectrons / theElectronPerADC), theAdcFullScale );
+      adc = convertSignalToAdc(detID, signalInElectrons, theThresholdInE);
       DigitizerUtility::DigiSimInfo info;
       info.sig_tot     = adc;
       info.ot_bit      = ( signalInElectrons  > theHIPThresholdInE ? true : false);
@@ -966,4 +992,34 @@ void Phase2TrackerDigitizerAlgorithm::digitize(const Phase2TrackerGeomDetUnit* p
       digi_map.insert({s.first, info});
     }
   }
+}
+//
+// Scale the Signal using Dual Slope option 
+//
+int Phase2TrackerDigitizerAlgorithm::convertSignalToAdc(uint32_t detID, float signal_in_elec,float threshold) {
+  int signal_in_adc;
+  int temp_signal;
+  const int max_limit = 10;
+  if (thePhase2ReadoutMode == 0) signal_in_adc = theAdcFullScale;
+  else { 
+    
+    if (thePhase2ReadoutMode == -1) {
+      temp_signal = std::min( int(signal_in_elec / theElectronPerADC), theAdcFullScale );
+    } else {
+      // calculate the kink point and the slope
+      const int dualslope_param = std::min(abs(thePhase2ReadoutMode), max_limit);
+      const int kink_point = int(theAdcFullScale/2) +1;
+      temp_signal = std::floor((signal_in_elec-threshold) / theElectronPerADC) + 1;
+      if ( temp_signal > kink_point) temp_signal = std::floor((temp_signal - kink_point)/(pow(2, dualslope_param-1))) + kink_point;
+    }     
+    signal_in_adc = std::min(temp_signal, theAdcFullScale );
+    LogInfo("Phase2TrackerDigitizerAlgorithm") << " DetId " << detID
+                                               << " signal_in_elec " << signal_in_elec 
+					       << " threshold " << threshold << " signal_above_thr " 
+					       << (signal_in_elec-threshold) 
+					       << " temp conversion " << std::floor((signal_in_elec-threshold)/theElectronPerADC)+1
+					       << " signal after slope correction " << temp_signal 
+					       << " signal_in_adc " << signal_in_adc;
+  } 
+  return signal_in_adc; 
 }

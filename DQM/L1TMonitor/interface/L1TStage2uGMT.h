@@ -27,7 +27,6 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
  protected:
 
   void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override;
-  void beginLuminosityBlock(const edm::LuminosityBlock&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker&, const edm::Run&, const edm::EventSetup&) override;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
 
@@ -159,6 +158,7 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   MonitorElement* ugmtMuonBXvshwChargeValid;
   MonitorElement* ugmtMuonBXvshwQual;
   MonitorElement* ugmtMuonBXvshwIso;
+  MonitorElement* ugmtMuonChargevsLink;
 
   // muon correlations
   MonitorElement* ugmtMuMuInvMass;

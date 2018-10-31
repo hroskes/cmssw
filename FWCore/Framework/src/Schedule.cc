@@ -1,5 +1,6 @@
 #include "FWCore/Framework/interface/Schedule.h"
 
+#include "DataFormats/Common/interface/setIsMergeable.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/Provenance/interface/ProcessConfiguration.h"
 #include "DataFormats/Provenance/interface/ProductRegistry.h"
@@ -33,6 +34,7 @@
 #include "FWCore/Utilities/interface/TypeID.h"
 
 
+
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -43,6 +45,9 @@
 #include <set>
 #include <exception>
 #include <sstream>
+
+#include "make_shared_noexcept_false.h"
+
 
 namespace edm {
 
@@ -80,7 +85,7 @@ namespace edm {
       bool postCalled = false;
       std::shared_ptr<TriggerResultInserter> returnValue;
       try {
-        maker::ModuleHolderT<TriggerResultInserter> holder(std::make_shared<TriggerResultInserter>(*trig_pset, iPrealloc.numberOfStreams()),static_cast<Maker const*>(nullptr));
+        maker::ModuleHolderT<TriggerResultInserter> holder(make_shared_noexcept_false<TriggerResultInserter>(*trig_pset, iPrealloc.numberOfStreams()),static_cast<Maker const*>(nullptr));
         holder.setModuleDescription(md);
         holder.registerProductsAndCallbacks(&preg);
         returnValue =holder.module();
@@ -131,7 +136,7 @@ namespace edm {
         bool postCalled = false;
 
         try {
-          maker::ModuleHolderT<T> holder(std::make_shared<T>(iPrealloc.numberOfStreams()),
+          maker::ModuleHolderT<T> holder(make_shared_noexcept_false<T>(iPrealloc.numberOfStreams()),
                                          static_cast<Maker const*>(nullptr));
           holder.setModuleDescription(md);
           holder.registerProductsAndCallbacks(&preg);
@@ -472,7 +477,7 @@ namespace edm {
     assert(0<prealloc.numberOfStreams());
     streamSchedules_.reserve(prealloc.numberOfStreams());
     for(unsigned int i=0; i<prealloc.numberOfStreams();++i) {
-      streamSchedules_.emplace_back(std::make_shared<StreamSchedule>(
+      streamSchedules_.emplace_back(make_shared_noexcept_false<StreamSchedule>(
         resultsInserter(),
         pathStatusInserters_,
         endPathStatusInserters_,
@@ -564,6 +569,10 @@ namespace edm {
       c->selectProducts(preg, thinnedAssociationsHelper);
     }
 
+    for(auto & product : preg.productListUpdator()) {
+      setIsMergeable(product.second);
+    }
+
     {
       // We now get a collection of types that may be consumed.
       std::set<TypeID> productTypesConsumed;
@@ -641,7 +650,7 @@ namespace edm {
                         SubProcessParentageHelper const* subProcessParentageHelper) {
     std::string const output("output");
 
-    ParameterSet const& maxEventsPSet = proc_pset.getUntrackedParameterSet("maxEvents", ParameterSet());
+    ParameterSet const& maxEventsPSet = proc_pset.getUntrackedParameterSet("maxEvents");
     int maxEventSpecs = 0;
     int maxEventsOut = -1;
     ParameterSet const* vMaxEventsOut = nullptr;
@@ -991,14 +1000,23 @@ namespace edm {
     for_all(all_output_communicators_, std::bind(&OutputModuleCommunicator::openFile, _1, std::cref(fb)));
   }
 
-  void Schedule::writeRun(RunPrincipal const& rp, ProcessContext const* processContext) {
-    using std::placeholders::_1;
-    for_all(all_output_communicators_, std::bind(&OutputModuleCommunicator::writeRun, _1, std::cref(rp), processContext));
+  void Schedule::writeRunAsync(WaitingTaskHolder task,
+                               RunPrincipal const& rp,
+                               ProcessContext const* processContext,
+                               ActivityRegistry* activityRegistry,
+                               MergeableRunProductMetadata const* mergeableRunProductMetadata) {
+    for(auto& c: all_output_communicators_) {
+      c->writeRunAsync(task, rp, processContext, activityRegistry, mergeableRunProductMetadata);
+    }
   }
 
-  void Schedule::writeLumi(LuminosityBlockPrincipal const& lbp, ProcessContext const* processContext) {
-    using std::placeholders::_1;
-    for_all(all_output_communicators_, std::bind(&OutputModuleCommunicator::writeLumi, _1, std::cref(lbp), processContext));
+  void Schedule::writeLumiAsync(WaitingTaskHolder task,
+                                LuminosityBlockPrincipal const& lbp,
+                                ProcessContext const* processContext,
+                                ActivityRegistry* activityRegistry) {
+    for(auto& c: all_output_communicators_) {
+      c->writeLumiAsync(task, lbp, processContext, activityRegistry);
+    }
   }
 
   bool Schedule::shouldWeCloseOutput() const {
@@ -1036,9 +1054,10 @@ namespace edm {
   void Schedule::processOneEventAsync(WaitingTaskHolder iTask,
                                       unsigned int iStreamID,
                                       EventPrincipal& ep,
-                                      EventSetup const& es) {
+                                      EventSetup const& es,
+                                      ServiceToken const& token) {
     assert(iStreamID<streamSchedules_.size());
-    streamSchedules_[iStreamID]->processOneEventAsync(std::move(iTask),ep,es,pathStatusInserters_);
+    streamSchedules_[iStreamID]->processOneEventAsync(std::move(iTask),ep,es,token,pathStatusInserters_);
   }
   
   bool Schedule::changeModule(std::string const& iLabel,

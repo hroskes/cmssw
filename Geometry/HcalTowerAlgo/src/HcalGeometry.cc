@@ -21,7 +21,7 @@ HcalGeometry::HcalGeometry(const HcalTopology& topology) :
 HcalGeometry::~HcalGeometry() {}
 
 void HcalGeometry::init() {
-  if (!m_topology.withSpecialRBXHBHE()) m_mergePosition = false;
+  if (!m_topology.getMergePositionFlag()) m_mergePosition = false;
 #ifdef EDM_ML_DEBUG
   std::cout << "HcalGeometry: " << "HcalGeometry::init() "
 			       << " HBSize " << m_topology.getHBSize() 
@@ -104,6 +104,11 @@ std::shared_ptr<const CaloCellGeometry> HcalGeometry::getGeometry(const DetId& i
 }
 
 DetId HcalGeometry::getClosestCell(const GlobalPoint& r) const {
+  return getClosestCell(r,false);
+}
+
+DetId HcalGeometry::getClosestCell(const GlobalPoint& r,
+				   bool ignoreCorrect) const {
 
   // Now find the closest eta_bin, eta value of a bin i is average
   // of eta[i] and eta[i-1]
@@ -163,8 +168,12 @@ DetId HcalGeometry::getClosestCell(const GlobalPoint& r) const {
         }
       }
     }
-    
-    return correctId(bestId);
+#ifdef EDM_ML_DEBUG
+    std::cout << bestId << " Corrected to " << HcalDetId(correctId(bestId)) 
+	      << std::endl;
+#endif
+
+    return (ignoreCorrect ? bestId : correctId(bestId));
   }
 }
 

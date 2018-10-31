@@ -107,6 +107,7 @@ namespace reco {
 
     edm::EDGetTokenT<HBHEDigiCollection> hbhedigi_token_;
     edm::EDGetTokenT<HcalCalibDigiCollection> hcalcalibdigi_token_;
+    edm::EDGetTokenT<QIE10DigiCollection> lasermondigi_token_;
     edm::EDGetTokenT<HBHERecHitCollection> hbherechit_token_;
     edm::EDGetTokenT<CaloTowerCollection> calotower_token_;
     edm::EDGetTokenT<reco::TrackCollection> track_token_;
@@ -141,6 +142,7 @@ namespace reco {
 
     int laserMonitorTSStart_;
     int laserMonitorTSEnd_;
+    unsigned laserMonitorSamples_;
     
     std::vector<float> adc2fC;
     std::vector<float> adc2fCHF;

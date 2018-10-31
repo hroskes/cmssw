@@ -69,12 +69,13 @@ class OMTFReconstruction {
 
 
     bool dumpResultToXML, dumpDetailedResultToXML;
+    int bxMin, bxMax;
 
   ///OMTF objects
     OMTFConfiguration   *m_OMTFConfig;
     OMTFinputMaker       m_InputMaker;
     OMTFSorter           m_Sorter;
-    OMTFGhostBuster      m_GhostBuster;
+    std::unique_ptr<IGhostBuster> m_GhostBuster;
     OMTFProcessor       *m_OMTF;    
   ///
     xercesc::DOMElement *aTopElement;

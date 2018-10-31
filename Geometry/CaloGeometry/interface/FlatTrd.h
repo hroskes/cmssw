@@ -72,7 +72,9 @@ public:
   void getTransform( Tr3D& tr, Pt3DVec* lptr ) const override;
 
   void setPosition ( const GlobalPoint& p ) { m_global = p;  setRefPoint(p); }
-  void setBackPoint( const GlobalPoint& p ) { setBackPoint(p); }
+
+  static constexpr unsigned int ncorner_    = 8;
+  static constexpr unsigned int ncornerBy2_ = 4;
 
 private:
 

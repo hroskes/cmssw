@@ -115,14 +115,17 @@ trackingLowPU.toModify(pixelLessStepTrackingRegions, RegionPSet = dict(
 ))
 
 from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
-from RecoTracker.TkTrackingRegions.globalTrackingRegionWithVertices_cff import globalTrackingRegionWithVertices as _globalTrackingRegionWithVertices
-pp_on_XeXe_2017.toReplaceWith(pixelLessStepTrackingRegions, 
-                              _globalTrackingRegionWithVertices.clone(RegionPSet=dict(
-            fixedError = 3.0,
-            ptMin = 2.0,
-            originRadius = 1.0
-            )                                                                      )
+from Configuration.Eras.Modifier_pp_on_AA_2018_cff import pp_on_AA_2018
+from RecoTracker.IterativeTracking.MixedTripletStep_cff import _mixedTripletStepTrackingRegionsCommon_pp_on_HI
+(pp_on_XeXe_2017 | pp_on_AA_2018).toReplaceWith(pixelLessStepTrackingRegions, 
+                _mixedTripletStepTrackingRegionsCommon_pp_on_HI.clone(RegionPSet=dict(
+                    ptMinScaling4BigEvts= False,
+                    fixedError = 3.0,
+                    ptMin = 2.0,
+                    originRadius = 1.0
+                )                                                                      )
 )
+
 
 # seeding
 from RecoPixelVertexing.PixelLowPtUtilities.ClusterShapeHitFilterESProducer_cfi import ClusterShapeHitFilterESProducer as _ClusterShapeHitFilterESProducer
@@ -178,13 +181,13 @@ trackingLowPU.toModify(pixelLessStepSeeds,
 #fastsim
 import FastSimulation.Tracking.TrajectorySeedProducer_cfi
 _fastSim_pixelLessStepSeeds = FastSimulation.Tracking.TrajectorySeedProducer_cfi.trajectorySeedProducer.clone(
-    layerList = pixelLessStepSeedLayers.layerList.value(),
     trackingRegions = "pixelLessStepTrackingRegions",
     hitMasks = cms.InputTag("pixelLessStepMasks"),
 )
 from FastSimulation.Tracking.SeedingMigration import _hitSetProducerToFactoryPSet
 _fastSim_pixelLessStepSeeds.seedFinderSelector.MultiHitGeneratorFactory = _hitSetProducerToFactoryPSet(pixelLessStepHitTriplets)
 _fastSim_pixelLessStepSeeds.seedFinderSelector.MultiHitGeneratorFactory.refitHits = False
+_fastSim_pixelLessStepSeeds.seedFinderSelector.layerList = pixelLessStepSeedLayers.layerList.value()
 fastSim.toReplaceWith(pixelLessStepSeeds,_fastSim_pixelLessStepSeeds)
 
 # QUALITY CUTS DURING TRACK BUILDING
@@ -198,7 +201,8 @@ pixelLessStepTrajectoryFilter = _pixelLessStepTrajectoryFilterBase.clone(
     seedPairPenalty = 1,
 )
 trackingLowPU.toReplaceWith(pixelLessStepTrajectoryFilter, _pixelLessStepTrajectoryFilterBase)
-pp_on_XeXe_2017.toModify(pixelLessStepTrajectoryFilter, minPt=2.0)
+for e in [pp_on_XeXe_2017, pp_on_AA_2018]:
+    e.toModify(pixelLessStepTrajectoryFilter, minPt=2.0)
 
 import RecoTracker.MeasurementDet.Chi2ChargeMeasurementEstimator_cfi
 pixelLessStepChi2Est = RecoTracker.MeasurementDet.Chi2ChargeMeasurementEstimator_cfi.Chi2ChargeMeasurementEstimator.clone(
@@ -287,6 +291,7 @@ trackingPhase1.toReplaceWith(pixelLessStep, pixelLessStepClassifier1.clone(
      mva = dict(GBRForestLabel = 'MVASelectorPixelLessStep_Phase1'),
      qualityCuts = [-0.4,0.0,0.4],
 ))
+pp_on_AA_2018.toModify(pixelLessStep, qualityCuts = [-0.4,0.0,0.8])
 
 # For LowPU
 import RecoTracker.FinalTrackSelectors.multiTrackSelector_cfi

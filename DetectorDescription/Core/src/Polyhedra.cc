@@ -1,9 +1,8 @@
 #include "DetectorDescription/Core/src/Polyhedra.h" 
+#include "DetectorDescription/Core/interface/DDUnits.h"
 
 #include <cmath>
 
-#include "CLHEP/Units/GlobalSystemOfUnits.h"
-#include "CLHEP/Units/SystemOfUnits.h"
 #include "DetectorDescription/Core/interface/DDSolidShapes.h"
 #include "DetectorDescription/Core/src/Solid.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -14,12 +13,14 @@ using DDI::Polyhedra;
 using std::fabs;
 using std::cos;
 using std::sin;
+using namespace dd;
+using namespace dd::operators;
 
 Polyhedra::Polyhedra( int sides, double startPhi, double deltaPhi,
                       const std::vector<double> & z,
                       const std::vector<double> & rmin,
                       const std::vector<double> & rmax)
-  : Solid(ddpolyhedra_rrz)	      
+  : Solid(DDSolidShape::ddpolyhedra_rrz)	      
 {
   p_.emplace_back(sides);
   p_.emplace_back(startPhi);
@@ -41,7 +42,7 @@ Polyhedra::Polyhedra( int sides, double startPhi, double deltaPhi,
 
 Polyhedra::Polyhedra( int sides, double startPhi, double deltaPhi,
                       const std::vector<double> & z,
-                      const std::vector<double> & r) : Solid(ddpolyhedra_rz)	      
+                      const std::vector<double> & r) : Solid(DDSolidShape::ddpolyhedra_rz)	      
 {
   p_.emplace_back(sides);
   p_.emplace_back(startPhi);
@@ -62,17 +63,35 @@ Polyhedra::Polyhedra( int sides, double startPhi, double deltaPhi,
 
 double Polyhedra::volume() const
 {
-  double volume=0;
-  /* the following assumption is made: there are at least 3 eaqual sides if there is a complete circle (this has to be done, otherwise you can not define a polygon in a circle */
+  double volume = 0;
+  /* the following assumption is made:
+     there are at least 3 eaqual sides
+     if there is a complete circle (this has to be done,
+     otherwise you can not define a polygon in a circle */
   
-  /* the calculation for the volume is similar as in the case of the polycone. However, the rotation is not defined as part of a circle, but as sides in a regular polygon (specified by parameter "sides"). The sides are defined betwee startPhi and endPhi and form triangles within the circle they are defined in. First we need to determine the aread of side. let alpha |startPhi-endPhi|. the half the angle of 1 side is beta=0.5*(alph/sides). If r is the raddius of the circle in which the regular polygon is defined, the are of such a side will be 0.5*(height side)*(base side)=0.5*(cos(beta)*r)*(2*sin(beta)*r)= cos(beta)sin(beta)*r*r. r is the radius that varies if we "walk" over the boundaries of the polygon that is described by the z and r values (this yields the same integral primitive as used with the Polycone. Read Polycone documentation in code first if you do not understand this */
+  /* the calculation for the volume is similar as in
+     the case of the polycone. However, the rotation
+     is not defined as part of a circle, but as sides
+     in a regular polygon (specified by parameter "sides").
+     The sides are defined betwee startPhi and endPhi and
+     form triangles within the circle they are defined in.
+     First we need to determine the aread of side.
+     let alpha |startPhi-endPhi|.
+     the half the angle of 1 side is beta=0.5*(alph/sides).
+     If r is the raddius of the circle in which the regular polygon is defined,
+     the are of such a side will be
+     0.5*(height side)*(base side)=0.5*(cos(beta)*r)*(2*sin(beta)*r)= cos(beta)sin(beta)*r*r.
+     r is the radius that varies if we "walk" over the boundaries of
+     the polygon that is described by the z and r values
+     (this yields the same integral primitive as used with the Polycone.
+     Read Polycone documentation in code first if you do not understand this */
    
   //FIXME: rz, rrz !!
-  if (shape()==ddpolyhedra_rrz) 
+  if (shape()==DDSolidShape::ddpolyhedra_rrz) 
   {
     int loop = (p_.size()-3)/3 -1;
     double sec=0;
-    double a = 0.5*fabs(p_[2]/rad / p_[0]);
+    double a = 0.5*fabs(CONVERT_TO( p_[2], rad ) / p_[0]);
     int i=3;
     for (int j=3; j<(loop+3); ++j) 
     {
@@ -104,7 +123,7 @@ double Polyhedra::volume() const
   }  
   int sides=int(p_[0]);
   //double phiFrom=p_[1]/rad;
-  double phiDelta=p_[2]/rad;
+  double phiDelta=CONVERT_TO( p_[2], rad );
   
   double zBegin=0;
   double zEnd=0;
@@ -155,9 +174,9 @@ double Polyhedra::volume() const
 void DDI::Polyhedra::stream(std::ostream & os) const
 {
   os << " sides=" << p_[0]
-     << " startPhi[deg]=" << p_[1]/deg
-     << " dPhi[deg]=" << p_[2]/deg 
+     << " startPhi[deg]=" << CONVERT_TO( p_[1], deg )
+     << " dPhi[deg]=" << CONVERT_TO( p_[2], deg )
      << " Sizes[cm]=";
   for (unsigned k=3; k<p_.size(); ++k)
-    os << p_[k]/cm << " ";
+    os << CONVERT_TO( p_[k], cm ) << " ";
 }

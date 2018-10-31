@@ -12,13 +12,14 @@ phase2TrackerDigitizer = cms.PSet(
     GeometryType = cms.string('idealForDigi'),
     isOTreadoutAnalog = cms.bool(False),#set this to true if you want analog readout for OT
 # Common for Algos
+    premixStage1 = cms.bool(False),
     AlgorithmCommon = cms.PSet(
-      DeltaProductionCut = cms.double(0.03)
+      DeltaProductionCut = cms.double(0.03),
+      makeDigiSimLinks = cms.untracked.bool(True),
     ),
 # Specific parameters
 #Pixel Digitizer Algorithm
     PixelDigitizerAlgorithm = cms.PSet(
-      makeDigiSimLinks = cms.untracked.bool(True),
       ElectronPerAdc = cms.double(600.0),
       ReadoutNoiseInElec = cms.double(0.0),
       ThresholdInElectrons_Barrel = cms.double(1200.0),
@@ -29,8 +30,8 @@ phase2TrackerDigitizer = cms.PSet(
       HIPThresholdInElectrons_Barrel = cms.double(1.0e10), # very high value to avoid Over threshold bit
       HIPThresholdInElectrons_Endcap = cms.double(1.0e10), # very high value to avoid Over threshold bit
       NoiseInElectrons = cms.double(0.0),
-      DigitalReadout           = cms.bool(False), # Flag to decide analog or digital readout
-      AdcFullScale = cms.int32(16),
+      Phase2ReadoutMode = cms.int32(-1), # Flag to decide Readout Mode :Digital(0) or Analog (linear TDR (-1), dual slope with slope parameters (+1,+2,+3,+4) with threshold subtraction
+      AdcFullScale = cms.int32(15),
       TofUpperCut = cms.double(12.5),
       TofLowerCut = cms.double(-12.5),
       AddNoisyPixels = cms.bool(False),
@@ -56,7 +57,6 @@ phase2TrackerDigitizer = cms.PSet(
     ),
 #Pixel in PS Module
     PSPDigitizerAlgorithm = cms.PSet(
-      makeDigiSimLinks = cms.untracked.bool(True),
       ElectronPerAdc = cms.double(135.0),
       ReadoutNoiseInElec = cms.double(200.0),#D.B.:Fill readout noise, including all readout chain, relevant for smearing
       ThresholdInElectrons_Barrel = cms.double(6300.), #(0.4 MIP = 0.4 * 16000 e)
@@ -67,7 +67,7 @@ phase2TrackerDigitizer = cms.PSet(
       HIPThresholdInElectrons_Barrel = cms.double(1.0e10), # very high value to avoid Over threshold bit
       HIPThresholdInElectrons_Endcap = cms.double(1.0e10), # very high value to avoid Over threshold bit
       NoiseInElectrons = cms.double(200),	         # 30% of the readout noise (should be changed in future)
-      DigitalReadout           = cms.bool(True), # Flag to decide analog or digital readout 
+      Phase2ReadoutMode = cms.int32(0), # Flag to decide Readout Mode :Digital(0) or Analog (linear TDR (-1), dual slope with slope parameters (+1,+2,+3,+4) with threshold subtraction
       AdcFullScale = cms.int32(255),
       TofUpperCut = cms.double(12.5),
       TofLowerCut = cms.double(-12.5),
@@ -94,7 +94,6 @@ phase2TrackerDigitizer = cms.PSet(
     ),
 #Strip in PS module
     PSSDigitizerAlgorithm = cms.PSet(
-      makeDigiSimLinks = cms.untracked.bool(True),
       ElectronPerAdc = cms.double(135.0),
 #D.B.:the noise should be a function of strip capacitance, roughly: ReadoutNoiseInElec=500+(64*Cdet[pF]) ~= 500+(64*1.5[cm])
       ReadoutNoiseInElec = cms.double(700.0),#D.B.:Fill readout noise, including all readout chain, relevant for smearing
@@ -106,7 +105,7 @@ phase2TrackerDigitizer = cms.PSet(
       HIPThresholdInElectrons_Barrel = cms.double(21000.), # 1.4 MIP considered as HIP
       HIPThresholdInElectrons_Endcap = cms.double(21000.), # 1.4 MIP considered as HIP 
       NoiseInElectrons = cms.double(700),	         # 30% of the readout noise (should be changed in future)
-      DigitalReadout           = cms.bool(True), # Flag to decide analog or digital readout 
+      Phase2ReadoutMode = cms.int32(0), # Flag to decide Readout Mode :Digital(0) or Analog (linear TDR (-1), dual slope with slope parameters (+1,+2,+3,+4) with threshold subtraction
       AdcFullScale = cms.int32(255),
       TofUpperCut = cms.double(12.5),
       TofLowerCut = cms.double(-12.5),
@@ -133,7 +132,6 @@ phase2TrackerDigitizer = cms.PSet(
     ),
 #Two Strip Module
     SSDigitizerAlgorithm = cms.PSet(
-      makeDigiSimLinks = cms.untracked.bool(True),
       ElectronPerAdc = cms.double(135.0),
 #D.B.:the noise should be a function of strip capacitance, roughly: ReadoutNoiseInElec=500+(64*Cdet[pF]) ~= 500+(64*1.5[cm])
       ReadoutNoiseInElec = cms.double(1000.0),#D.B.:Fill readout noise, including all readout chain, relevant for smearing
@@ -145,7 +143,7 @@ phase2TrackerDigitizer = cms.PSet(
       HIPThresholdInElectrons_Barrel = cms.double(1.0e10), # very high value to avoid Over threshold bit
       HIPThresholdInElectrons_Endcap = cms.double(1.0e10), # very high value to avoid Over threshold bit
       NoiseInElectrons = cms.double(1000),	         # 30% of the readout noise (should be changed in future)
-      DigitalReadout           = cms.bool(True), # Flag to decide analog or digital readout 
+      Phase2ReadoutMode = cms.int32(0), # Flag to decide Readout Mode :Digital(0) or Analog (linear TDR (-1), dual slope with slope parameters (+1,+2,+3,+4) with threshold subtraction
       AdcFullScale = cms.int32(255),
       TofUpperCut = cms.double(12.5),
       TofLowerCut = cms.double(-12.5),
@@ -171,3 +169,44 @@ phase2TrackerDigitizer = cms.PSet(
       CellsToKill = cms.VPSet()
     )
 )
+
+# For premixing stage1
+# - add noise as by default
+# - do not add noisy pixels (to be done in stage2)
+# - do not apply inefficiency (to be done in stage2)
+# - disable threshold smearing
+#
+# For inner pixel
+# - extend the dynamic range of ADCs
+#
+# For outer tracker
+# - force analog readout to get the ADCs
+#
+# NOTE: It is currently assumed that all sub-digitizers have the same ElectronPerAdc.
+from Configuration.ProcessModifiers.premix_stage1_cff import premix_stage1
+_premixStage1ModifyDict = dict(
+    premixStage1 = True,
+    PixelDigitizerAlgorithm = dict(
+        AddNoisyPixels = False,
+        AddInefficiency = False,
+        AddThresholdSmearing = False,
+        ElectronPerAdc = phase2TrackerDigitizer.PSPDigitizerAlgorithm.ElectronPerAdc.value(),
+        AdcFullScale = phase2TrackerDigitizer.PSPDigitizerAlgorithm.AdcFullScale.value(),
+    ),
+    PSPDigitizerAlgorithm = dict(
+        AddNoisyPixels = False,
+        AddInefficiency = False,
+        AddThresholdSmearing = False,
+    ),
+    PSSDigitizerAlgorithm = dict(
+        AddNoisyPixels = False,
+        AddInefficiency = False,
+        AddThresholdSmearing = False,
+    ),
+    SSDigitizerAlgorithm = dict(
+        AddNoisyPixels = False,
+        AddInefficiency = False,
+        AddThresholdSmearing = False,
+    ),
+)
+premix_stage1.toModify(phase2TrackerDigitizer, **_premixStage1ModifyDict)

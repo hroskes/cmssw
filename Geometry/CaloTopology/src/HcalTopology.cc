@@ -193,17 +193,12 @@ bool HcalTopology::valid(const DetId& id) const {
 
 bool HcalTopology::validHcal(const HcalDetId& id) const {
   // check the raw rules
-  bool ok=validRaw(id);
-
-  ok=ok && !isExcluded(id);
-
-  return ok;
+  return validRaw(id) && !isExcluded(id);
 }
 
 bool HcalTopology::validDetId(HcalSubdetector subdet, int ieta, int iphi, 
                               int depth) const {
-  HcalDetId id(subdet,ieta,iphi,depth);
-  return validHcal(id);
+  return validHcal(HcalDetId(subdet,ieta,iphi,depth));
 }
 
 bool HcalTopology::validHT(const HcalTrigTowerDetId& id) const {
@@ -217,16 +212,21 @@ bool HcalTopology::validHT(const HcalTrigTowerDetId& id) const {
        if ((id.iphi() % 4) != 1)                               return false;
        if (id.ietaAbs() > 32)                                  return false;
     }
-  } else {
+  } else if (id.version()==1) {
     if (triggerMode_==HcalTopologyMode::TriggerMode_2009) return false;
     if (id.ietaAbs()<30 || id.ietaAbs()>41)         return false;
     if (id.ietaAbs()>29 && ((id.iphi()%2)==0))      return false;
     if (id.ietaAbs()>39 && ((id.iphi()%4)!=3))      return false;
+  } else if (id.version()>1) {
+    // only versions 0 and 1 are supported
+    return false;
   }
+
   return true;
 }
 
 bool HcalTopology::validHcal(const HcalDetId& id, const unsigned int flag) const {
+  /* original logic show here because condensed form below is rather terse
   // check the raw rules
   bool ok = validHcal(id);
   if (flag == 0) { // This is all what is needed
@@ -237,6 +237,8 @@ bool HcalTopology::validHcal(const HcalDetId& id, const unsigned int flag) const
     ok = hcons_->isPlan1MergedId(id);
   }
   return ok;
+  */
+  return (flag>0 and hcons_->isPlan1MergedId(id)) or ((flag!=1 or !hcons_->isPlan1ToBeMergedId(id)) and validHcal(id));
 }
 
 bool HcalTopology::isExcluded(const HcalDetId& id) const {
@@ -717,7 +719,7 @@ bool HcalTopology::incrementDepth(HcalDetId & detId) const {
   int depth   = detId.depth();
   int iphi    = detId.iphi();
   int zside   = detId.zside();
-  int nDepthBins, startingBin;
+  int nDepthBins(0), startingBin(0);
   depthBinInformation(subdet, etaRing, iphi, zside, nDepthBins, startingBin);
 
   // see if the new depth bin exists

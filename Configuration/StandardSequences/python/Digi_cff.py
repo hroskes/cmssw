@@ -38,7 +38,7 @@ pdigi_valid_nogen=cms.Sequence(pdigi_nogen)
 
 from GeneratorInterface.HiGenCommon.HeavyIon_cff import *
 pdigi_hi=cms.Sequence(pdigi+heavyIon)
-pdigi_hi_nogen=cms.Sequence(pdigi_nogen+heavyIon)
+pdigi_hi_nogen=cms.Sequence(pdigi_nogen+genJetMET+heavyIon)
 
 from Configuration.Eras.Modifier_fastSim_cff import fastSim
 def _fastSimDigis(process):
@@ -48,7 +48,8 @@ def _fastSimDigis(process):
     # use an alias to make the mixed track collection available under the usual label
     from FastSimulation.Configuration.DigiAliases_cff import loadDigiAliases
     loadDigiAliases(process)
-modifyDigi_fastSimDigis = fastSim.makeProcessModifier(_fastSimDigis)
+# no need for the aliases for premixing stage1
+modifyDigi_fastSimDigis = (fastSim & ~premix_stage1).makeProcessModifier(_fastSimDigis)
 
 #phase 2 common mods
 def _modifyEnableHcalHardcode( theProcess ):

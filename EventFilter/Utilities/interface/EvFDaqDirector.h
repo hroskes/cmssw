@@ -26,6 +26,8 @@
 #include <cstdio>
 
 #include <tbb/concurrent_hash_map.h>
+#include <boost/filesystem.hpp>
+#include <boost/asio.hpp>
 
 class SystemBounds;
 class GlobalContext;
@@ -41,6 +43,10 @@ namespace edm {
 
 namespace Json{
   class Value;
+}
+
+namespace jsoncollector {
+class DataPointDefinition;
 }
 
 namespace edm {
@@ -72,6 +78,7 @@ namespace evf{
       std::string &baseRunDir(){return run_dir_;}
       std::string &buBaseRunDir(){return bu_run_dir_;}
       std::string &buBaseRunOpenDir(){return bu_run_open_dir_;}
+      bool useFileBroker() const {return useFileBroker_;}
 
       std::string findCurrentRunDir(){ return dirManager_.findRunDir(run_);}
       std::string getInputJsonFilePath(const unsigned int ls, const unsigned int index) const;
@@ -97,6 +104,7 @@ namespace evf{
       std::string getBoLSFilePathOnFU(const unsigned int ls) const;
       std::string getEoRFilePath() const;
       std::string getEoRFilePathOnFU() const;
+      std::string getFFFParamsFilePathOnBU() const;
       std::string getRunOpenDirPath() const {return run_dir_ +"/open";}
       bool outputAdler32Recheck() const {return outputAdler32Recheck_;}
       void removeFile(unsigned int ls, unsigned int index);
@@ -113,9 +121,21 @@ namespace evf{
       void unlockFULocal();
       void lockFULocal2();
       void unlockFULocal2();
+      void createBoLSFile(const uint32_t lumiSection, bool checkIfExists) const;
+      void createLumiSectionFiles(const uint32_t lumiSection, const uint32_t currentLumiSection, bool doCreateBoLS = true);
+      int grabNextJsonFile(std::string const& jsonSourcePath, std::string const& rawSourcePath, int64_t& fileSizeFromJson, bool& fileFound);
+      int grabNextJsonFileAndUnlock(boost::filesystem::path const& jsonSourcePath);
+
+      EvFDaqDirector::FileStatus contactFileBroker(unsigned int& serverHttpStatus, bool& serverState,
+                                                uint32_t& serverLS, uint32_t& closedServerLS,
+                                                std::string& nextFileJson, std::string& nextFileRaw, int maxLS);
+
+      FileStatus getNextFromFileBroker(const unsigned int currentLumiSection, unsigned int& ls, std::string& nextFile,
+                                        int& serverEventsInNewFile_, int64_t& fileSize, uint64_t& thisLockWaitTimeUs);
       void createRunOpendirMaybe();
       void createProcessingNotificationMaybe() const;
       int readLastLSEntry(std::string const& file);
+      unsigned int getLumisectionToStart() const;
       void setDeleteTracking( std::mutex* fileDeleteLock,std::list<std::pair<int,InputFile*>> *filesToDelete) {
         fileDeleteLockPtr_=fileDeleteLock;
         filesToDeletePtr_ = filesToDelete;
@@ -128,7 +148,7 @@ namespace evf{
 
     private:
       bool bumpFile(unsigned int& ls, unsigned int& index, std::string& nextFile, uint32_t& fsize, int maxLS);
-      void openFULockfileStream(std::string& fuLockFilePath, bool create);
+      void openFULockfileStream(bool create);
       std::string inputFileNameStem(const unsigned int ls, const unsigned int index) const;
       std::string outputFileNameStem(const unsigned int ls, std::string const& stream) const;
       std::string mergedFileNameStem(const unsigned int ls, std::string const& stream) const;
@@ -141,6 +161,12 @@ namespace evf{
       std::string bu_base_dir_;
       bool directorBu_;
       unsigned int run_;
+      bool useFileBroker_;
+      std::string fileBrokerHost_;
+      std::string fileBrokerPort_;
+      bool fileBrokerKeepAlive_;
+      bool fileBrokerUseLocalLock_;
+      unsigned int startFromLS_ = 1;
       bool outputAdler32Recheck_;
       bool requireTSPSet_;
       std::string selectedTransferMode_;
@@ -150,9 +176,12 @@ namespace evf{
 
       std::string hostname_;
       std::string run_string_;
+      std::string run_nstring_;
+      std::string pid_;
       std::string run_dir_;
       std::string bu_run_dir_;
       std::string bu_run_open_dir_;
+      std::string fulockfile_;
 
       int bu_readlock_fd_;
       int bu_writelock_fd_;
@@ -198,6 +227,20 @@ namespace evf{
 
       //values initialized in .cc file
       static const std::vector<std::string> MergeTypeNames_;
+
+
+      //json parser
+      jsoncollector::DataPointDefinition *dpd_;
+
+      boost::asio::io_service io_service_;
+      std::unique_ptr<boost::asio::ip::tcp::resolver> resolver_;
+      std::unique_ptr<boost::asio::ip::tcp::resolver::query> query_;
+      std::unique_ptr<boost::asio::ip::tcp::resolver::iterator> endpoint_iterator_;
+      std::unique_ptr<boost::asio::ip::tcp::socket> socket_;
+      //boost::asio::io_context io_context_;
+      //tcp::resolver resolver_;
+      //tcp::resolver::results_type endpoints_;
+
   };
 }
 

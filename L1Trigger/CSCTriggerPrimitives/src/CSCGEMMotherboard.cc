@@ -61,7 +61,7 @@ void CSCGEMMotherboard::retrieveGEMPads(const GEMPadDigiCollection* gemPads, uns
       GEMDetId roll_id(roll->id());
       auto pads_in_det = gemPads->get(roll_id);
       for (auto pad = pads_in_det.first; pad != pads_in_det.second; ++pad) {
-        const int bx_shifted(lct_central_bx + pad->bx());
+        const int bx_shifted(CSCConstants::LCT_CENTRAL_BX + pad->bx());
         // consider matches with BX difference +1/0/-1
         for (int bx = bx_shifted - maxDeltaBXPad_;bx <= bx_shifted + maxDeltaBXPad_; ++bx) {
           pads_[bx].emplace_back(roll_id.rawId(), *pad);
@@ -77,7 +77,7 @@ void CSCGEMMotherboard::retrieveGEMCoPads()
   for (const auto& copad: gemCoPadV){
     GEMDetId detId(theRegion, 1, theStation, 0, theChamber, 0);
     // only consider matches with same BX
-    coPads_[lct_central_bx + copad.bx(1)].emplace_back(detId.rawId(), copad);
+    coPads_[CSCConstants::LCT_CENTRAL_BX + copad.bx(1)].emplace_back(detId.rawId(), copad);
   }
 }
 
@@ -127,6 +127,10 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
 
   // make a new LCT
   CSCCorrelatedLCTDigi thisLCT;
+  if (not alct.isValid() and not clct.isValid()) {
+    LogTrace("CSCGEMCMotherboard") << "Warning!!! either ALCT or CLCT not valid, return invalid LCT \n";
+    return thisLCT;
+  }
 
   // Determine the case and assign properties depending on the LCT dataformat (old/new)
   if (alct.isValid() and clct.isValid() and gem1.isValid() and not gem2.isValid()) {
@@ -136,7 +140,7 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
     keyStrip = clct.getKeyStrip();
     keyWG = alct.getKeyWG();
     bend = clct.getBend();
-    thisLCT.setALCT(alct);
+    thisLCT.setALCT(getBXShiftedALCT(alct));
     thisLCT.setCLCT(clct);
     thisLCT.setGEM1(gem1);
     thisLCT.setType(CSCCorrelatedLCTDigi::ALCTCLCTGEM);
@@ -148,29 +152,30 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
     keyStrip = clct.getKeyStrip();
     keyWG = alct.getKeyWG();
     bend = clct.getBend();
-    thisLCT.setALCT(alct);
+    thisLCT.setALCT(getBXShiftedALCT(alct));
     thisLCT.setCLCT(clct);
     thisLCT.setGEM1(gem2.first());
     thisLCT.setGEM2(gem2.second());
     thisLCT.setType(CSCCorrelatedLCTDigi::ALCTCLCT2GEM);
   }
-  else if (alct.isValid() and gem2.isValid()) {
+  else if (alct.isValid() and gem2.isValid() and not clct.isValid()) {
     const auto& mymap1 = getLUT()->get_gem_pad_to_csc_hs(par, p);
     pattern = promoteALCTGEMpattern_ ? 10 : 0;
     quality = promoteALCTGEMquality_ ? 15 : 11;
     bx = alct.getBX();
-    keyStrip = mymap1[gem2.pad(2)];
+    // GEM pad number is counting from 1
+    keyStrip = mymap1[gem2.pad(2) - 1];
     keyWG = alct.getKeyWG();
-    thisLCT.setALCT(alct);
+    thisLCT.setALCT(getBXShiftedALCT(alct));
     thisLCT.setGEM1(gem2.first());
     thisLCT.setGEM2(gem2.second());
     thisLCT.setType(CSCCorrelatedLCTDigi::ALCT2GEM);
   }
-  else if (clct.isValid() and gem2.isValid()) {
+  else if (clct.isValid() and gem2.isValid() and not alct.isValid()) {
     const auto& mymap2 = getLUT()->get_gem_roll_to_csc_wg(par, p);
     pattern = encodePattern(clct.getPattern(), clct.getStripType());
     quality = promoteCLCTGEMquality_ ? 15 : 11;
-    bx = gem2.bx(1) + lct_central_bx;
+    bx = gem2.bx(1) + CSCConstants::LCT_CENTRAL_BX;
     keyStrip = clct.getKeyStrip();
     // choose the corresponding wire-group in the middle of the partition
     keyWG = mymap2[gem2.roll()];
@@ -440,4 +445,3 @@ int CSCGEMMotherboard::getLctTrigEnable<CSCCLCTDigi>() const
 {
   return clct_trig_enable;
 }
-

@@ -21,8 +21,6 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/MuonDetId/interface/MuonSubdetId.h"
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
-#include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
-#include "DataFormats/SiPixelDetId/interface/PXFDetId.h"
 
 // Fireworks includes
 #include "Fireworks/Core/interface/FWModelId.h"
@@ -104,8 +102,9 @@ FWTrackHitsDetailView::build (const FWModelId &id, const reco::Track* track)
    for( TEveElement::List_i i = m_modules->BeginChildren(), end = m_modules->EndChildren(); i != end; ++i )
    {
       TEveGeoShape* gs = dynamic_cast<TEveGeoShape*>(*i);
+       const auto & rhs = *(*(i));
       if (gs == nullptr && (*i != nullptr)) {
-        std::cerr << "Got a " << typeid(**i).name() << ", expecting TEveGeoShape. ignoring (it must be the clusters)." << std::endl;
+        std::cerr << "Got a " << typeid(rhs).name() << ", expecting TEveGeoShape. ignoring (it must be the clusters)." << std::endl;
         continue;
       }
       gs->SetMainTransparency(75);
@@ -369,49 +368,7 @@ FWTrackHitsDetailView::addModules( const reco::Track& track,
 	 switch( detid.det())
 	 {
 	 case DetId::Tracker:
-	    switch( detid.subdetId())
-	    {
-	    case SiStripDetId::TIB:
-	       name = "TIB ";
-	       break;
-	    case SiStripDetId::TOB:
-	       name = "TOB ";
-	       break;
-	    case SiStripDetId::TID:
-	       name = "TID ";
-	       break;
-	    case SiStripDetId::TEC:
-	       name = "TEC ";
-	       break;
-	    case PixelSubdetector::PixelBarrel:
-	       name = "Pixel Barrel ";
-	       { 
-		  PXBDetId idid = PXBDetId( detid.rawId() );
-		  unsigned int layer = idid.layer();
-		  unsigned int ladder = idid.ladder();
-		  unsigned int module = idid.module();
-
-		  name += TString::Format( ": Layer=%u, Ladder=%u, Module=%u \n",
-					   layer, ladder, module );
-	       }
-	       break;
-	    case PixelSubdetector::PixelEndcap:
-	       name = "Pixel Endcap ";
-	       {    
-	          PXFDetId idid = PXFDetId( detid.rawId() );
-		  unsigned int side = idid.side();
-		  unsigned int disk = idid.disk();
-		  unsigned int blade = idid.blade();
-		  unsigned int panel = idid.panel();
-		  unsigned int module = idid.module();
-
-		  name += TString::Format( ": Side=%u, Disk=%u, Blade=%u, Panel=%u, Module=%u \n",
-					   side, disk, blade, panel, module );
-	       }
-		
-	    default:
-	       break;
-	    }
+            name = iItem->getGeom()->getTrackerTopology()->print(detid);
 	    break;
 	    
 	 case DetId::Muon:

@@ -42,7 +42,9 @@ std::pair<std::vector<reco::TransientTrack>,GlobalPoint> TracksClusteringFromDis
                  GlobalPoint cp(dist.crossingPoint()); 
 
 		 double timeSig = 0.;
-		 if( edm::isFinite(seed.timeExt()) && edm::isFinite(tt->timeExt()) ) { // apply only if time available
+		 if( primaryVertex.covariance(3,3) > 0. && 
+		     edm::isFinite(seed.timeExt()) && edm::isFinite(tt->timeExt()) ) { 
+		   // apply only if time available and being used in vertexing
 		   const double tError = std::sqrt( std::pow(seed.dtErrorExt(),2) + std::pow(tt->dtErrorExt(),2) );
 		   timeSig = std::abs( seed.timeExt() - tt->timeExt() ) / tError;
 		 }
@@ -58,8 +60,8 @@ std::pair<std::vector<reco::TransientTrack>,GlobalPoint> TracksClusteringFromDis
 
                  float w = distanceFromPV*distanceFromPV/(pvDistance*distance);
           	 bool selected = (m.significance() < clusterMaxSignificance && 
-				  dotprodSeed > clusterMinAngleCosine && //Angles between PV-PCAonSeed vectors and seed directions
-				  dotprodTrack > clusterMinAngleCosine && //Angles between PV-PCAonTrack vectors and track directions
+				  ((clusterMinAngleCosine > 0) ? (dotprodSeed > clusterMinAngleCosine) : (dotprodSeed < clusterMinAngleCosine)) && //Angles between PV-PCAonSeed vectors and seed directions
+				  ((clusterMinAngleCosine > 0) ? (dotprodTrack > clusterMinAngleCosine) : (dotprodTrack < clusterMinAngleCosine)) && //Angles between PV-PCAonTrack vectors and track directions
 				  //dotprodTrackSeed2D > clusterMinAngleCosine && //Angle between track and seed
 				  //distance*clusterScale*tracks.size() < (distanceFromPV+pvDistance)*(distanceFromPV+pvDistance)/pvDistance && // cut scaling with track density
 				  distance*distanceRatio < distanceFromPV && // cut scaling with track density

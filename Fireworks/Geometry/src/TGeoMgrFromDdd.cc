@@ -67,7 +67,6 @@ namespace
    TGeoCombiTrans* createPlacement(const DDRotationMatrix& iRot,
                                    const DDTranslation&    iTrans)
    {
-      //  std::cout << "in createPlacement" << std::endl;
       double elements[9];
       iRot.GetComponents(elements);
       TGeoRotation r;
@@ -105,9 +104,11 @@ TGeoMgrFromDdd::produce(const DisplayGeomRecord& iRecord)
       gGeoIdentity = new TGeoIdentity("Identity");
    }
 
-   std::cout << "about to initialize the DDCompactView walker" << std::endl;
-   DDCompactView::walker_type             walker(viewH->graph());
-   DDCompactView::walker_type::value_type info = walker.current();
+   std::cout << "about to initialize the DDCompactView walker"
+	     << " with a root node " << viewH->root() << std::endl;
+
+   auto walker = viewH->walker();
+   auto info = walker.current();
 
    // The top most item is actually the volume holding both the
    // geometry AND the magnetic field volumes!
@@ -119,6 +120,7 @@ TGeoMgrFromDdd::produce(const DisplayGeomRecord& iRecord)
    TGeoVolume *top = createVolume(info.first.name().fullname(),
 				  info.first.solid(),
                                   info.first.material());
+
    if (top == nullptr) {
       return std::shared_ptr<TGeoManager>();
    }
@@ -133,14 +135,14 @@ TGeoMgrFromDdd::produce(const DisplayGeomRecord& iRecord)
 
    do
    {
-      DDCompactView::walker_type::value_type info = walker.current();
+      auto info = walker.current();
 
       if (m_verbose)
       {
 	 for(unsigned int i=0; i<parentStack.size();++i) {
 	    std::cout <<" ";
 	 }
-	 std::cout << info.first.name()<<" "<<info.second->copyno()<<" "
+	 std::cout << info.first.name() <<" "<<info.second->copyno()<<" "
 		   << DDSolidShapesName::name(info.first.solid().shape())<<std::endl;
       }
 
@@ -235,14 +237,14 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
       const std::vector<double>& params = iSolid.parameters();
       switch(iSolid.shape())
       {
-	 case ddbox:
+	 case DDSolidShape::ddbox:
 	    rSolid = new TGeoBBox(
                                   iName.c_str(),
                                   params[0]/cm,
                                   params[1]/cm,
                                   params[2]/cm);
 	    break;
-	 case ddcons:
+	 case DDSolidShape::ddcons:
 	    rSolid = new TGeoConeSeg(
                                      iName.c_str(),
                                      params[0]/cm,
@@ -254,7 +256,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
                                      params[6]/deg+params[5]/deg
                                      );
 	    break;
-	 case ddtubs:
+	 case DDSolidShape::ddtubs:
 	    //Order in params is  zhalf,rIn,rOut,startPhi,deltaPhi
 	    rSolid= new TGeoTubeSeg(
                                     iName.c_str(),
@@ -264,7 +266,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
                                     params[3]/deg,
                                     params[3]/deg + params[4]/deg);
 	    break;
-	 case ddcuttubs:
+	 case DDSolidShape::ddcuttubs:
 	    //Order in params is  zhalf,rIn,rOut,startPhi,deltaPhi,lx,ly,lz,tx,ty,tz
 	    rSolid= new TGeoCtub(
 				 iName.c_str(),
@@ -276,7 +278,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 				 params[5],params[6],params[7],
 				 params[8],params[9],params[10]);
 	    break;
-	 case ddtrap:
+	 case DDSolidShape::ddtrap:
 	    rSolid =new TGeoTrap(
                                  iName.c_str(),
                                  params[0]/cm,  //dz
@@ -291,7 +293,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
                                  params[9]/cm,  //dx4
                                  params[10]/deg);//alpha2
 	    break;
-	 case ddpolycone_rrz:	 
+	 case DDSolidShape::ddpolycone_rrz:	 
 	    rSolid = new TGeoPcon(
                                   iName.c_str(),
                                   params[0]/deg,
@@ -312,7 +314,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	       rSolid->SetDimensions(&(*(temp.begin())));
 	    }
 	    break;
-	 case ddpolyhedra_rrz:
+	 case DDSolidShape::ddpolyhedra_rrz:
 	    rSolid = new TGeoPgon(
                                   iName.c_str(),
                                   params[1]/deg,
@@ -334,7 +336,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	       rSolid->SetDimensions(&(*(temp.begin())));
 	    }
 	    break;
-         case ddextrudedpolygon:
+         case DDSolidShape::ddextrudedpolygon:
 	    {
 	      DDExtrudedPolygon extrPgon(iSolid);
 	      std::vector<double> x = extrPgon.xVec();
@@ -356,7 +358,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	      rSolid = mySolid;
 	    }
 	    break;
-	 case ddpseudotrap:
+	 case DDSolidShape::ddpseudotrap:
 	 {
 	    //implementation taken from SimG4Core/Geometry/src/DDG4SolidConverter.cc
 	    const static DDRotationMatrix s_rot( ROOT::Math::RotationX( 90.*deg ));
@@ -419,14 +421,14 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	      throw cms::Exception( "Check parameters of the PseudoTrap! name=" + pt.name().name());   
 	    }
 
-	    std::auto_ptr<TGeoShape> trap( new TGeoTrd2( pt.name().name().c_str(),
+	    std::unique_ptr<TGeoShape> trap( new TGeoTrd2( pt.name().name().c_str(),
 							 pt.x1()/cm,
 							 pt.x2()/cm,
 							 pt.y1()/cm,
 							 pt.y2()/cm,
 							 pt.halfZ()/cm ));
 	      
-	    std::auto_ptr<TGeoShape> tubs( new TGeoTubeSeg( pt.name().name().c_str(),
+	    std::unique_ptr<TGeoShape> tubs( new TGeoTubeSeg( pt.name().name().c_str(),
 							    0.,
 							    std::abs(r)/cm, // radius cannot be negative!!!
 							    h/cm,
@@ -446,7 +448,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	    }
 	    else
 	    {
- 	      std::auto_ptr<TGeoShape> box( new TGeoBBox( 1.1*x/cm, 1.1*h/cm, sqrt(r*r-x*x)/cm ));
+ 	      std::unique_ptr<TGeoShape> box( new TGeoBBox( 1.1*x/cm, 1.1*h/cm, sqrt(r*r-x*x)/cm ));
 	      
 	      TGeoSubtraction* sub = new TGeoSubtraction( tubs.release(),
 							  box.release(),
@@ -456,7 +458,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 											  0.,
 											  0. )));
 	      
-	      std::auto_ptr<TGeoShape> tubicCap( new TGeoCompositeShape( iName.c_str(), sub ));
+	      std::unique_ptr<TGeoShape> tubicCap( new TGeoCompositeShape( iName.c_str(), sub ));
 						
 	      TGeoUnion* boolS = new TGeoUnion( trap.release(),
 						tubicCap.release(),
@@ -472,7 +474,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	    
 	    break;
 	 }
-         case ddtorus:
+         case DDSolidShape::ddtorus:
 	 {
 	    DDTorus solid( iSolid );
 	    rSolid = new TGeoTorus( iName.c_str(),
@@ -483,30 +485,30 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 				    solid.deltaPhi()/deg);
 	    break;
 	 }	
-	 case ddsubtraction:
+	 case DDSolidShape::ddsubtraction:
 	 {
 	    DDBooleanSolid boolSolid(iSolid);
 	    if(!boolSolid) {
 	       throw cms::Exception("GeomConvert") <<"conversion to DDBooleanSolid failed";
 	    }
 	    
-	    std::auto_ptr<TGeoShape> left( createShape(boolSolid.solidA().name().fullname(),
+	    std::unique_ptr<TGeoShape> left( createShape(boolSolid.solidA().name().fullname(),
 						       boolSolid.solidA()) );
-	    std::auto_ptr<TGeoShape> right( createShape(boolSolid.solidB().name().fullname(),
+	    std::unique_ptr<TGeoShape> right( createShape(boolSolid.solidB().name().fullname(),
 							boolSolid.solidB()));
 	    if( nullptr != left.get() &&
 		nullptr != right.get() ) {
 	       TGeoSubtraction* sub = new TGeoSubtraction(left.release(),right.release(),
 							  nullptr,
 							  createPlacement(
-                                                                          *(boolSolid.rotation().matrix()),
+                                                                          boolSolid.rotation().matrix(),
                                                                           boolSolid.translation()));
 	       rSolid = new TGeoCompositeShape(iName.c_str(),
 					       sub);
 	    }
 	    break;
 	 }
-         case ddtrunctubs:
+         case DDSolidShape::ddtrunctubs:
 	 {
 	    DDTruncTubs tt( iSolid );
 	    if( !tt )
@@ -545,7 +547,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	    double R( cutAtDelta );
 	    
 	    // Note: startPhi is always 0.0
-	    std::auto_ptr<TGeoShape> tubs( new TGeoTubeSeg( name.c_str(), rIn/cm, rOut/cm, zHalf/cm, startPhi, deltaPhi/deg ));
+	    std::unique_ptr<TGeoShape> tubs( new TGeoTubeSeg( name.c_str(), rIn/cm, rOut/cm, zHalf/cm, startPhi, deltaPhi/deg ));
 
 	    double boxX( rOut ), boxY( rOut ); // exaggerate dimensions - does not matter, it's subtracted!
 	    
@@ -573,7 +575,7 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	    {
 	      xBox = - ( boxX / sin( fabs( alpha )) - r );
 	    }
-	    std::auto_ptr<TGeoShape> box( new TGeoBBox( name.c_str(), boxX/cm, boxZ/cm, boxY/cm ));
+	    std::unique_ptr<TGeoShape> box( new TGeoBBox( name.c_str(), boxX/cm, boxZ/cm, boxY/cm ));
 
 	    TGeoTranslation trans( xBox/cm, 0., 0.);
 
@@ -585,16 +587,16 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	    				     sub );
 	    break;   
 	 }
-	 case ddunion:
+	 case DDSolidShape::ddunion:
 	 {
 	    DDBooleanSolid boolSolid(iSolid);
 	    if(!boolSolid) {
 	       throw cms::Exception("GeomConvert") <<"conversion to DDBooleanSolid failed";
 	    }
 	    
-	    std::auto_ptr<TGeoShape> left( createShape(boolSolid.solidA().name().fullname(),
+	    std::unique_ptr<TGeoShape> left( createShape(boolSolid.solidA().name().fullname(),
 						       boolSolid.solidA()) );
-	    std::auto_ptr<TGeoShape> right( createShape(boolSolid.solidB().name().fullname(),
+	    std::unique_ptr<TGeoShape> right( createShape(boolSolid.solidB().name().fullname(),
 							boolSolid.solidB()));
 	    //DEBUGGING
 	    //break;
@@ -603,23 +605,23 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 	       TGeoUnion* boolS = new TGeoUnion(left.release(),right.release(),
 						nullptr,
 						createPlacement(
-                                                                *(boolSolid.rotation().matrix()),
+                                                                boolSolid.rotation().matrix(),
                                                                 boolSolid.translation()));
 	       rSolid = new TGeoCompositeShape(iName.c_str(),
 					       boolS);
 	    }
 	    break;
 	 }
-	 case ddintersection:
+	 case DDSolidShape::ddintersection:
 	 {
 	    DDBooleanSolid boolSolid(iSolid);
 	    if(!boolSolid) {
 	       throw cms::Exception("GeomConvert") <<"conversion to DDBooleanSolid failed";
 	    }
 	    
-	    std::auto_ptr<TGeoShape> left( createShape(boolSolid.solidA().name().fullname(),
+	    std::unique_ptr<TGeoShape> left( createShape(boolSolid.solidA().name().fullname(),
 						       boolSolid.solidA()) );
-	    std::auto_ptr<TGeoShape> right( createShape(boolSolid.solidB().name().fullname(),
+	    std::unique_ptr<TGeoShape> right( createShape(boolSolid.solidB().name().fullname(),
 							boolSolid.solidB()));
 	    if( nullptr != left.get() &&
 		nullptr != right.get() ) {
@@ -627,14 +629,14 @@ TGeoMgrFromDdd::createShape(const std::string& iName,
 							      right.release(),
 							      nullptr,
 							      createPlacement(
-                                                                              *(boolSolid.rotation().matrix()),
+                                                                              boolSolid.rotation().matrix(),
                                                                               boolSolid.translation()));
 	       rSolid = new TGeoCompositeShape(iName.c_str(),
 					       boolS);
 	    }
 	    break;
 	 }
-         case ddellipticaltube:
+         case DDSolidShape::ddellipticaltube:
 	 {
 	   DDEllipticalTube eSolid(iSolid);
 	   if(!eSolid) {

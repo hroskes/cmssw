@@ -233,7 +233,7 @@ SiStripCMMonitorPlugin::analyze(const edm::Event& iEvent,
       continue;
     }
 
-    std::auto_ptr<const sistrip::FEDBuffer> buffer;
+    std::unique_ptr<const sistrip::FEDBuffer> buffer;
 
     if (!lFedErrors.fillFatalFEDErrors(fedData,0)) {
       continue;
@@ -279,7 +279,7 @@ SiStripCMMonitorPlugin::analyze(const edm::Event& iEvent,
 
       if (!lDetId || lDetId == sistrip::invalid32_) continue;
 
-      bool lFailUnpackerChannelCheck = !buffer->channelGood(iCh) && connected;
+      bool lFailUnpackerChannelCheck = !buffer->channelGood(iCh, true) && connected;
 
       if (lFailUnpackerChannelCheck) {
 	continue;

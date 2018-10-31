@@ -7,10 +7,7 @@
 #include "DataFormats/DetId/interface/DetIdCollection.h"
 #include "DataFormats/SiStripCommon/interface/SiStripConstants.h"
 #include "EventFilter/SiStripRawToDigi/interface/SiStripFEDBuffer.h"
-#include "boost/cstdint.hpp"
-#include <iostream>
-#include <string>
-#include <vector>
+#include "WarningSummary.h"
  
 /// sistrip classes
 namespace sistrip { class RawToClustersLazyUnpacker; }
@@ -64,6 +61,8 @@ namespace sistrip {
     inline void doAPVEmulatorCheck( bool );
 
     inline void legacy( bool );
+
+    void printWarningSummary() const { warnings_.printSummary(); }
 
   private:
     
@@ -146,8 +145,9 @@ namespace sistrip {
     std::vector<SiStripRawDigi> scope_work_digis_; 
     std::vector<SiStripRawDigi> proc_work_digis_;
     std::vector<SiStripRawDigi> cm_work_digis_;
+
+    WarningSummary warnings_;
   };
-  
 }
 
 void sistrip::RawToDigiUnpacker::readoutOrder( uint16_t& physical_order, uint16_t& readout_order ) 
