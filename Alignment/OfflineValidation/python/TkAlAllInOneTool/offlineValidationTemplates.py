@@ -130,7 +130,8 @@ void TkAlExtendedOfflineValidation()
   }  	
   
   glob_t path;
-  string a = string("/eos/cms/store/caf/user/") + std::getenv("USER") + ("/AlignmentValidation/2018/July/07.16/*_sorted.root");
+  string eosdir = .oO[eosdir]Oo.;
+  string a = string("/eos/cms/store/caf/user/") + std::getenv("USER") + string("/AlignmentValidation/2018/")+eosdir+string(/*_sorted.root");
   glob(a.data(), 0, NULL, &path);
   vector<string> GC_files2;
 
