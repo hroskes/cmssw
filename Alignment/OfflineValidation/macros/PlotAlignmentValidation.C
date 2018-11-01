@@ -1977,9 +1977,9 @@ vector <Int_t> PlotAlignmentValidation::return_ids (TString filename, int n){
 vector <TH1*>  PlotAlignmentValidation::findmodule (TFile* f, unsigned int moduleid){
 		
 		
-		//TFile *f = TFile::Open(filename, "READ");
-		TString histnamex;
-		TString histnamey;
+	//TFile *f = TFile::Open(filename, "READ");
+	TString histnamex;
+	TString histnamey;
         //read necessary branch/folder
         auto t = (TTree*)f->Get("TrackerOfflineValidationStandalone/TkOffVal");
 
@@ -1996,80 +1996,67 @@ vector <TH1*>  PlotAlignmentValidation::findmodule (TFile* f, unsigned int modul
         }
 		 
 	vector <TH1*> h;
-		
+
         auto h1 = (TH1*)f->FindObjectAny(histnamex);
-	auto h2 = (TH1*)f->FindObjectAny(histnamey);
-        
-	h1->SetDirectory(0);
-	h2->SetDirectory(0);
-        
-	h.push_back(h1);
-	h.push_back(h2);
+        if (h1) {
+		h1->SetDirectory(0);
+		h.push_back(h1);
+	} else {
+		cout << "Warning: couldn't find " << histnamex << endl;
+	}
 		
+        if (histnamey != "") {
+		auto h2 = (TH1*)f->FindObjectAny(histnamey);
+		if (h2) {
+			h2->SetDirectory(0);
+			h.push_back(h2);
+		} else {
+			cout << "Warning: couldn't find " << histnamex << endl;
+		}
+        }
+
 	return h;
  }
 
 void PlotAlignmentValidation::residual_by_moduleID( unsigned int moduleid){
-	TCanvas *cx = new TCanvas("x_residual");
-	TCanvas *cy = new TCanvas("y_residual");
-	TLegend *legendx =new TLegend(0.55, 0.7, 1, 0.9);
-        TLegend *legendy =new TLegend(0.55, 0.7, 1, 0.9);
-	
-    	legendx->SetTextSize(0.016);
-	legendx->SetTextAlign(12);
-        legendy->SetTextSize(0.016);
-        legendy->SetTextAlign(12);
+	array<unique_ptr<TCanvas>, 2> canvas = {make_unique<TCanvas>("x_residual"), make_unique<TCanvas>("y_residual")};
+        array<unique_ptr<TLegend>, 2> legend = {make_unique<TLegend>(0.55, 0.7, 1, 0.9), make_unique<TLegend>(0.55, 0.7, 1, 0.9)};
+        for (const auto& l : legend) {
+		l->SetTextSize(0.016);
+		l->SetTextAlign(12);
+        }
 
-	
-	
-	
 	for (auto it : sourceList) {
 		TFile* file = it->getFile();
 		int color = it->getLineColor();
-		int linestyle = it->getLineStyle();   //this you set by doing h->SetLineStyle(linestyle)
+		int linestyle = it->getLineStyle();
 		TString legendname = it->getName(); //this goes in the legend
 	    	vector<TH1*> hist = findmodule(file, moduleid);
-			
-		TString histnamex = legendname+" NEntries: "+to_string(int(hist[0]->GetEntries()));
-        	hist[0]->SetTitle(histnamex);
-        	hist[0]->SetStats(0);
-        	hist[0]->Rebin(50);
-        	hist[0]->SetBit(TH1::kNoTitle);
-        	hist[0]->SetLineColor(color);
-        	hist[0]->SetLineStyle(linestyle);
-        	cx->cd();
-		hist[0]->Draw("Same");
-		legendx->AddEntry(hist[0], histnamex, "l");
-				
-			
-		TString histnamey = legendname+" NEntries: "+to_string(int(hist[1]->GetEntries()));
-        	hist[1]->SetTitle(histnamey);
-        	hist[1]->SetStats(0);
-        	hist[1]->Rebin(50);
-        	hist[1]->SetBit(TH1::kNoTitle);
-        	hist[1]->SetLineColor(color);
-        	hist[1]->SetLineStyle(linestyle);
-        	cy->cd();
-		hist[1]->Draw("Same");
-		legendy->AddEntry(hist[1], histnamey, "l");
-	
+
+		int i = 0;
+		for (auto h : hist) {
+			TString histname = legendname+" NEntries: "+to_string(int(h->GetEntries()));
+			h->SetTitle(histname);
+			h->SetStats(0);
+			h->Rebin(50);
+			h->SetBit(TH1::kNoTitle);
+			h->SetLineColor(color);
+			h->SetLineStyle(linestyle);
+			canvas[i]->cd();
+			h->Draw("Same");
+			legend[i]->AddEntry(h, histname, "l");
+			i++;
+		}
 	}
-	
-	TString filenamex = "x_residual_"+to_string(moduleid);
-        TString filenamey = "y_residual_"+to_string(moduleid);
-        cx->cd();
-	legendx->Draw();
-        cx->SaveAs(outputDir + "/" +filenamex+".root");
-        cx->SaveAs(outputDir + "/" +filenamex+".pdf");
-        cx->SaveAs(outputDir + "/" +filenamex+".png");
-        cx->SaveAs(outputDir + "/" +filenamex+".eps");
 
-        cy->cd();
-	legendy->Draw();
-        cy->SaveAs(outputDir + "/" +filenamey+".root");
-        cy->SaveAs(outputDir + "/" +filenamey+".pdf");
-        cy->SaveAs(outputDir + "/" +filenamey+".png");
-        cy->SaveAs(outputDir + "/" +filenamey+".eps");
-	
-
+	array<TString, 2> filenames = {"x_residual_"+to_string(moduleid), "y_residual_"+to_string(moduleid)};
+        for (int i = 0; i < 2; i++) {
+		if (!legend[i]->GetListOfPrimitives()->GetEntries()) continue;
+	        canvas[i]->cd();
+		legend[i]->Draw();
+	        canvas[i]->SaveAs(outputDir + "/" +filenames[i]+".root");
+	        canvas[i]->SaveAs(outputDir + "/" +filenames[i]+".pdf");
+	        canvas[i]->SaveAs(outputDir + "/" +filenames[i]+".png");
+	        canvas[i]->SaveAs(outputDir + "/" +filenames[i]+".eps");
+	}
 }
