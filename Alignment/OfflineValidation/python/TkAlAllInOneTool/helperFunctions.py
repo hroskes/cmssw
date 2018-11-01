@@ -195,6 +195,31 @@ def cppboolstring(string, name):
     """
     return pythonboolstring(string, name).lower()
 
+def intfromstring(string, name):
+    """
+    Takes a string from the configuration file
+    and makes it into an int
+    """
+    try:
+        return str(int(string))
+    except ValueError:
+        raise ValueError("{} has to be an integer!".format(name))
+
+def listofstrings(string, name):
+    """
+    takes a string from the configuration file
+    and makes it into a list of strings separated by commas
+    """
+    if "'" in string and '"' not in string: string = string.replace("'", '"')
+
+    if '"' not in string and "'" not in string:
+        return ", ".join('"' + _ + '"' for _ in string.split(","))
+    else:
+        split = [_.strip() for _ in string.split(",")]
+        if not all(_.startswith('"') and _.endswith('"') for _ in split):
+            raise ValueError("Can't figure out how to parse {}.  For simplest results, just use things separated by commas with no quotes.".format(name))
+        return string
+
 conddbcode = None
 def conddb(*args):
     """

@@ -86,7 +86,10 @@ root -x -b -q -l TkAlExtendedOfflineValidation.C
 ######################################################################
 extendedValidationTemplate="""
 #include "Alignment/OfflineValidation/macros/PlotAlignmentValidation.C"
+
 #include "FWCore/FWLite/interface/FWLiteEnabler.h"
+
+#include <glob.h>
 
 void TkAlExtendedOfflineValidation()
 {
@@ -113,8 +116,8 @@ void TkAlExtendedOfflineValidation()
   vector <int> moduleids1 = {.oO[moduleid]Oo.};
   vector <Int_t> moduleids2;
   vector <Int_t> moduleids3;
-  int n = .oO[number_of_modules]Oo.;
-  vector <TString> GC_files ={ .oO[GC_files]Oo.};
+  int n = .oO[nmodulesfromGCP]Oo.;
+  vector <TString> GCPfiles ={ .oO[GCPfiles]Oo.};
  
   for (auto moduleid : moduleids1) {
        	p.residual_by_moduleID(moduleid);
@@ -122,7 +125,7 @@ void TkAlExtendedOfflineValidation()
   
 
   
-  for (auto file : GC_files){
+  for (auto file : GCPfiles){
 	moduleids2 = p.return_ids(file, n);
 	for (auto moduleid : moduleids2) {
        		p.residual_by_moduleID(moduleid);
@@ -130,15 +133,14 @@ void TkAlExtendedOfflineValidation()
   }  	
   
   glob_t path;
-  string eosdir = .oO[eosdir]Oo.;
   string a = string("root://eoscms//eos/cms/store/group/alca_trackeralign/AlignmentValidation/.oO[eosdir]Oo./*_sorted.root");
   glob(a.data(), 0, NULL, &path);
-  vector<string> GC_files2;
+  vector<string> GCPfiles2;
 
-  for (int i=0; i<path.gl_pathc; i++){GC_files2.push_back(path.gl_pathv[i]);}
+  for (unsigned int i=0; i<path.gl_pathc; i++){GCPfiles2.push_back(path.gl_pathv[i]);}
 
 
-  for (auto file: GC_files2){
+  for (auto file: GCPfiles2){
         moduleids3 = p.return_ids(file.data(), n);
         for (auto moduleid : moduleids3) {
                 p.residual_by_moduleID(moduleid);

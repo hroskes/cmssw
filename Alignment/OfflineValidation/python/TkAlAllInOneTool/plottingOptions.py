@@ -5,7 +5,7 @@ import globalDictionaries
 import configTemplates
 
 from genericValidation import ValidationMetaClass, ValidationWithComparison, ValidationWithPlots
-from helperFunctions import getCommandOutput2, replaceByMap, cppboolstring
+from helperFunctions import getCommandOutput2, replaceByMap, cppboolstring, intfromstring, listofstrings
 from offlineValidation import OfflineValidation
 from primaryVertexValidation import PrimaryVertexValidation
 from TkAlExceptions import AllInOneError
@@ -184,13 +184,20 @@ class PlottingOptionsOffline(BasePlottingOptions):
                 "SurfaceShapes":"coarse",
                 "bigtext":"false",
                 "mergeOfflineParJobsScriptPath": ".oO[scriptsdir]Oo./TkAlOfflineJobsMerge.C",
-                "usefit": "false","moduleid": "" , "GC_files": "" , "number_of_modules": ""
+                "usefit": "false",
+                "moduleid": "",
+                "GCPfiles": "",
+                "nmodulesfromGCP": "0",
                }
     validationclass = OfflineValidation
     def __init__(self, config):
         super(PlottingOptionsOffline, self).__init__(config, "offline")
         for name in "usefit", "bigtext":
             self.general[name] = cppboolstring(self.general[name], name)
+        for name in "DMRMinimum", "nmodulesfromGCP":
+            self.general[name] = intfromstring(self.general[name], name)
+        for name in "GCPfiles",:
+            self.general[name] = listofstrings(self.general[name], name)
 
 
 class PlottingOptionsPrimaryVertex(BasePlottingOptions):

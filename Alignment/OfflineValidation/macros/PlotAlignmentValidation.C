@@ -1928,7 +1928,7 @@ const TString PlotAlignmentValidation::summaryfilename = "OfflineValidationSumma
 
 
 
-vector <Int_t> return_ids (TString filename, int n){
+vector <Int_t> PlotAlignmentValidation::return_ids (TString filename, int n){
 
         TFile* f = TFile::Open(filename, "READ");
         TTree* t= (TTree*)f->Get("alignTree");
@@ -1974,16 +1974,6 @@ vector <Int_t> return_ids (TString filename, int n){
 
 
 
-
-
-
-
-
-
-
-
-
-
 vector <TH1*>  PlotAlignmentValidation::findmodule (TFile* f, unsigned int moduleid){
 		
 		
@@ -1996,7 +1986,7 @@ vector <TH1*>  PlotAlignmentValidation::findmodule (TFile* f, unsigned int modul
         TkOffTreeVariables *variables=0;
         t->SetBranchAddress("TkOffTreeVariables", &variables);
         unsigned int number_of_entries=t->GetEntries();
-        for (int i=0;i<number_of_entries;i++){
+        for (unsigned int i=0;i<number_of_entries;i++){
                 t->GetEntry(i);
                  if (variables->moduleId==moduleid){
                         histnamex=variables->histNameX;
